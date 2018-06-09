@@ -26,6 +26,34 @@ namespace TorrentSwifter.Encodings
         public class Dictionary : Dictionary<string, object>
         {
             /// <summary>
+            /// Creates a new dictionary.
+            /// </summary>
+            public Dictionary()
+            {
+
+            }
+
+            /// <summary>
+            /// Creates a new dictionary.
+            /// </summary>
+            /// <param name="capacity">The initial dictionary capacity.</param>
+            public Dictionary(int capacity)
+                : base(capacity)
+            {
+
+            }
+
+            /// <summary>
+            /// Creates a new dictionary.
+            /// </summary>
+            /// <param name="dictionary">The initial dictionary contents.</param>
+            public Dictionary(IDictionary<string, object> dictionary)
+                : base(dictionary)
+            {
+
+            }
+
+            /// <summary>
             /// Attempts to get an integer item from the dictionary.
             /// </summary>
             /// <param name="key">The item key.</param>
@@ -137,6 +165,34 @@ namespace TorrentSwifter.Encodings
         /// </summary>
         public class List : List<object>
         {
+            /// <summary>
+            /// Creates a new list.
+            /// </summary>
+            public List()
+            {
+
+            }
+
+            /// <summary>
+            /// Creates a new list.
+            /// </summary>
+            /// <param name="capacity">The initial list capacity.</param>
+            public List(int capacity)
+                : base(capacity)
+            {
+
+            }
+
+            /// <summary>
+            /// Creates a new list.
+            /// </summary>
+            /// <param name="collection">The initial list collection.</param>
+            public List(IEnumerable<object> collection)
+                : base(collection)
+            {
+
+            }
+
             /// <summary>
             /// Returns an integer item from the list at a specific index.
             /// </summary>
