@@ -15,11 +15,81 @@ namespace TorrentSwifter
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
         #endregion
 
+        #region Classes
+        private class Piece
+        {
+            private readonly int index;
+            private readonly int size;
+
+            private bool isVerified = false;
+            private bool[] downloadedBlocks = null;
+
+            public int Size
+            {
+                get { return size; }
+            }
+
+            public bool IsVerified
+            {
+                get { return isVerified; }
+                set
+                {
+                    if (isVerified != value)
+                    {
+                        isVerified = value;
+                        if (isVerified)
+                        {
+                            for (int i = 0; i < downloadedBlocks.Length; i++)
+                            {
+                                downloadedBlocks[i] = true;
+                            }
+                        }
+                        else if (HasDownloadedAllBlocks())
+                        {
+                            // Reset the download state of all blocks if we have downloaded all blocks
+                            // but the hash was still not correct.
+                            for (int i = 0; i < downloadedBlocks.Length; i++)
+                            {
+                                downloadedBlocks[i] = false;
+                            }
+                        }
+                    }
+                }
+            }
+
+            public Piece(int index, int size, int blockCount)
+            {
+                this.index = index;
+                this.size = size;
+
+                downloadedBlocks = new bool[blockCount];
+            }
+
+            public bool HasDownloadedAllBlocks()
+            {
+                bool result = true;
+
+                for (int i = 0; i < downloadedBlocks.Length; i++)
+                {
+                    if (!downloadedBlocks[i])
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+
+                return result;
+            }
+        }
+        #endregion
+
         #region Fields
         private readonly TorrentMetaData metaData;
         private readonly string downloadPath;
         private readonly int blockSize;
         private readonly long totalSize;
+
+        private Piece[] pieces = null;
         #endregion
 
         #region Properties
@@ -86,6 +156,30 @@ namespace TorrentSwifter
             this.downloadPath = Path.GetFullPath(downloadPath);
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
+
+            InitializePieces();
+        }
+        #endregion
+
+        #region Private Methods
+        private void InitializePieces()
+        {
+            long totalSize = metaData.TotalSize;
+            int pieceSize = metaData.PieceSize;
+            int pieceCount = metaData.PieceCount;
+            pieces = new Piece[pieceCount];
+
+            int lastPieceSize = (int)(totalSize % pieceSize);
+            if (lastPieceSize == 0)
+                lastPieceSize = pieceSize;
+
+            for (int i = 0; i < pieceCount; i++)
+            {
+                bool isLastPiece = (i == (pieceCount - 1));
+                int currentPieceSize = (isLastPiece ? lastPieceSize : pieceSize);
+                int blockCount = (((currentPieceSize - 1) / blockSize) + 1);
+                pieces[i] = new Piece(i, currentPieceSize, blockCount);
+            }
         }
         #endregion
     }
