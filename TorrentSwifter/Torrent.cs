@@ -15,6 +15,15 @@ namespace TorrentSwifter
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
         #endregion
 
+        #region Delegates
+        /// <summary>
+        /// An event handler for pieces.
+        /// </summary>
+        /// <param name="torrent">The torrent.</param>
+        /// <param name="pieceIndex">The piece index.</param>
+        public delegate void PieceEventHandler(Torrent torrent, int pieceIndex);
+        #endregion
+
         #region Classes
         private class Piece
         {
@@ -126,6 +135,13 @@ namespace TorrentSwifter
         private Piece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
+        #endregion
+
+        #region Events
+        /// <summary>
+        /// An event that occurs once a piece has been downloaded and verified.
+        /// </summary>
+        public event PieceEventHandler PieceVerified;
         #endregion
 
         #region Properties
@@ -267,6 +283,48 @@ namespace TorrentSwifter
                     }
                 }
             }
+        }
+
+        private void VerifyPiece(int pieceIndex)
+        {
+            var piece = pieces[pieceIndex];
+            var pieceHash = metaData.PieceHashes[pieceIndex];
+            byte[] computedPieceHash = GetPieceHash(pieceIndex);
+
+            bool isVerified = (computedPieceHash != null && pieceHash.Equals(computedPieceHash));
+            if (piece.IsVerified != isVerified)
+            {
+                piece.IsVerified = isVerified;
+
+                if (isVerified)
+                {
+                    // TODO: Check if we have downloaded and verified all pieces
+
+                    var verifiedHandler = PieceVerified;
+                    if (verifiedHandler != null)
+                    {
+                        verifiedHandler.Invoke(this, pieceIndex);
+                    }
+                }
+            }
+        }
+
+        private byte[] ReadPiece(int pieceIndex)
+        {
+            var piece = pieces[pieceIndex];
+            byte[] pieceData = new byte[piece.Size];
+            long torrentOffset = ((long)pieceIndex * (long)PieceSize);
+            int readByteCount = ReadData(torrentOffset, pieceData, 0, pieceData.Length);
+            if (readByteCount != pieceData.Length)
+                return null;
+
+            return pieceData;
+        }
+
+        private byte[] GetPieceHash(int pieceIndex)
+        {
+            byte[] pieceData = ReadPiece(pieceIndex);
+            return HashHelper.ComputeSHA1(pieceData);
         }
         #endregion
 
