@@ -269,5 +269,84 @@ namespace TorrentSwifter
             }
         }
         #endregion
+
+        #region Internal Methods
+        internal int ReadData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
+        {
+            if (torrentOffset < 0 || torrentOffset >= totalSize)
+                throw new ArgumentOutOfRangeException("torrentOffset");
+            else if (buffer == null)
+                throw new ArgumentNullException("buffer");
+            else if (bufferOffset < 0 || bufferOffset >= buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+            else if (count < 0 || (bufferOffset + count) > buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+
+            int readByteCount = 0;
+            for (int i = 0; i < files.Length && count > 0; i++)
+            {
+                var file = files[i];
+                if (torrentOffset >= file.Offset && torrentOffset < file.EndOffset)
+                {
+                    long localOffset = torrentOffset - file.Offset;
+                    int localCount = (int)Math.Min(file.Size - localOffset, count);
+
+                    if (!File.Exists(file.Path))
+                        break;
+
+                    using (var fileStream = new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                    {
+                        fileStream.Seek(localOffset, SeekOrigin.Begin);
+                        localCount = fileStream.Read(buffer, bufferOffset, localCount);
+                        if (localCount <= 0)
+                            break;
+                    }
+
+                    torrentOffset += localCount;
+                    bufferOffset += localCount;
+                    count -= localCount;
+                    readByteCount += localCount;
+                }
+            }
+            return readByteCount;
+        }
+
+        internal void WriteData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
+        {
+            if (torrentOffset < 0 || torrentOffset >= totalSize)
+                throw new ArgumentOutOfRangeException("torrentOffset");
+            else if (buffer == null)
+                throw new ArgumentNullException("buffer");
+            else if (bufferOffset < 0 || bufferOffset >= buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+            else if (count < 0 || (bufferOffset + count) > buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+
+            for (int i = 0; i < files.Length && count > 0; i++)
+            {
+                var file = files[i];
+                if (torrentOffset >= file.Offset && torrentOffset < file.EndOffset)
+                {
+                    long localOffset = torrentOffset - file.Offset;
+                    int localCount = (int)Math.Min(file.Size - localOffset, count);
+
+                    IOHelper.CreateParentDirectoryIfItDoesntExist(file.Path);
+
+                    lock (fileWriteLocks[i])
+                    {
+                        using (var fileStream = new FileStream(file.Path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+                        {
+                            fileStream.Seek(localOffset, SeekOrigin.Begin);
+                            fileStream.Write(buffer, bufferOffset, localCount);
+                        }
+                    }
+
+                    torrentOffset += localCount;
+                    bufferOffset += localCount;
+                    count -= localCount;
+                }
+            }
+        }
+        #endregion
     }
 }
