@@ -35,19 +35,35 @@ namespace TorrentSwifter
             }
 
             /// <summary>
-            /// Gets the size of the file.
+            /// Gets or sets the size of the file.
             /// </summary>
             public long Size
             {
                 get { return size; }
+                set { size = value; }
             }
 
             /// <summary>
-            /// Gets the MD5 hash of this file.
+            /// Gets or sets the MD5 hash of this file.
             /// </summary>
             public byte[] MD5Hash
             {
                 get { return md5Hash; }
+                set { md5Hash = value; }
+            }
+
+            /// <summary>
+            /// Creates new file item information.
+            /// </summary>
+            /// <param name="path">The path of the file.</param>
+            public FileItem(string path)
+            {
+                if (path == null)
+                    throw new ArgumentNullException("path");
+
+                this.path = path.Replace('\\', '/');
+                this.size = 0L;
+                this.md5Hash = null;
             }
 
             /// <summary>
@@ -332,6 +348,8 @@ namespace TorrentSwifter
                     throw new ArgumentException(string.Format("The piece size cannot be more than {0} bytes ({1}).", MaxPieceSize, SizeHelper.GetHumanReadableSize(MinPieceSize)), "value");
                 else if (!MathHelper.IsPowerOfTwo(value))
                     throw new ArgumentException("The piece size must be a power of two.", "value");
+                else if (files != null)
+                    throw new InvalidOperationException("Unable to change the piece size once the files have been set.");
 
                 pieceSize = value;
             }
@@ -376,6 +394,7 @@ namespace TorrentSwifter
         #endregion
 
         #region Public Methods
+        #region Loading
         /// <summary>
         /// Loads torrent information from a stream.
         /// </summary>
@@ -409,7 +428,9 @@ namespace TorrentSwifter
 
             Load(torrentInfo);
         }
+        #endregion
 
+        #region Saving
         /// <summary>
         /// Saves this torrent information to a stream.
         /// </summary>
@@ -434,12 +455,156 @@ namespace TorrentSwifter
             if (filePath == null)
                 throw new ArgumentNullException("filePath");
 
-            using (var stream = File.Create(filePath))
-            {
-                var torrentInfo = Save();
-                BEncoding.EncodeToFile(torrentInfo, filePath);
-            }
+            var torrentInfo = Save();
+            BEncoding.EncodeToFile(torrentInfo, filePath);
         }
+        #endregion
+
+        #region Set Files
+        /// <summary>
+        /// Assigns a single file for this torrent.
+        /// </summary>
+        /// <param name="filePath">The path to the single file for this torrent.</param>
+        public void SetSingleFile(string filePath)
+        {
+            if (filePath == null)
+                throw new ArgumentNullException("filePath");
+
+            filePath = Path.GetFullPath(filePath);
+            if (!File.Exists(filePath))
+                throw new FileNotFoundException(string.Format("The file could not be found: {0}", filePath), filePath);
+
+            string parentDirectoryPath = IOHelper.GetParentDirectory(filePath);
+            string fileName = Path.GetFileName(filePath);
+
+            var files = new FileItem[]
+            {
+                new FileItem(fileName)
+            };
+            SetFiles(parentDirectoryPath, files);
+        }
+
+        /// <summary>
+        /// Assigns multiple files inside of a directory for this torrent.
+        /// </summary>
+        /// <param name="directoryPath">The path to the directory.</param>
+        public void SetDirectoryFiles(string directoryPath)
+        {
+            if (directoryPath == null)
+                throw new ArgumentNullException("directoryPath");
+
+            directoryPath = Path.GetFullPath(directoryPath);
+            if (!Directory.Exists(directoryPath))
+                throw new DirectoryNotFoundException(string.Format("The directory could not be found: {0}", directoryPath));
+
+            string[] directoryFilePaths = Directory.GetFiles(directoryPath, "*", SearchOption.AllDirectories);
+            if (directoryFilePaths.Length == 0)
+                throw new InvalidOperationException(string.Format("The directory is empty.", directoryPath));
+
+            var files = new FileItem[directoryFilePaths.Length];
+            for (int i = 0; i < files.Length; i++)
+            {
+                string filePath = directoryFilePaths[i];
+                string localPath = IOHelper.GetLocalPath(filePath, directoryPath);
+                files[i] = new FileItem(localPath);
+            }
+
+            SetFiles(directoryPath, files);
+        }
+
+        /// <summary>
+        /// Assigns the files for this torrent.
+        /// </summary>
+        /// <param name="rootPath">The path to the root directory of where the files can be found.</param>
+        /// <param name="files">The files of the torrent.</param>
+        public void SetFiles(string rootPath, FileItem[] files)
+        {
+            if (rootPath == null)
+                throw new ArgumentNullException("rootPath");
+            else if (!Directory.Exists(rootPath))
+                throw new DirectoryNotFoundException(string.Format("The directory could not be found: {0}", rootPath));
+            else if (files == null)
+                throw new ArgumentNullException("files");
+            else if (files.Length == 0)
+                throw new ArgumentException("There must be at least one file.", "files");
+
+            long totalSize = 0L;
+            for (int i = 0; i < files.Length; i++)
+            {
+                if (files[i].Path == null)
+                    throw new ArgumentException(string.Format("The file path at index {0} is null.", i), "files");
+
+                string fileFullPath = IOHelper.GetTorrentFilePath(rootPath, files[i]);
+                var fileInfo = new FileInfo(fileFullPath);
+                if (!fileInfo.Exists)
+                    throw new FileNotFoundException(string.Format("Unable to find the file: {0}", fileFullPath), fileFullPath);
+
+                long fileSize = fileInfo.Length;
+                files[i].Size = fileSize;
+                totalSize += fileSize;
+            }
+
+            if (totalSize == 0L)
+                throw new InvalidOperationException("Unable to create a torrent with the total size of zero.");
+
+            if (pieceSize == 0)
+                pieceSize = SizeHelper.GetRecommendedPieceSize(totalSize);
+
+            int pieceCount = (int)((totalSize - 1) / pieceSize) + 1;
+            pieceHashes = new PieceHash[pieceCount];
+
+            int lastPieceSize = (int)(totalSize % pieceSize);
+            if (lastPieceSize == 0)
+                lastPieceSize = pieceSize;
+
+            byte[] pieceData = new byte[pieceSize];
+            int pieceDataOffset = 0;
+            int pieceIndex = 0;
+            int currentPieceSize = (pieceCount > 1 ? pieceSize : lastPieceSize);
+            for (int i = 0; i < files.Length; i++)
+            {
+                string fileFullPath = IOHelper.GetTorrentFilePath(rootPath, files[i]);
+                using (var fileStream = File.OpenRead(fileFullPath))
+                {
+                    while (pieceIndex < pieceCount)
+                    {
+                        int pieceRemaining = currentPieceSize - pieceDataOffset;
+                        if (pieceRemaining <= 0)
+                        {
+                            byte[] pieceHash = HashHelper.ComputeSHA1(pieceData, 0, pieceDataOffset);
+                            pieceHashes[pieceIndex] = new PieceHash(pieceHash);
+
+                            ++pieceIndex;
+                            pieceDataOffset = 0;
+                            currentPieceSize = (pieceIndex < (pieceCount - 1) ? pieceSize : lastPieceSize);
+                            pieceRemaining = currentPieceSize;
+
+                            if (pieceIndex >= pieceCount)
+                                break;
+                        }
+
+                        int readBytes = fileStream.Read(pieceData, pieceDataOffset, pieceRemaining);
+                        if (readBytes <= 0)
+                            break;
+
+                        pieceDataOffset += readBytes;
+                    }
+                }
+            }
+
+            if (pieceDataOffset > 0)
+            {
+                byte[] pieceHash = HashHelper.ComputeSHA1(pieceData, 0, pieceDataOffset);
+                pieceHashes[pieceIndex] = new PieceHash(pieceHash);
+                ++pieceIndex;
+            }
+
+            if (pieceIndex < pieceCount)
+                throw new InvalidOperationException(string.Format("Something went wrong when calculating piece hashes. Expected {0} hashes but only calculated {1}.", pieceCount, pieceIndex));
+
+            this.files = files;
+        }
+        #endregion
         #endregion
 
         #region Private Methods
