@@ -504,7 +504,8 @@ namespace TorrentSwifter
         /// Assigns a single file for this torrent.
         /// </summary>
         /// <param name="filePath">The path to the single file for this torrent.</param>
-        public void SetSingleFile(string filePath)
+        /// <param name="calculateMD5Hash">If the MD5 hash should be calculated for the file.</param>
+        public void SetSingleFile(string filePath, bool calculateMD5Hash = false)
         {
             if (filePath == null)
                 throw new ArgumentNullException("filePath");
@@ -520,14 +521,15 @@ namespace TorrentSwifter
             {
                 new FileItem(fileName)
             };
-            SetFiles(parentDirectoryPath, files);
+            SetFiles(parentDirectoryPath, files, calculateMD5Hash);
         }
 
         /// <summary>
         /// Assigns multiple files inside of a directory for this torrent.
         /// </summary>
         /// <param name="directoryPath">The path to the directory.</param>
-        public void SetDirectoryFiles(string directoryPath)
+        /// <param name="calculateMD5Hashes">If MD5 hashes for the files should be calculated.</param>
+        public void SetDirectoryFiles(string directoryPath, bool calculateMD5Hashes = false)
         {
             if (directoryPath == null)
                 throw new ArgumentNullException("directoryPath");
@@ -548,7 +550,7 @@ namespace TorrentSwifter
                 files[i] = new FileItem(localPath);
             }
 
-            SetFiles(directoryPath, files);
+            SetFiles(directoryPath, files, calculateMD5Hashes);
         }
 
         /// <summary>
@@ -556,7 +558,8 @@ namespace TorrentSwifter
         /// </summary>
         /// <param name="rootPath">The path to the root directory of where the files can be found.</param>
         /// <param name="files">The files of the torrent.</param>
-        public void SetFiles(string rootPath, FileItem[] files)
+        /// <param name="calculateMD5Hashes">If MD5 hashes for the files should be calculated.</param>
+        public void SetFiles(string rootPath, FileItem[] files, bool calculateMD5Hashes = false)
         {
             if (rootPath == null)
                 throw new ArgumentNullException("rootPath");
@@ -581,6 +584,12 @@ namespace TorrentSwifter
                 long fileSize = fileInfo.Length;
                 files[i].Size = fileSize;
                 totalSize += fileSize;
+
+                if (calculateMD5Hashes)
+                {
+                    byte[] md5Hash = HashHelper.ComputeFileMD5(fileFullPath);
+                    files[i].MD5Hash = md5Hash;
+                }
             }
 
             this.totalSize = totalSize;
