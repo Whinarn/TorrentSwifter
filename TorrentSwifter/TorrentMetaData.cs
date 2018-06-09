@@ -379,6 +379,14 @@ namespace TorrentSwifter
         }
 
         /// <summary>
+        /// Gets the count of pieces for this torrent.
+        /// </summary>
+        public int PieceCount
+        {
+            get { return (pieceHashes != null ? pieceHashes.Length : 0); }
+        }
+
+        /// <summary>
         /// Gets the piece hashes of this torrent.
         /// </summary>
         public PieceHash[] PieceHashes
