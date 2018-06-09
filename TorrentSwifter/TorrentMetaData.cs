@@ -913,7 +913,9 @@ namespace TorrentSwifter
                             info.Add("md5sum", fileMD5HashHex);
                         }
 
-                        fileDictionary.Add("path", fileItem.Path);
+                        string[] pathParts = fileItem.Path.Split(new char[] { '/' });
+                        var pathList = new BEncoding.List(pathParts);
+                        fileDictionary.Add("path", pathList);
                         fileList.Add(fileDictionary);
                     }
 
