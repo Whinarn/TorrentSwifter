@@ -167,7 +167,7 @@ namespace TorrentSwifter
         /// <summary>
         /// A piece hash.
         /// </summary>
-        public struct PieceHash : IEquatable<PieceHash>
+        public struct PieceHash : IEquatable<PieceHash>, IEquatable<byte[]>
         {
             private readonly byte[] hash;
             private readonly string hashString;
@@ -222,6 +222,28 @@ namespace TorrentSwifter
                 for (int i = 0; i < hash.Length; i++)
                 {
                     if (hash[i] != other.hash[i])
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+                return result;
+            }
+
+            /// <summary>
+            /// Returns if this piece hash equals another piece hash.
+            /// </summary>
+            /// <param name="other">The other piece hash.</param>
+            /// <returns>If equals.</returns>
+            public bool Equals(byte[] other)
+            {
+                if (hash.Length != other.Length)
+                    return false;
+
+                bool result = true;
+                for (int i = 0; i < hash.Length; i++)
+                {
+                    if (hash[i] != other[i])
                     {
                         result = false;
                         break;
