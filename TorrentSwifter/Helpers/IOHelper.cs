@@ -24,6 +24,30 @@ namespace TorrentSwifter.Helpers
             CreateDirectoryIfItDoesntExist(parentDirectoryPath);
         }
 
+        public static void CreateEmptyFile(string filePath)
+        {
+            if (File.Exists(filePath))
+                return;
+
+            CreateParentDirectoryIfItDoesntExist(filePath);
+
+            var fileStream = File.Create(filePath);
+            fileStream.Dispose();
+        }
+
+        public static void CreateAllocatedFile(string filePath, long fileSize)
+        {
+            if (File.Exists(filePath))
+                return;
+
+            CreateParentDirectoryIfItDoesntExist(filePath);
+
+            using (var fileStream = File.Create(filePath))
+            {
+                fileStream.SetLength(fileSize);
+            }
+        }
+
         public static string GetLocalPath(string fullPath, string rootPath)
         {
             fullPath = Path.GetFullPath(fullPath);
