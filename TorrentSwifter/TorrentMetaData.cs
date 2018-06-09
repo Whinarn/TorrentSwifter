@@ -7,9 +7,9 @@ using TorrentSwifter.Helpers;
 namespace TorrentSwifter
 {
     /// <summary>
-    /// Torrent information.
+    /// Torrent meta-data information.
     /// </summary>
-    public sealed class TorrentInfo
+    public sealed class TorrentMetaData
     {
         #region Consts
         private const int MinPieceSize = 32 * (int)SizeHelper.KiloByte;
@@ -365,11 +365,11 @@ namespace TorrentSwifter
 
         #region Constructors
         /// <summary>
-        /// Creates new torrent information.
+        /// Creates new torrent meta-data information.
         /// </summary>
-        public TorrentInfo()
+        public TorrentMetaData()
         {
-            string assemblyVersion = AssemblyHelper.GetAssemblyVersion(typeof(TorrentInfo));
+            string assemblyVersion = AssemblyHelper.GetAssemblyVersion(typeof(TorrentMetaData));
             createdBy = string.Format("TorrentSwifter/{0}", assemblyVersion);
             creationDate = DateTime.Now;
         }

@@ -11,10 +11,10 @@ namespace TorrentSwifterCLI
         {
             string torrentFilePath = (args.Length > 0 ? args[0] : DefaultTorrentPath);
 
-            var torrentInfo = new TorrentInfo();
-            torrentInfo.LoadFromFile(torrentFilePath);
+            var torrentMetaData = new TorrentMetaData();
+            torrentMetaData.LoadFromFile(torrentFilePath);
 
-            Console.WriteLine("Info Hash: {0}", torrentInfo.InfoHash);
+            Console.WriteLine("Info Hash: {0}", torrentMetaData.InfoHash);
         }
     }
 }
