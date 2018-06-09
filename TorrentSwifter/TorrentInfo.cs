@@ -703,7 +703,7 @@ namespace TorrentSwifter
             byte[] pieceHashData = new byte[20 * pieceCount];
             for (int i = 0; i < pieceCount; i++)
             {
-                Buffer.BlockCopy(null, 0, pieceHashData, (i * 20), 20);
+                Buffer.BlockCopy(pieceHashes[i].Hash, 0, pieceHashData, (i * 20), 20);
             }
 
             var info = new BEncoding.Dictionary();
