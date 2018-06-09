@@ -289,6 +289,7 @@ namespace TorrentSwifter
         private int pieceSize = 0;
         private PieceHash[] pieceHashes = null;
 
+        private long totalSize = 0L;
         private FileItem[] files = null;
         private AnnounceItem[] announces = null;
         #endregion
@@ -383,6 +384,14 @@ namespace TorrentSwifter
         public PieceHash[] PieceHashes
         {
             get { return pieceHashes; }
+        }
+
+        /// <summary>
+        /// Gets the total size of the torrent.
+        /// </summary>
+        public long TotalSize
+        {
+            get { return totalSize; }
         }
 
         /// <summary>
@@ -566,6 +575,7 @@ namespace TorrentSwifter
                 totalSize += fileSize;
             }
 
+            this.totalSize = totalSize;
             if (totalSize == 0L)
                 throw new InvalidOperationException("Unable to create a torrent with the total size of zero.");
 
@@ -643,6 +653,7 @@ namespace TorrentSwifter
             pieceSize = 0;
             pieceHashes = null;
 
+            totalSize = 0L;
             files = null;
             announces = null;
         }
@@ -812,7 +823,7 @@ namespace TorrentSwifter
                 };
             }
 
-            long totalSize = ComputeTotalSize();
+            totalSize = ComputeTotalSize();
             int expectedPieceCount = (int)((totalSize - 1) / pieceSize) + 1;
             if (expectedPieceCount != pieceHashes.Length)
                 throw new InvalidOperationException(string.Format("The calculated number of pieces is {0} while there are {1} piece hashes.", expectedPieceCount, pieceHashes.Length));
@@ -821,7 +832,6 @@ namespace TorrentSwifter
         private BEncoding.Dictionary Save()
         {
             var torrentInfo = new BEncoding.Dictionary();
-            long totalSize = ComputeTotalSize();
 
             // Make sure that there is a piece size
             if (pieceSize == 0)
