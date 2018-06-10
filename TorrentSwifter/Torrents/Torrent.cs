@@ -2,7 +2,7 @@
 using System.IO;
 using TorrentSwifter.Helpers;
 
-namespace TorrentSwifter
+namespace TorrentSwifter.Torrents
 {
     /// <summary>
     /// A torrent.

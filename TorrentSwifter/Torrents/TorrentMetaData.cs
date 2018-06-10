@@ -4,7 +4,7 @@ using System.IO;
 using TorrentSwifter.Encodings;
 using TorrentSwifter.Helpers;
 
-namespace TorrentSwifter
+namespace TorrentSwifter.Torrents
 {
     /// <summary>
     /// Torrent meta-data information.
