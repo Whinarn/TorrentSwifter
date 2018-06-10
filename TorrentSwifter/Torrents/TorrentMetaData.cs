@@ -172,7 +172,7 @@ namespace TorrentSwifter.Torrents
         private DateTime creationDate = DateTime.MinValue;
         private bool isPrivate = false;
         private string source = null;
-        private PieceHash infoHash = default(PieceHash);
+        private InfoHash infoHash = default(InfoHash);
 
         private int pieceSize = 0;
         private PieceHash[] pieceHashes = null;
@@ -240,7 +240,7 @@ namespace TorrentSwifter.Torrents
         /// <summary>
         /// Gets the info hash of this torrent.
         /// </summary>
-        public PieceHash InfoHash
+        public InfoHash InfoHash
         {
             get { return infoHash; }
         }
@@ -553,7 +553,7 @@ namespace TorrentSwifter.Torrents
             creationDate = DateTime.MinValue;
             isPrivate = false;
             source = null;
-            infoHash = default(PieceHash);
+            infoHash = default(InfoHash);
 
             pieceSize = 0;
             pieceHashes = null;
@@ -880,7 +880,7 @@ namespace TorrentSwifter.Torrents
             return totalSize;
         }
 
-        private static PieceHash ComputeInfoHash(BEncoding.Dictionary info)
+        private static InfoHash ComputeInfoHash(BEncoding.Dictionary info)
         {
             using (var stream = new MemoryStream())
             {
@@ -888,7 +888,7 @@ namespace TorrentSwifter.Torrents
 
                 stream.Seek(0L, SeekOrigin.Begin);
                 byte[] hash = HashHelper.ComputeSHA1(stream);
-                return new PieceHash(hash);
+                return new InfoHash(hash);
             }
         }
 
