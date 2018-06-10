@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Helpers
 {
