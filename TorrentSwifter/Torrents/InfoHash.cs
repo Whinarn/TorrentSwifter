@@ -68,9 +68,9 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
-        /// Returns if this piece hash equals another piece hash.
+        /// Returns if this info hash equals another info hash.
         /// </summary>
-        /// <param name="other">The other piece hash.</param>
+        /// <param name="other">The other info hash.</param>
         /// <returns>If equals.</returns>
         public bool Equals(byte[] other)
         {
