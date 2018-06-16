@@ -104,6 +104,15 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Returns the url-encoded string for this info hash.
+        /// </summary>
+        /// <returns>The url-encoded string.</returns>
+        public string ToUrlEncodedString()
+        {
+            return UriHelper.UrlEncode(hash);
+        }
+
+        /// <summary>
         /// Returns the text-representation of this info hash.
         /// </summary>
         /// <returns>The hash in hexadecimals.</returns>
