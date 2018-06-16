@@ -23,7 +23,7 @@ namespace TorrentSwifter.Helpers
             {
                 byte b = bytes[i];
                 chars[j] = HexChars[b >> 4];
-                chars[j + 1] = HexChars[b & 0xf];
+                chars[j + 1] = HexChars[b & 0xF];
             }
             return new string(chars);
         }
@@ -49,7 +49,7 @@ namespace TorrentSwifter.Helpers
             {
                 byte b = bytes[offset + i];
                 chars[j] = HexChars[b >> 4];
-                chars[j + 1] = HexChars[b & 0xf];
+                chars[j + 1] = HexChars[b & 0xF];
             }
             return new string(chars);
         }
