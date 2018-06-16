@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace TorrentSwifter.Encodings
@@ -513,6 +514,11 @@ namespace TorrentSwifter.Encodings
             if (reader.Pop() != EndByte)
                 throw new InvalidDataException("The data is corrupt and does not represent valid BEncoding. Expected end of dictionary.");
 
+            // Validate to make sure that the dictionary is already sorted
+            var sortedKeys = dictionary.Keys.OrderBy((x) => x, DictionarySorter.instance);
+            if (!sortedKeys.SequenceEqual(dictionary.Keys))
+                throw new InvalidDataException("The data is corrupt and does not represent valid BEncoding. Expected a sorted dictionary.");
+
             return dictionary;
         }
 
@@ -551,6 +557,9 @@ namespace TorrentSwifter.Encodings
 
             long integerValue;
             string integerText = Encoding.ASCII.GetString(integerDigitBytes, 0, integerDigitCount);
+            if (integerText.StartsWith("0"))
+                throw new InvalidDataException("The data is corrupt and does not represent valid BEncoding. Expected integer without leading zeroes.");
+
             if (!long.TryParse(integerText, NumberStyles.Integer, CultureInfo.InvariantCulture, out integerValue))
                 throw new InvalidDataException("The data is corrupt and does not represent valid BEncoding. Expected integer.");
 
