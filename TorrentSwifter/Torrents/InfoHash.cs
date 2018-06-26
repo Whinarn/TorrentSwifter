@@ -109,7 +109,7 @@ namespace TorrentSwifter.Torrents
         /// <returns>The url-encoded string.</returns>
         public string ToUrlEncodedString()
         {
-            return UriHelper.UrlEncode(hash);
+            return UriHelper.UrlEncodeText(hash);
         }
 
         /// <summary>

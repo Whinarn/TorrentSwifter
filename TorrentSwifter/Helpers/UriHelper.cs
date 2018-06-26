@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
+using System.Net;
 using System.Text;
 
 namespace TorrentSwifter.Helpers
@@ -11,24 +11,28 @@ namespace TorrentSwifter.Helpers
         private const string HexChars = "0123456789abcdef";
         private static readonly char[] NotEncodedChars = { '-', '_', '.', '~' };
 
-        public static string UrlEncode(string text)
+        public static string UrlEncodeText(string text)
         {
             if (text == null)
                 throw new ArgumentNullException("text");
+            else if (text.Length == 0)
+                return string.Empty;
 
-            byte[] bytes = Encoding.UTF8.GetBytes(text);
-            return UrlEncode(bytes, 0, bytes.Length);
+            return WebUtility.UrlEncode(text);
         }
 
-        public static string UrlEncode(byte[] bytes)
+        public static string UrlEncodeText(byte[] bytes)
         {
             if (bytes == null)
                 throw new ArgumentNullException("bytes");
+            else if (bytes.Length == 0)
+                return string.Empty;
 
-            return UrlEncode(bytes, 0, bytes.Length);
+            byte[] encodedBytes = WebUtility.UrlEncodeToBytes(bytes, 0, bytes.Length);
+            return Encoding.UTF8.GetString(encodedBytes);
         }
 
-        public static string UrlEncode(byte[] bytes, int offset, int count)
+        public static string UrlEncodeText(byte[] bytes, int offset, int count)
         {
             if (bytes == null)
                 throw new ArgumentNullException("bytes");
@@ -39,29 +43,114 @@ namespace TorrentSwifter.Helpers
             else if (count == 0)
                 return string.Empty;
 
-            var sb = new StringBuilder(count * 3);
+            byte[] encodedBytes = WebUtility.UrlEncodeToBytes(bytes, offset, count);
+            return Encoding.UTF8.GetString(encodedBytes);
+        }
 
-            for (int i = 0; i < count; i++)
-            {
-                byte b = bytes[offset + i];
-                char c = (char)b;
-                if (c == ' ')
-                {
-                    sb.Append('+');
-                }
-                else if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || NotEncodedChars.Contains(c))
-                {
-                    sb.Append(c);
-                }
-                else
-                {
-                    sb.Append('%');
-                    sb.Append(HexChars[b >> 4]);
-                    sb.Append(HexChars[b & 0xF]);
-                }
-            }
+        public static byte[] UrlEncode(string text)
+        {
+            if (text == null)
+                throw new ArgumentNullException("text");
+            else if (text.Length == 0)
+                return new byte[0];
 
-            return sb.ToString();
+            byte[] textBytes = Encoding.UTF8.GetBytes(text);
+            return WebUtility.UrlEncodeToBytes(textBytes, 0, textBytes.Length);
+        }
+
+        public static byte[] UrlEncode(byte[] bytes)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            else if (bytes.Length == 0)
+                return new byte[0];
+
+            return WebUtility.UrlEncodeToBytes(bytes, 0, bytes.Length);
+        }
+
+        public static byte[] UrlEncode(byte[] bytes, int offset, int count)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            else if (offset < 0 || offset >= bytes.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            else if (count < 0 || (offset + count) > bytes.Length)
+                throw new ArgumentOutOfRangeException("count");
+            else if (count == 0)
+                return new byte[0];
+
+            return WebUtility.UrlEncodeToBytes(bytes, offset, count);
+        }
+
+        public static string UrlDecodeText(string text)
+        {
+            if (text == null)
+                throw new ArgumentNullException("text");
+            else if (text.Length == 0)
+                return string.Empty;
+
+            return WebUtility.UrlDecode(text);
+        }
+
+        public static string UrlDecodeText(byte[] bytes)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            else if (bytes.Length == 0)
+                return string.Empty;
+
+            byte[] decodedBytes = WebUtility.UrlDecodeToBytes(bytes, 0, bytes.Length);
+            return Encoding.UTF8.GetString(decodedBytes);
+        }
+
+        public static string UrlDecodeText(byte[] bytes, int offset, int count)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            else if (offset < 0 || offset >= bytes.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            else if (count < 0 || (offset + count) > bytes.Length)
+                throw new ArgumentOutOfRangeException("count");
+            else if (count == 0)
+                return string.Empty;
+
+            byte[] decodedBytes = WebUtility.UrlDecodeToBytes(bytes, offset, count);
+            return Encoding.UTF8.GetString(decodedBytes);
+        }
+
+        public static byte[] UrlDecode(string text)
+        {
+            if (text == null)
+                throw new ArgumentNullException("text");
+            else if (text.Length == 0)
+                return new byte[0];
+
+            byte[] textBytes = Encoding.UTF8.GetBytes(text);
+            return WebUtility.UrlDecodeToBytes(textBytes, 0, textBytes.Length);
+        }
+
+        public static byte[] UrlDecode(byte[] bytes)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            else if (bytes.Length == 0)
+                return new byte[0];
+
+            return WebUtility.UrlDecodeToBytes(bytes, 0, bytes.Length);
+        }
+
+        public static byte[] UrlDecode(byte[] bytes, int offset, int count)
+        {
+            if (bytes == null)
+                throw new ArgumentNullException("bytes");
+            else if (offset < 0 || offset >= bytes.Length)
+                throw new ArgumentOutOfRangeException("offset");
+            else if (count < 0 || (offset + count) > bytes.Length)
+                throw new ArgumentOutOfRangeException("count");
+            else if (count == 0)
+                return new byte[0];
+
+            return WebUtility.UrlDecodeToBytes(bytes, offset, count);
         }
 
         public static Uri AppendQueryString(Uri uri, IEnumerable<KeyValuePair<string, object>> queryParameters)

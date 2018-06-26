@@ -155,7 +155,7 @@ namespace TorrentSwifter.Trackers
             }
             if (ip != null)
             {
-                parameters.Add("ip", UriHelper.UrlEncode(ip.ToString()));
+                parameters.Add("ip", UriHelper.UrlEncodeText(ip.ToString()));
             }
             if (desiredPeerCount > 0)
             {
