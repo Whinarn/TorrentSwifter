@@ -241,6 +241,26 @@ namespace TorrentSwifter.Network
         }
 
         /// <summary>
+        /// Reads a count of bytes from the packet into a new buffer.
+        /// </summary>
+        /// <param name="count">The count of bytes to read.</param>
+        /// <returns>The read byte-buffer.</returns>
+        public byte[] ReadBytes(int count)
+        {
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count");
+            else if ((offset + count) > length)
+                throw new EndOfStreamException();
+            else if (count == 0)
+                return new byte[0];
+
+            var buffer = new byte[count];
+            Buffer.BlockCopy(data, offset, buffer, 0, count);
+            offset += count;
+            return buffer;
+        }
+
+        /// <summary>
         /// Reads an ASCII text string from the packet.
         /// </summary>
         /// <param name="length">The length of the text string to read in bytes.</param>
