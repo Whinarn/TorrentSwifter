@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
+using TorrentSwifter.Helpers;
 using TorrentSwifter.Network;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Torrents;
@@ -29,6 +31,14 @@ namespace TorrentSwifter.Trackers
             Announce = 1,
             Scrape = 2,
             Error = 3
+        }
+
+        [Flags]
+        private enum UdpExtensions : ushort
+        {
+            None = 0x0000,
+            Authentication = 0x0001,
+            RequestString = 0x0002
         }
         #endregion
 
@@ -105,6 +115,9 @@ namespace TorrentSwifter.Trackers
         private UdpClient client = null;
         private bool isListening = false;
         private readonly int key;
+        private readonly string authUser;
+        private readonly byte[] authPassHash;
+        private readonly string requestString;
 
         private bool isConnecting = false;
         private bool isConnected = false;
@@ -143,6 +156,10 @@ namespace TorrentSwifter.Trackers
         {
             if (!string.Equals(uri.Scheme, "udp", StringComparison.OrdinalIgnoreCase))
                 throw new ArgumentException("The URI-scheme is not UDP.", "uri");
+
+            authUser = GetAuthUserName(uri);
+            authPassHash = GetAuthPasswordHash(uri);
+            requestString = GetRequestString(uri);
 
             client = new UdpClient(uri.Host, uri.Port);
             isListening = true;
@@ -192,9 +209,21 @@ namespace TorrentSwifter.Trackers
                 }
 
                 // TODO: Add support for IPv6 announces
+                UdpExtensions extensions = UdpExtensions.None;
+                int extensionSize = 0;
+                if (!string.IsNullOrEmpty(authUser))
+                {
+                    extensions |= UdpExtensions.Authentication;
+                    extensionSize += 1 + authUser.Length + 8;
+                }
+                if (!string.IsNullOrEmpty(requestString))
+                {
+                    extensions |= UdpExtensions.RequestString;
+                    extensionSize += 1 + requestString.Length;
+                }
 
                 int ipInteger = GetIPAsInteger(request.IP);
-                var announceRequest = CreateRequest(TrackerUdpAction.Announce, 98);
+                var announceRequest = CreateRequest(TrackerUdpAction.Announce, 100 + extensionSize);
                 announceRequest.Write(request.InfoHash.Hash, 0, 20);
                 announceRequest.Write(request.PeerID.ID, 0, 20);
                 announceRequest.WriteInt64(request.BytesDownloaded);
@@ -205,6 +234,23 @@ namespace TorrentSwifter.Trackers
                 announceRequest.WriteInt32(key);
                 announceRequest.WriteInt32((request.DesiredPeerCount > 0 ? request.DesiredPeerCount : -1));
                 announceRequest.WriteUInt16((ushort)request.Port);
+                announceRequest.WriteUInt16((ushort)extensions);
+
+                if ((extensions & UdpExtensions.Authentication) != 0)
+                {
+                    announceRequest.WriteByte((byte)authUser.Length);
+                    announceRequest.WriteString(authUser);
+
+                    byte[] passwordHash = GenerateAuthPasswordHash(announceRequest, authPassHash);
+                    announceRequest.Write(passwordHash, 0, 8);
+                }
+
+                if ((extensions & UdpExtensions.RequestString) != 0)
+                {
+                    announceRequest.WriteByte((byte)requestString.Length);
+                    announceRequest.WriteString(requestString);
+                }
+
                 await SendRequest(announceRequest);
 
                 var responsePacket = await WaitForResponse(announceRequest, 20, RequestTimeout);
@@ -606,6 +652,80 @@ namespace TorrentSwifter.Trackers
         #endregion
 
         #region Helper Methods
+        private static string GetAuthUserName(Uri uri)
+        {
+            string userInfo = uri.UserInfo;
+            if (string.IsNullOrEmpty(userInfo))
+                return null;
+
+            int colonIndex = userInfo.IndexOf(':');
+            string userName = null;
+            if (colonIndex != -1)
+            {
+                userName = userInfo.Substring(0, colonIndex);
+            }
+            else
+            {
+                userName = UriHelper.UrlDecodeText(userInfo);
+            }
+
+            userName = UriHelper.UrlDecodeText(userName);
+            if (userName.Length <= 255)
+            {
+                return userName;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        private static string GetAuthPassword(Uri uri)
+        {
+            string userInfo = uri.UserInfo;
+            if (string.IsNullOrEmpty(userInfo))
+                return null;
+
+            int colonIndex = userInfo.IndexOf(':');
+            if (colonIndex != -1)
+            {
+                string password = userInfo.Substring(colonIndex + 1);
+                return UriHelper.UrlDecodeText(password);
+            }
+            else
+            {
+                return string.Empty;
+            }
+        }
+
+        private static byte[] GetAuthPasswordHash(Uri uri)
+        {
+            string password = GetAuthPassword(uri);
+            if (password == null)
+                return null;
+
+            byte[] passwordBytes = System.Text.Encoding.ASCII.GetBytes(password);
+            return HashHelper.ComputeSHA1(passwordBytes, 0, passwordBytes.Length);
+        }
+
+        private static string GetRequestString(Uri uri)
+        {
+            string pathAndQuery = uri.PathAndQuery;
+            if (string.IsNullOrEmpty(pathAndQuery))
+                return null;
+            else if (pathAndQuery.Length <= 255) // We can pass both the path and query
+                return pathAndQuery;
+
+            string path = uri.AbsolutePath;
+            if (string.IsNullOrEmpty(path))
+                return null;
+            else if (path.Length <= 255) // We can pass only the path
+                return path;
+
+            // Nothing was short enough to pass along
+            return null;
+        }
+
         private static int GetIPAsInteger(IPAddress ipAddress)
         {
             if (ipAddress == null)
@@ -615,6 +735,30 @@ namespace TorrentSwifter.Trackers
 
             var addressBytes = ipAddress.GetAddressBytes();
             return ((addressBytes[0] << 24) | (addressBytes[1] << 16) | (addressBytes[2] << 8) | addressBytes[3]);
+        }
+
+        private static byte[] GenerateAuthPasswordHash(Packet packet, byte[] passwordHash)
+        {
+            int packetSize = packet.Length;
+            byte[] packetData = packet.Data;
+
+            using (var sha1 = SHA1.Create())
+            {
+                int offset = 0;
+                while (offset < packetSize)
+                {
+                    offset += sha1.TransformBlock(packetData, offset, packetSize - offset, packetData, offset);
+                }
+
+                offset = 0;
+                while (offset < passwordHash.Length)
+                {
+                    offset += sha1.TransformBlock(passwordHash, offset, passwordHash.Length - offset, passwordHash, offset);
+                }
+
+                sha1.TransformFinalBlock(packetData, 0, 0);
+                return sha1.Hash;
+            }
         }
 
         private uint SwapBytes(uint x)
