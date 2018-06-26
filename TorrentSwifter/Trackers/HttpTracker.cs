@@ -67,6 +67,16 @@ namespace TorrentSwifter.Trackers
 
             client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.Add(userAgentProductInfo);
+
+            if (!string.IsNullOrEmpty(uri.UserInfo))
+            {
+                string userInfo = uri.UserInfo;
+                if (userInfo.IndexOf(':') != -1)
+                {
+                    byte[] userInfoBytes = Encoding.ASCII.GetBytes(userInfo);
+                    client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(userInfoBytes));
+                }
+            }
         }
         #endregion
 
@@ -410,7 +420,7 @@ namespace TorrentSwifter.Trackers
         {
             var guid = Guid.NewGuid();
             var guidBytes = guid.ToByteArray();
-            return UriHelper.UrlEncode(guidBytes, 0, 8);
+            return UriHelper.UrlEncodeText(guidBytes, 0, 8);
         }
         #endregion
     }
