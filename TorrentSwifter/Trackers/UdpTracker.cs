@@ -103,7 +103,6 @@ namespace TorrentSwifter.Trackers
 
         #region Fields
         private UdpClient client = null;
-        private IPEndPoint endPoint = null;
         private bool isListening = false;
         private readonly int key;
 
@@ -563,9 +562,10 @@ namespace TorrentSwifter.Trackers
             var peers = new PeerInfo[peerCount];
             for (int i = 0; i < peerCount; i++)
             {
-                int peerIPInteger = packet.ReadInt32();
+                uint peerIPInteger = packet.ReadUInt32();
                 int peerPort = packet.ReadUInt16();
 
+                peerIPInteger = SwapBytes(peerIPInteger);
                 var ipAddress = new IPAddress(peerIPInteger);
                 var peerEndPoint = new IPEndPoint(ipAddress, peerPort);
                 peers[i] = new PeerInfo(peerEndPoint);
@@ -615,6 +615,14 @@ namespace TorrentSwifter.Trackers
 
             var addressBytes = ipAddress.GetAddressBytes();
             return ((addressBytes[0] << 24) | (addressBytes[1] << 16) | (addressBytes[2] << 8) | addressBytes[3]);
+        }
+
+        private uint SwapBytes(uint x)
+        {
+            return ((x & 0x000000FF) << 24) +
+                   ((x & 0x0000FF00) << 8) +
+                   ((x & 0x00FF0000) >> 8) +
+                   ((x & 0xFF000000) >> 24);
         }
         #endregion
     }
