@@ -557,7 +557,7 @@ namespace TorrentSwifter.Encodings
 
             long integerValue;
             string integerText = Encoding.ASCII.GetString(integerDigitBytes, 0, integerDigitCount);
-            if (integerText.StartsWith("0"))
+            if (integerText.Length > 1 && integerText[0] == '0')
                 throw new InvalidDataException("The data is corrupt and does not represent valid BEncoding. Expected integer without leading zeroes.");
 
             if (!long.TryParse(integerText, NumberStyles.Integer, CultureInfo.InvariantCulture, out integerValue))
