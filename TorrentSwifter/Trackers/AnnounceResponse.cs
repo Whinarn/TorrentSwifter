@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Trackers
@@ -10,9 +11,9 @@ namespace TorrentSwifter.Trackers
     {
         #region Fields
         private readonly Tracker tracker;
-        private readonly string failureReason;
-        private readonly string warningMessage;
-        private readonly PeerInfo[] peers;
+        private string failureReason;
+        private string warningMessage;
+        private PeerInfo[] peers;
         #endregion
 
         #region Properties
@@ -67,6 +68,49 @@ namespace TorrentSwifter.Trackers
             this.failureReason = failureReason;
             this.warningMessage = warningMessage;
             this.peers = peers;
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Merges this response with another response.
+        /// </summary>
+        /// <param name="other">The other response.</param>
+        public void Merge(AnnounceResponse other)
+        {
+            if (other == null)
+                throw new ArgumentNullException("other");
+            else if (other.tracker != tracker)
+                throw new ArgumentException("The responses are not from the same tracker.", "other");
+
+            if (string.IsNullOrEmpty(failureReason))
+            {
+                failureReason = other.failureReason;
+            }
+            if (string.IsNullOrEmpty(warningMessage))
+            {
+                warningMessage = other.warningMessage;
+            }
+
+            if (peers != null && peers.Length > 0 && other.peers != null && other.peers.Length > 0)
+            {
+                var peerList = new List<PeerInfo>(peers.Length + other.peers.Length);
+                peerList.AddRange(peers);
+
+                for (int i = 0; i < other.peers.Length; i++)
+                {
+                    if (!peerList.Contains(other.peers[i]))
+                    {
+                        peerList.Add(other.peers[i]);
+                    }
+                }
+
+                peers = peerList.ToArray();
+            }
+            else
+            {
+                peers = other.peers;
+            }
         }
         #endregion
     }
