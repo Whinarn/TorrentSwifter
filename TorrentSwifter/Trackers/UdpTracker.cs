@@ -48,6 +48,7 @@ namespace TorrentSwifter.Trackers
             private readonly TrackerUdpAction action;
             private readonly int transactionID;
             private readonly DateTime date;
+            private IPEndPoint expectedResponseEP = null;
             private Packet responsePacket = null;
 
             public TrackerUdpAction Action
@@ -81,16 +82,28 @@ namespace TorrentSwifter.Trackers
                 set { responsePacket = value; }
             }
 
-            public TrackerRequest(long connectionID, TrackerUdpAction action, int transactionID, int length)
+            public TrackerRequest(long connectionID, TrackerUdpAction action, int transactionID, int length, IPEndPoint expectedResponseEP)
                 : base(length)
             {
                 this.action = action;
                 this.transactionID = transactionID;
+                this.expectedResponseEP = expectedResponseEP;
                 date = DateTime.Now;
 
                 WriteInt64(connectionID);
                 WriteInt32((int)action);
                 WriteInt32(transactionID);
+            }
+
+            public bool IsValidEndpoint(IPEndPoint endPoint)
+            {
+                if (expectedResponseEP == null)
+                    return true;
+                else if (endPoint == null)
+                    return false;
+
+                // TODO: Should we have to validate the port also?
+                return (expectedResponseEP.Address.Equals(endPoint.Address));
             }
         }
 
@@ -121,7 +134,12 @@ namespace TorrentSwifter.Trackers
 
         private bool isConnecting = false;
         private bool isConnected = false;
-        private long connectionID = 0L;
+        private bool isConnectedV4 = false;
+        private bool isConnectedV6 = false;
+        private long connectionIDv4 = 0L;
+        private long connectionIDv6 = 0L;
+        private IPEndPoint trackerEndpointV4 = null;
+        private IPEndPoint trackerEndpointV6 = null;
 
         private Dictionary<int, TrackerRequest> pendingRequests = new Dictionary<int, TrackerRequest>();
 
@@ -161,7 +179,8 @@ namespace TorrentSwifter.Trackers
             authPassHash = GetAuthPasswordHash(uri);
             requestString = GetRequestString(uri);
 
-            client = new UdpClient(uri.Host, uri.Port);
+            client = new UdpClient(0);
+
             isListening = true;
             StartReceivingPackets();
 
@@ -201,71 +220,30 @@ namespace TorrentSwifter.Trackers
 
             try
             {
+                failureMessage = null;
+                warningMessage = null;
                 if (!await WaitForConnection().ConfigureAwait(false))
                 {
                     status = TrackerStatus.Offline;
-                    failureMessage = "Failed to connect with tracker.";
+                    if (failureMessage == null)
+                    {
+                        failureMessage = "Failed to connect with tracker.";
+                    }
                     return null;
                 }
 
-                // TODO: Add support for IPv6 announces
-                UdpExtensions extensions = UdpExtensions.None;
-                int extensionSize = 0;
-                if (!string.IsNullOrEmpty(authUser))
-                {
-                    extensions |= UdpExtensions.Authentication;
-                    extensionSize += 1 + authUser.Length + 8;
-                }
-                if (!string.IsNullOrEmpty(requestString))
-                {
-                    extensions |= UdpExtensions.RequestString;
-                    extensionSize += 1 + requestString.Length;
-                }
+                var responseV4 = DoAnnounceRequest(request, false);
+                var responseV6 = DoAnnounceRequest(request, true);
 
-                int ipInteger = GetIPAsInteger(request.IP);
-                var announceRequest = CreateRequest(TrackerUdpAction.Announce, 100 + extensionSize);
-                announceRequest.Write(request.InfoHash.Hash, 0, 20);
-                announceRequest.Write(request.PeerID.ID, 0, 20);
-                announceRequest.WriteInt64(request.BytesDownloaded);
-                announceRequest.WriteInt64(request.BytesLeft);
-                announceRequest.WriteInt64(request.BytesUploaded);
-                announceRequest.WriteInt32((int)request.TrackerEvent);
-                announceRequest.WriteInt32(ipInteger);
-                announceRequest.WriteInt32(key);
-                announceRequest.WriteInt32((request.DesiredPeerCount > 0 ? request.DesiredPeerCount : -1));
-                announceRequest.WriteUInt16((ushort)request.Port);
-                announceRequest.WriteUInt16((ushort)extensions);
-
-                if ((extensions & UdpExtensions.Authentication) != 0)
-                {
-                    announceRequest.WriteByte((byte)authUser.Length);
-                    announceRequest.WriteString(authUser);
-
-                    byte[] passwordHash = GenerateAuthPasswordHash(announceRequest, authPassHash);
-                    announceRequest.Write(passwordHash, 0, 8);
-                }
-
-                if ((extensions & UdpExtensions.RequestString) != 0)
-                {
-                    announceRequest.WriteByte((byte)requestString.Length);
-                    announceRequest.WriteString(requestString);
-                }
-
-                await SendRequest(announceRequest);
-
-                var responsePacket = await WaitForResponse(announceRequest, 20, RequestTimeout);
-                if (responsePacket == null)
-                {
-                    status = TrackerStatus.Offline;
-                    failureMessage = "Timed out making announce request.";
-                    return null;
-                }
-
-                var announceResponse = HandleAnnounceResponseV4(responsePacket);
+                var responses = await Task.WhenAll(responseV4, responseV6);
+                var announceResponse = JoinResponses(responses);
                 if (announceResponse == null)
                 {
-                    status = TrackerStatus.InvalidResponse;
-                    failureMessage = "The tracker returned an invalid announce response.";
+                    if (failureMessage == null)
+                    {
+                        status = TrackerStatus.InvalidResponse;
+                        failureMessage = "The tracker returned an invalid announce response.";
+                    }
                     return null;
                 }
 
@@ -304,33 +282,35 @@ namespace TorrentSwifter.Trackers
 
             try
             {
+                failureMessage = null;
                 if (!await WaitForConnection().ConfigureAwait(false))
                 {
                     failureMessage = "Failed to connect with tracker.";
                     return null;
                 }
 
-                var scrapeRequest = CreateRequest(TrackerUdpAction.Scrape, 16 + (20 * infoHashes.Length));
-                for (int i = 0; i < infoHashes.Length; i++)
-                {
-                    var hashBytes = infoHashes[i].Hash;
-                    scrapeRequest.Write(hashBytes, 0, 20);
-                }
+                var responseV4 = DoScrapeRequest(infoHashes, false);
+                var responseV6 = DoScrapeRequest(infoHashes, true);
 
-                await SendRequest(scrapeRequest);
-
-                var responsePacket = await WaitForResponse(scrapeRequest, 8 + (12 * infoHashes.Length), RequestTimeout);
-                if (responsePacket == null)
-                {
-                    failureMessage = "Timed out making scrape request.";
-                    return null;
-                }
-
-                var scrapeResponse = HandleScrapeResponse(responsePacket, infoHashes);
+                var firstResponseTask = await Task.WhenAny(responseV4, responseV6);
+                var scrapeResponse = firstResponseTask.Result;
                 if (scrapeResponse == null)
                 {
+                    if (firstResponseTask == responseV4)
+                    {
+                        await responseV6;
+                        scrapeResponse = responseV6.Result;
+                    }
+                    else
+                    {
+                        await responseV4;
+                        scrapeResponse = responseV4.Result;
+                    }
+                }
+
+                if (scrapeResponse == null && failureMessage == null)
+                {
                     failureMessage = "The tracker returned an invalid scrape response.";
-                    return null;
                 }
 
                 return scrapeResponse;
@@ -380,35 +360,130 @@ namespace TorrentSwifter.Trackers
 
         private async Task<bool> Connect()
         {
+            // TODO: Retry logic for connections?
+
             isConnecting = true;
             isConnected = false;
-            client.Connect(Uri.Host, Uri.Port);
+            trackerEndpointV4 = null;
+            trackerEndpointV6 = null;
 
-            connectionID = ProtocolMagic;
-            var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16);
-            await SendRequest(connectionRequest);
-
-            var responsePacket = await WaitForResponse(connectionRequest, 16, ConnectionTimeout);
-            if (responsePacket == null)
+            var ipAddresses = await Dns.GetHostAddressesAsync(Uri.Host);
+            if (ipAddresses == null || ipAddresses.Length == 0)
             {
+                failureMessage = string.Format("Unable to resolve host: {0}", Uri.Host);
                 isConnected = false;
                 isConnecting = false;
                 return false;
             }
 
-            connectionID = responsePacket.ReadInt64();
+            trackerEndpointV4 = GetIPEndpoint(ipAddresses, AddressFamily.InterNetwork, Uri.Port);
+            trackerEndpointV6 = GetIPEndpoint(ipAddresses, AddressFamily.InterNetworkV6, Uri.Port);
+            bool enabledV4 = (trackerEndpointV4 != null);
+            bool enabledV6 = (trackerEndpointV6 != null);
+            if (!enabledV4 && !enabledV6)
+            {
+                failureMessage = string.Format("Unable to resolve IP for host: {0}", Uri.Host);
+                isConnected = false;
+                isConnecting = false;
+                return false;
+            }
+
+            // Try connecting with both IPv4 and IPv6
+            var connectTaskV4 = ConnectV4();
+            var connectTaskV6 = ConnectV6();
+
+            var completedTask = await Task.WhenAny(connectTaskV4, connectTaskV6);
+            if (!completedTask.Result)
+            {
+                await Task.WhenAll(connectTaskV4, connectTaskV6);
+                if (!isConnectedV4 && !isConnectedV6)
+                {
+                    isConnected = false;
+                    isConnecting = false;
+                    return false;
+                }
+            }
+
             isConnected = true;
             isConnecting = false;
             return true;
         }
 
-        private TrackerRequest CreateRequest(TrackerUdpAction action, int length)
+        private async Task<bool> ConnectV4()
         {
-            int transactionID = GetNextTransactionID();
-            return new TrackerRequest(connectionID, action, transactionID, length);
+            connectionIDv4 = ProtocolMagic;
+            isConnectedV4 = false;
+
+            if (trackerEndpointV4 == null)
+                return false;
+
+            var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16, false);
+            await SendRequest(connectionRequest, trackerEndpointV4);
+
+            var responsePacket = await WaitForResponse(connectionRequest, 16, ConnectionTimeout);
+            if (responsePacket == null)
+            {
+                status = TrackerStatus.InvalidResponse;
+                failureMessage = "The tracker returned an invalid connect response.";
+                isConnectedV4 = false;
+                return false;
+            }
+
+            connectionIDv4 = responsePacket.ReadInt64();
+            isConnectedV4 = true;
+            return true;
         }
 
-        private async Task SendRequest(TrackerRequest request)
+        private async Task<bool> ConnectV6()
+        {
+            connectionIDv6 = ProtocolMagic;
+            isConnectedV6 = false;
+
+            if (trackerEndpointV6 == null)
+                return false;
+
+            var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16, true);
+            await SendRequest(connectionRequest, trackerEndpointV6);
+
+            var responsePacket = await WaitForResponse(connectionRequest, 16, ConnectionTimeout);
+            if (responsePacket == null)
+            {
+                status = TrackerStatus.InvalidResponse;
+                failureMessage = "The tracker returned an invalid connect response.";
+                isConnectedV6 = false;
+                return false;
+            }
+
+            connectionIDv6 = responsePacket.ReadInt64();
+            isConnectedV6 = true;
+            return true;
+        }
+
+        private TrackerRequest CreateRequest(TrackerUdpAction action, int length, bool isIPv6)
+        {
+            long connectionID = (isIPv6 ? connectionIDv4 : connectionIDv4);
+            var endpoint = (isIPv6 ? trackerEndpointV6 : trackerEndpointV4);
+            int transactionID = GetNextTransactionID();
+            return new TrackerRequest(connectionID, action, transactionID, length, endpoint);
+        }
+
+        private async Task SendRequestV4(TrackerRequest request)
+        {
+            if (trackerEndpointV4 == null)
+                return;
+
+            await SendRequest(request, trackerEndpointV4);
+        }
+
+        private async Task SendRequestV6(TrackerRequest request)
+        {
+            if (trackerEndpointV6 == null)
+                return;
+
+            await SendRequest(request, trackerEndpointV6);
+        }
+
+        private async Task SendRequest(TrackerRequest request, IPEndPoint endpoint)
         {
             // We add the new request to pending requests, so that we can easily find the source for incoming responses
             lock (pendingRequests)
@@ -416,12 +491,15 @@ namespace TorrentSwifter.Trackers
                 pendingRequests.Add(request.TransactionID, request);
             }
 
-            // TODO: Send more than once?
-            await client.SendAsync(request.Data, request.Length);
+            // TODO: Send twice?
+            await client.SendAsync(request.Data, request.Length, endpoint);
         }
 
         private async Task<Packet> WaitForResponse(TrackerRequest request, int minimumResponseLength, int timeout)
         {
+            if (request == null)
+                return null;
+
             Packet responsePacket = null;
             try
             {
@@ -517,7 +595,16 @@ namespace TorrentSwifter.Trackers
                     {
                         if (pendingRequests.TryGetValue(transactionID, out trackerRequest))
                         {
-                            pendingRequests.Remove(transactionID);
+                            // Make sure that we received this from the correct endpoint
+                            if (trackerRequest.IsValidEndpoint(endpoint))
+                            {
+                                pendingRequests.Remove(transactionID);
+                            }
+                            else
+                            {
+                                trackerRequest = null;
+                                // TODO: Log response coming from the incorrect endpoint
+                            }
                         }
                         else
                         {
@@ -531,7 +618,7 @@ namespace TorrentSwifter.Trackers
                     }
                     else
                     {
-                        // TODO: Log request with missing transaction?
+                        // TODO: Log response with missing transaction?
                     }
                 }
             }
@@ -620,6 +707,47 @@ namespace TorrentSwifter.Trackers
             return new AnnounceResponse(this, null, null, peers);
         }
 
+        private AnnounceResponse HandleAnnounceResponseV6(Packet packet)
+        {
+            int interval = packet.ReadInt32();
+            int leecherCount = packet.ReadInt32();
+            int seederCount = packet.ReadInt32();
+
+            this.completeCount = seederCount;
+            this.incompleteCount = leecherCount;
+            this.minInterval = TimeSpan.FromSeconds(interval);
+
+            if (this.interval < this.minInterval)
+            {
+                this.interval = this.minInterval;
+            }
+
+            int remainingPacketSize = packet.Length - packet.Offset;
+            if (remainingPacketSize <= 0)
+            {
+                return new AnnounceResponse(this, null, null, null);
+            }
+            else if ((remainingPacketSize % 18) != 0)
+            {
+                // The announce response is invalid
+                return null;
+            }
+
+            int peerCount = (remainingPacketSize / 18);
+            var peers = new PeerInfo[peerCount];
+            for (int i = 0; i < peerCount; i++)
+            {
+                byte[] peerIPBytes = packet.ReadBytes(16);
+                int peerPort = packet.ReadUInt16();
+
+                var ipAddress = new IPAddress(peerIPBytes);
+                var peerEndPoint = new IPEndPoint(ipAddress, peerPort);
+                peers[i] = new PeerInfo(peerEndPoint);
+            }
+
+            return new AnnounceResponse(this, null, null, peers);
+        }
+
         private ScrapeResponse HandleScrapeResponse(Packet packet, InfoHash[] infoHashes)
         {
             int remainingPacketSize = packet.Length - packet.Offset;
@@ -648,6 +776,107 @@ namespace TorrentSwifter.Trackers
             }
 
             return new ScrapeResponse(this, torrents);
+        }
+        #endregion
+
+        #region Create Requests
+        private async Task<AnnounceResponse> DoAnnounceRequest(AnnounceRequest request, bool isIPv6)
+        {
+            if ((!isIPv6 && trackerEndpointV4 == null) || (isIPv6 && trackerEndpointV6 == null))
+                return null;
+
+            UdpExtensions extensions = UdpExtensions.None;
+            int extensionSize = 0;
+            if (!string.IsNullOrEmpty(authUser))
+            {
+                extensions |= UdpExtensions.Authentication;
+                extensionSize += 1 + authUser.Length + 8;
+            }
+            if (!string.IsNullOrEmpty(requestString))
+            {
+                extensions |= UdpExtensions.RequestString;
+                extensionSize += 1 + requestString.Length;
+            }
+
+            int ipInteger = (!isIPv6 ? GetIPAsInteger(request.IP) : 0);
+            var announceRequest = CreateRequest(TrackerUdpAction.Announce, 100 + extensionSize, isIPv6);
+            announceRequest.Write(request.InfoHash.Hash, 0, 20);
+            announceRequest.Write(request.PeerID.ID, 0, 20);
+            announceRequest.WriteInt64(request.BytesDownloaded);
+            announceRequest.WriteInt64(request.BytesLeft);
+            announceRequest.WriteInt64(request.BytesUploaded);
+            announceRequest.WriteInt32((int)request.TrackerEvent);
+            announceRequest.WriteInt32(ipInteger);
+            announceRequest.WriteInt32(key);
+            announceRequest.WriteInt32((request.DesiredPeerCount > 0 ? request.DesiredPeerCount : -1));
+            announceRequest.WriteUInt16((ushort)request.Port);
+            announceRequest.WriteUInt16((ushort)extensions);
+
+            if ((extensions & UdpExtensions.Authentication) != 0)
+            {
+                announceRequest.WriteByte((byte)authUser.Length);
+                announceRequest.WriteString(authUser);
+
+                byte[] passwordHash = GenerateAuthPasswordHash(announceRequest, authPassHash);
+                announceRequest.Write(passwordHash, 0, 8);
+            }
+
+            if ((extensions & UdpExtensions.RequestString) != 0)
+            {
+                announceRequest.WriteByte((byte)requestString.Length);
+                announceRequest.WriteString(requestString);
+            }
+
+            // TODO: Implement retrying logic?
+            if (isIPv6)
+                await SendRequestV6(announceRequest);
+            else
+                await SendRequestV4(announceRequest);
+
+            var responsePacket = await WaitForResponse(announceRequest, 20, RequestTimeout);
+            if (responsePacket == null)
+            {
+                status = TrackerStatus.Offline;
+                failureMessage = "Timed out making announce request.";
+                return null;
+            }
+
+            AnnounceResponse announceResponse;
+            if (isIPv6)
+                announceResponse = HandleAnnounceResponseV6(responsePacket);
+            else
+                announceResponse = HandleAnnounceResponseV4(responsePacket);
+
+            return announceResponse;
+        }
+
+        private async Task<ScrapeResponse> DoScrapeRequest(InfoHash[] infoHashes, bool isIPv6)
+        {
+            if ((!isIPv6 && trackerEndpointV4 == null) || (isIPv6 && trackerEndpointV6 == null))
+                return null;
+
+            var scrapeRequest = CreateRequest(TrackerUdpAction.Scrape, 16 + (20 * infoHashes.Length), isIPv6);
+            for (int i = 0; i < infoHashes.Length; i++)
+            {
+                var hashBytes = infoHashes[i].Hash;
+                scrapeRequest.Write(hashBytes, 0, 20);
+            }
+
+            // TODO: Implement retrying logic?
+            if (isIPv6)
+                await SendRequestV6(scrapeRequest);
+            else
+                await SendRequestV4(scrapeRequest);
+
+            var responsePacket = await WaitForResponse(scrapeRequest, 8 + (12 * infoHashes.Length), RequestTimeout);
+            if (responsePacket == null)
+            {
+                failureMessage = "Timed out making scrape request.";
+                return null;
+            }
+
+            var scrapeResponse = HandleScrapeResponse(responsePacket, infoHashes);
+            return scrapeResponse;
         }
         #endregion
 
@@ -759,6 +988,49 @@ namespace TorrentSwifter.Trackers
                 sha1.TransformFinalBlock(packetData, 0, 0);
                 return sha1.Hash;
             }
+        }
+
+        private static IPEndPoint GetIPEndpoint(IPAddress[] ipAddresses, AddressFamily addressFamily, int port)
+        {
+            if (ipAddresses == null || ipAddresses.Length == 0)
+                return null;
+
+            IPEndPoint endpoint = null;
+
+            for (int i = 0; i < ipAddresses.Length; i++)
+            {
+                if (ipAddresses[i].AddressFamily == addressFamily)
+                {
+                    endpoint = new IPEndPoint(ipAddresses[i], port);
+                    break;
+                }
+            }
+
+            return endpoint;
+        }
+
+        private static AnnounceResponse JoinResponses(AnnounceResponse[] responses)
+        {
+            if (responses == null || responses.Length == 0)
+                return null;
+
+            AnnounceResponse response = null;
+            for (int i = 0; i < responses.Length; i++)
+            {
+                if (responses[i] != null)
+                {
+                    if (response != null)
+                    {
+                        response.Merge(responses[i]);
+                    }
+                    else
+                    {
+                        response = responses[i];
+                    }
+                }
+            }
+
+            return response;
         }
 
         private uint SwapBytes(uint x)
