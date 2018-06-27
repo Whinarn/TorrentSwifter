@@ -6,7 +6,7 @@ namespace TorrentSwifter.Peers
     /// <summary>
     /// Peer information.
     /// </summary>
-    public struct PeerInfo
+    public struct PeerInfo : IEquatable<PeerInfo>
     {
         #region Fields
         private PeerID? id;
@@ -60,6 +60,63 @@ namespace TorrentSwifter.Peers
 
             this.id = id;
             this.endPoint = endPoint;
+        }
+        #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Returns if this peer information equals another object.
+        /// </summary>
+        /// <param name="obj">The other object.</param>
+        /// <returns>If equals.</returns>
+        public override bool Equals(object obj)
+        {
+            if (obj is PeerInfo)
+                return Equals((PeerInfo)obj);
+            else
+                return false;
+        }
+
+        /// <summary>
+        /// Returns if this peer information equals another peer information.
+        /// </summary>
+        /// <param name="other">The other peer information.</param>
+        /// <returns>If equals.</returns>
+        public bool Equals(PeerInfo other)
+        {
+            if (endPoint == other.endPoint)
+                return true;
+            else if (endPoint == null)
+                return false;
+            else if (other.endPoint == null)
+                return false;
+
+            return endPoint.Equals(other.endPoint);
+        }
+
+        /// <summary>
+        /// Returns the hash code for the peer information.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return endPoint.GetHashCode();
+        }
+
+        /// <summary>
+        /// Returns the text-representation of the peer information.
+        /// </summary>
+        /// <returns>The text-representation.</returns>
+        public override string ToString()
+        {
+            if (id.HasValue)
+            {
+                return string.Format("{0} ({1})", endPoint, id.Value);
+            }
+            else
+            {
+                return endPoint.ToString();
+            }
         }
         #endregion
     }
