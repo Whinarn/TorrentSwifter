@@ -6,6 +6,7 @@ using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using TorrentSwifter.Helpers;
+using TorrentSwifter.Logging;
 using TorrentSwifter.Network;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Torrents;
@@ -74,6 +75,11 @@ namespace TorrentSwifter.Trackers
             public bool IsIPv6
             {
                 get { return isIPv6; }
+            }
+
+            public IPEndPoint ExpectedResponseEndPoint
+            {
+                get { return expectedResponseEP; }
             }
 
             public bool HasResponse
@@ -718,7 +724,8 @@ namespace TorrentSwifter.Trackers
                             else
                             {
                                 trackerRequest = null;
-                                // TODO: Log response coming from the incorrect endpoint
+                                Logger.LogWarning("[UDP Tracker] Received a response to transaction [{0}] from invalid endpoint: {1} != {2}",
+                                    transactionID, endpoint, trackerRequest.ExpectedResponseEndPoint);
                             }
                         }
                         else
@@ -733,13 +740,13 @@ namespace TorrentSwifter.Trackers
                     }
                     else
                     {
-                        // TODO: Log response with missing transaction?
+                        Logger.LogWarning("[UDP Tracker] Received a response with missing transaction: {0}", transactionID);
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // TODO: Log exception!
+                Logger.LogException(ex, false);
             }
             finally
             {

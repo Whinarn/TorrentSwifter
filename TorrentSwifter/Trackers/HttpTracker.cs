@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TorrentSwifter.Encodings;
 using TorrentSwifter.Helpers;
+using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Torrents;
 
@@ -358,25 +359,26 @@ namespace TorrentSwifter.Trackers
                         }
                         else
                         {
-                            // TODO: Log about invalid peer IP? Can this be a hostname?
+                            Logger.LogError("[HTTP Tracker] Unable to parse peer IP: {0}", peerIP);
                         }
                     }
                 }
                 else if (peer is byte[])
                 {
-                    var decodedPeers = DecodePeers(peer as byte[]);
+                    var peerBytes = peer as byte[];
+                    var decodedPeers = DecodePeers(peerBytes);
                     if (decodedPeers != null)
                     {
                         peerInfoList.AddRange(decodedPeers);
                     }
                     else
                     {
-                        // TODO: Log about invalid peer info?
+                        Logger.LogError("[HTTP Tracker] Unable to decode peer information from {0} bytes of compact data.", peerBytes.Length);
                     }
                 }
                 else
                 {
-                    // TODO: Log about unknown peer information?
+                    Logger.LogError("[HTTP Tracker] Unable decode get peer information with invalid BEncode type: {0}", (peer != null ? peer.GetType().Name : "<null>"));
                 }
             }
 

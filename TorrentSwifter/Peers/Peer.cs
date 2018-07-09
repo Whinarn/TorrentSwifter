@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using TorrentSwifter.Logging;
 using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers
@@ -164,10 +165,14 @@ namespace TorrentSwifter.Peers
         #region Connection Events
         private void OnTCPConnectionConnected(object sender, EventArgs e)
         {
+            Logger.LogInfo("[Peer] Connected to {0}", endPoint);
+
+            // TODO: Send handshake!
         }
 
         private void OnTCPConnectionDisconnected(object sender, EventArgs e)
         {
+            Logger.LogInfo("[Peer] Disconnected from {0}", endPoint);
         }
         #endregion
     }
