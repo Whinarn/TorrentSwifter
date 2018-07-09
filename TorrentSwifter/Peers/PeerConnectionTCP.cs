@@ -17,6 +17,24 @@ namespace TorrentSwifter.Peers
         private const int ReceiveBufferMaxSize = 128 * 1024; // 128kB
         #endregion
 
+        #region Enums
+        private enum MessageType : int
+        {
+            Unknown = -3,
+            Handshake = -2,
+            KeepAlive = -1,
+            Choke = 0,
+            Unchoke = 1,
+            Interested = 2,
+            NotInterested = 3,
+            Have = 4,
+            BitField = 5,
+            Request = 6,
+            Piece = 7,
+            Cancel = 8
+        }
+        #endregion
+
         #region Fields
         private Socket socket = null;
         private bool isConnecting = false;
@@ -219,6 +237,20 @@ namespace TorrentSwifter.Peers
 
         private void HandlePacket(Packet packet)
         {
+            var messageType = GetMessageType(packet);
+            if (messageType == MessageType.Unknown)
+            {
+                Logger.LogWarning("[Peer] Received unhandled message of {0} bytes.", packet.Length);
+                return;
+            }
+
+            switch (messageType)
+            {
+                default:
+                    Logger.LogError("[Peer] Received unhandled message type: {0}", messageType);
+                    Disconnect();
+                    break;
+            }
         }
 
         private int GetPacketLength()
@@ -231,6 +263,27 @@ namespace TorrentSwifter.Peers
             int packetLength = ((receiveBuffer[0] << 24) | (receiveBuffer[1] << 16) | (receiveBuffer[2] << 8) | receiveBuffer[3]);
             packetLength += 4;
             return packetLength;
+        }
+
+        private MessageType GetMessageType(Packet packet)
+        {
+            if (!isHandshakeReceived)
+                return MessageType.Handshake;
+            else if (packet.Length == 4 && packet.ReadInt32() == 0)
+                return MessageType.KeepAlive;
+            else if (packet.Length <= 4)
+                return MessageType.Unknown;
+
+            packet.Offset = 4;
+            int messageTypeInt = packet.ReadByte();
+            if (Enum.IsDefined(typeof(MessageType), messageTypeInt))
+            {
+                return (MessageType)Enum.ToObject(typeof(MessageType), messageTypeInt);
+            }
+            else
+            {
+                return MessageType.Unknown;
+            }
         }
         #endregion
     }
