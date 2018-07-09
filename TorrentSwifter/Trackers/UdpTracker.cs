@@ -527,7 +527,7 @@ namespace TorrentSwifter.Trackers
 
         private TrackerRequest CreateRequest(TrackerUdpAction action, int length, bool isIPv6)
         {
-            long connectionID = (isIPv6 ? connectionIDv4 : connectionIDv4);
+            long connectionID = (isIPv6 ? connectionIDv6 : connectionIDv4);
             var endpoint = (isIPv6 ? trackerEndpointV6 : trackerEndpointV4);
             int transactionID = GetNextTransactionID();
             return new TrackerRequest(connectionID, action, transactionID, length, endpoint);
