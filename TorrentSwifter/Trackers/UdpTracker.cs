@@ -728,7 +728,12 @@ namespace TorrentSwifter.Trackers
             {
                 if (isListening)
                 {
-                    client.BeginReceive(OnReceivedPacket, client);
+                    try
+                    {
+                        client.BeginReceive(OnReceivedPacket, client);
+                    }
+                    catch (ObjectDisposedException) // We can silence the disposed exceptions because that means that we have stopped the tracker anyways
+                    { }
                 }
             }
         }
