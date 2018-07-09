@@ -41,6 +41,9 @@ namespace TorrentSwifter.Peers
         private bool isConnected = false;
         private bool isHandshakeReceived = false;
 
+        private InfoHash infoHash = default(InfoHash);
+        private PeerID peerID = default(PeerID);
+
         private int receiveOffset = 0;
         private byte[] receiveBuffer = new byte[ReceiveBufferMaxSize];
         private Packet receivedPacket = null;
@@ -246,11 +249,52 @@ namespace TorrentSwifter.Peers
 
             switch (messageType)
             {
+                case MessageType.Handshake:
+                    HandleHandshake(packet);
+                    break;
                 default:
                     Logger.LogError("[Peer] Received unhandled message type: {0}", messageType);
                     Disconnect();
                     break;
             }
+        }
+
+        private void HandleHandshake(Packet packet)
+        {
+            if (packet.Length != 68)
+            {
+                Logger.LogWarning("[Peer] Invalid handshake received with {0} bytes.", packet.Length);
+                Disconnect();
+                return;
+            }
+
+            int protocolNameLength = packet.ReadByte();
+            if (packet.RemainingBytes < (protocolNameLength + 40))
+            {
+                Logger.LogWarning("[Peer] Invalid handshake received with {0} bytes (protocol name length: {1}).", packet.Length, protocolNameLength);
+                Disconnect();
+                return;
+            }
+
+            string protocolName = packet.ReadString(protocolNameLength);
+            if (!string.Equals(protocolName, "BitTorrent protocol"))
+            {
+                Logger.LogWarning("[Peer] Handshake protocol is not supported: {0}", protocolName);
+                Disconnect();
+                return;
+            }
+
+            // Skip 8 bytes of flags
+            packet.Skip(8);
+
+            byte[] hashBytes = packet.ReadBytes(20);
+            byte[] idBytes = packet.ReadBytes(20);
+
+            infoHash = new InfoHash(hashBytes);
+            peerID = new PeerID(idBytes);
+            isHandshakeReceived = true;
+
+            // TODO: Send bit field!
         }
 
         private int GetPacketLength()
