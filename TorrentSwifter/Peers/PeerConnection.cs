@@ -71,7 +71,6 @@ namespace TorrentSwifter.Peers
         ~PeerConnection()
         {
             Dispose(false);
-            GC.SuppressFinalize(this);
         }
         #endregion
 
@@ -81,6 +80,7 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public void Dispose()
         {
+            GC.SuppressFinalize(this);
             Dispose(true);
         }
 
