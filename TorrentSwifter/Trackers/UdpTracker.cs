@@ -577,54 +577,62 @@ namespace TorrentSwifter.Trackers
 
             int retryCount = 0;
             Packet responsePacket = null;
-            while (retryCount < RetryAttempts && isConnected)
+            try
             {
-                var waitForPacketCancelToken = new CancellationTokenSource();
-                try
+                while (retryCount < RetryAttempts && (isConnected || request.Action == TrackerUdpAction.Connect))
                 {
-                    int timeout = (15 * (int)Math.Pow(2, retryCount)) * 1000;
-                    lock (cancellationTokens)
+                    var waitForPacketCancelToken = new CancellationTokenSource();
+                    try
                     {
-                        cancellationTokens.Add(waitForPacketCancelToken);
+                        int timeout = (15 * (int)Math.Pow(2, retryCount)) * 1000;
+                        lock (cancellationTokens)
+                        {
+                            cancellationTokens.Add(waitForPacketCancelToken);
+                        }
+                        waitForPacketCancelToken.CancelAfter(timeout);
+                        responsePacket = await WaitForPacketArrival(request, waitForPacketCancelToken.Token);
+                        break;
                     }
-                    waitForPacketCancelToken.CancelAfter(timeout);
-                    responsePacket = await WaitForPacketArrival(request, waitForPacketCancelToken.Token);
-                    break;
-                }
-                catch (OperationCanceledException)
-                {
-                    ++retryCount;
+                    catch (OperationCanceledException)
+                    {
+                        ++retryCount;
 
-                    // Try sending the request again
-                    await SendRequest(request);
-                }
-                finally
-                {
-                    // We remove the request from pending requests after this
-                    lock (pendingRequests)
-                    {
-                        pendingRequests.Remove(request.TransactionID);
+                        // Try sending the request again
+                        await SendRequest(request);
                     }
-                    
-                    // We also remove the cancellation token
-                    lock (cancellationTokens)
+                    finally
                     {
-                        cancellationTokens.Remove(waitForPacketCancelToken);
+                        // We remove the cancellation token
+                        lock (cancellationTokens)
+                        {
+                            cancellationTokens.Remove(waitForPacketCancelToken);
+                        }
                     }
                 }
             }
-
-            if (!isConnected)
+            finally
             {
-                throw new TrackerException(TrackerStatus.Offline, "The request was cancelled, because we are no longer connected to the tracker.");
+                // We remove the request from pending requests after this
+                lock (pendingRequests)
+                {
+                    pendingRequests.Remove(request.TransactionID);
+                }
             }
-            else if (retryCount >= RetryAttempts)
-            {
-                isConnected = false;
-                isConnectedV4 = false;
-                isConnectedV6 = false;
 
-                throw new TrackerException(TrackerStatus.Offline, "The request timed out.");
+            if (responsePacket == null)
+            {
+                if (!isConnected && request.Action != TrackerUdpAction.Connect)
+                {
+                    throw new TrackerException(TrackerStatus.Offline, "The request was cancelled, because we are no longer connected to the tracker.");
+                }
+                else if (retryCount >= RetryAttempts)
+                {
+                    isConnected = false;
+                    isConnectedV4 = false;
+                    isConnectedV6 = false;
+
+                    throw new TrackerException(TrackerStatus.Offline, "The request timed out.");
+                }
             }
 
             // We make sure that there is a packet and that it's large enough to fit the header
