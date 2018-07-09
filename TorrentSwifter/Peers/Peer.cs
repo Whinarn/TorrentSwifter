@@ -8,13 +8,13 @@ namespace TorrentSwifter.Peers
     /// <summary>
     /// A torrent peer.
     /// </summary>
-    public sealed class Peer
+    public sealed class Peer : IDisposable
     {
         #region Fields
         private readonly Torrent torrent;
         private readonly IPEndPoint endPoint;
 
-        private PeerConnection connection = null;
+        private PeerConnectionTCP tcpConnection = null;
         #endregion
 
         #region Properties
@@ -54,24 +54,89 @@ namespace TorrentSwifter.Peers
             this.torrent = torrent;
             this.endPoint = endPoint;
 
-            this.connection = new PeerConnectionTCP(endPoint);
+            tcpConnection = new PeerConnectionTCP(endPoint);
+            tcpConnection.Connected += OnTCPConnectionConnected;
+            tcpConnection.Disconnected += OnTCPConnectionDisconnected;
+        }
+        #endregion
+
+        #region Finalizer
+        /// <summary>
+        /// The finalizer.
+        /// </summary>
+        ~Peer()
+        {
+            Dispose(false);
+        }
+        #endregion
+
+        #region Dispose
+        /// <summary>
+        /// Disposes of this peer.
+        /// </summary>
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+            Dispose(true);
+        }
+
+        /// <summary>
+        /// Disposes of this peer connection.
+        /// </summary>
+        /// <param name="disposing">If disposing, otherwise finalizing.</param>
+        private void Dispose(bool disposing)
+        {
+            if (tcpConnection != null)
+            {
+                tcpConnection.Dispose();
+                tcpConnection = null;
+            }
         }
         #endregion
 
         #region Public Methods
         /// <summary>
-        /// Attempts to connect to this peer.
+        /// Attempts to connect to this peer synchronously.
         /// </summary>
         /// <returns>If the connection was successfully established.</returns>
-        public async Task<bool> Connect()
+        public bool Connect()
         {
-            if (connection == null)
+            if (tcpConnection == null)
                 return false;
-            else if (connection.IsConnecting || connection.IsConnected)
+            else if (tcpConnection.IsConnecting || tcpConnection.IsConnected)
                 return false;
 
-            await connection.ConnectAsync();
-            return true;
+            try
+            {
+                tcpConnection.Connect();
+                return tcpConnection.IsConnected;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Attempts to connect to this peer asynchronously.
+        /// </summary>
+        /// <returns>If the connection was successfully established.</returns>
+        public async Task<bool> ConnectAsync()
+        {
+            if (tcpConnection == null)
+                return false;
+            else if (tcpConnection.IsConnecting || tcpConnection.IsConnected)
+                return false;
+
+            try
+            {
+                await tcpConnection.ConnectAsync();
+                return tcpConnection.IsConnected;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         /// <summary>
@@ -79,10 +144,10 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public void Disconnect()
         {
-            if (!connection.IsConnecting && !connection.IsConnected)
-                return;
-
-            connection.Disconnect();
+            if (tcpConnection.IsConnected || tcpConnection.IsConnecting)
+            {
+                tcpConnection.Disconnect();
+            }
         }
 
         /// <summary>
@@ -93,6 +158,16 @@ namespace TorrentSwifter.Peers
         {
             // TODO: Expand this
             return endPoint.ToString();
+        }
+        #endregion
+
+        #region Connection Events
+        private void OnTCPConnectionConnected(object sender, EventArgs e)
+        {
+        }
+
+        private void OnTCPConnectionDisconnected(object sender, EventArgs e)
+        {
         }
         #endregion
     }
