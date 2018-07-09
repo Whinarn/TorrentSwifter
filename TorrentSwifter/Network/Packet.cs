@@ -55,6 +55,14 @@ namespace TorrentSwifter.Network
                 length = value;
             }
         }
+
+        /// <summary>
+        /// Gets the count of remaining bytes to read from this packet.
+        /// </summary>
+        public int RemainingBytes
+        {
+            get { return (length - offset); }
+        }
         #endregion
 
         #region Constructors
