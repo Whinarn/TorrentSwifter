@@ -36,11 +36,11 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets the peer connection.
+        /// Gets the peer TCP connection.
         /// </summary>
-        public PeerConnection Connection
+        public PeerConnectionTCP TCPConnection
         {
-            get { return connection; }
+            get { return tcpConnection; }
         }
         #endregion
 
