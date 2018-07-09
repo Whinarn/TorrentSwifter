@@ -47,6 +47,7 @@ namespace TorrentSwifter.Trackers
             private readonly TrackerUdpAction action;
             private readonly int transactionID;
             private readonly DateTime date;
+            private readonly bool isIPv6;
             private IPEndPoint expectedResponseEP = null;
             private Packet responsePacket = null;
 
@@ -70,6 +71,11 @@ namespace TorrentSwifter.Trackers
                 get { return (int)DateTime.Now.Subtract(date).TotalSeconds; }
             }
 
+            public bool IsIPv6
+            {
+                get { return isIPv6; }
+            }
+
             public bool HasResponse
             {
                 get { return (responsePacket != null); }
@@ -81,11 +87,12 @@ namespace TorrentSwifter.Trackers
                 set { responsePacket = value; }
             }
 
-            public TrackerRequest(long connectionID, TrackerUdpAction action, int transactionID, int length, IPEndPoint expectedResponseEP)
+            public TrackerRequest(long connectionID, TrackerUdpAction action, int transactionID, int length, bool isIPv6, IPEndPoint expectedResponseEP)
                 : base(length)
             {
                 this.action = action;
                 this.transactionID = transactionID;
+                this.isIPv6 = isIPv6;
                 this.expectedResponseEP = expectedResponseEP;
                 date = DateTime.Now;
 
@@ -530,23 +537,25 @@ namespace TorrentSwifter.Trackers
             long connectionID = (isIPv6 ? connectionIDv6 : connectionIDv4);
             var endpoint = (isIPv6 ? trackerEndpointV6 : trackerEndpointV4);
             int transactionID = GetNextTransactionID();
-            return new TrackerRequest(connectionID, action, transactionID, length, endpoint);
+            return new TrackerRequest(connectionID, action, transactionID, length, isIPv6, endpoint);
         }
 
-        private async Task SendRequestV4(TrackerRequest request)
+        private async Task SendRequest(TrackerRequest request)
         {
-            if (trackerEndpointV4 == null)
-                return;
+            if (request.IsIPv6)
+            {
+                if (trackerEndpointV6 == null)
+                    return;
 
-            await SendRequest(request, trackerEndpointV4);
-        }
+                await SendRequest(request, trackerEndpointV6);
+            }
+            else
+            {
+                if (trackerEndpointV4 == null)
+                    return;
 
-        private async Task SendRequestV6(TrackerRequest request)
-        {
-            if (trackerEndpointV6 == null)
-                return;
-
-            await SendRequest(request, trackerEndpointV6);
+                await SendRequest(request, trackerEndpointV4);
+            }
         }
 
         private async Task SendRequest(TrackerRequest request, IPEndPoint endpoint)
@@ -554,10 +563,7 @@ namespace TorrentSwifter.Trackers
             // We add the new request to pending requests, so that we can easily find the source for incoming responses
             lock (pendingRequests)
             {
-                if (!pendingRequests.ContainsKey(request.TransactionID))
-                {
-                    pendingRequests.Add(request.TransactionID, request);
-                }
+                pendingRequests[request.TransactionID] = request;
             }
 
             // TODO: Send twice?
@@ -588,6 +594,9 @@ namespace TorrentSwifter.Trackers
                 catch (OperationCanceledException)
                 {
                     ++retryCount;
+
+                    // Try sending the request again
+                    await SendRequest(request);
                 }
                 finally
                 {
@@ -930,11 +939,7 @@ namespace TorrentSwifter.Trackers
                 announceRequest.WriteString(requestString);
             }
 
-            // TODO: Implement retrying logic?
-            if (isIPv6)
-                await SendRequestV6(announceRequest);
-            else
-                await SendRequestV4(announceRequest);
+            await SendRequest(announceRequest);
 
             var responsePacket = await WaitForResponse(announceRequest, 20);
             if (responsePacket == null)
@@ -965,10 +970,7 @@ namespace TorrentSwifter.Trackers
                 scrapeRequest.Write(hashBytes, 0, 20);
             }
 
-            if (isIPv6)
-                await SendRequestV6(scrapeRequest);
-            else
-                await SendRequestV4(scrapeRequest);
+            await SendRequest(scrapeRequest);
 
             var responsePacket = await WaitForResponse(scrapeRequest, 8 + (12 * infoHashes.Length));
             if (responsePacket == null)
