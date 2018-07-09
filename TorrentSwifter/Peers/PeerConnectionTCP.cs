@@ -252,6 +252,36 @@ namespace TorrentSwifter.Peers
                 case MessageType.Handshake:
                     HandleHandshake(packet);
                     break;
+                case MessageType.KeepAlive:
+                    HandleKeepAlive(packet);
+                    break;
+                case MessageType.Choke:
+                    HandleChoke(packet);
+                    break;
+                case MessageType.Unchoke:
+                    HandleUnchoke(packet);
+                    break;
+                case MessageType.Interested:
+                    HandleInterested(packet);
+                    break;
+                case MessageType.NotInterested:
+                    HandleNotInterested(packet);
+                    break;
+                case MessageType.Have:
+                    HandleHave(packet);
+                    break;
+                case MessageType.BitField:
+                    HandleBitField(packet);
+                    break;
+                case MessageType.Request:
+                    HandleRequest(packet);
+                    break;
+                case MessageType.Piece:
+                    HandlePiece(packet);
+                    break;
+                case MessageType.Cancel:
+                    HandleCancel(packet);
+                    break;
                 default:
                     Logger.LogError("[Peer] Received unhandled message type: {0}", messageType);
                     Disconnect();
@@ -295,6 +325,56 @@ namespace TorrentSwifter.Peers
             isHandshakeReceived = true;
 
             // TODO: Send bit field!
+        }
+
+        private void HandleKeepAlive(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleChoke(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleUnchoke(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleInterested(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleNotInterested(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleHave(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleBitField(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleRequest(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandlePiece(Packet packet)
+        {
+            // TODO: Implement!
+        }
+
+        private void HandleCancel(Packet packet)
+        {
+            // TODO: Implement!
         }
 
         private int GetPacketLength()
