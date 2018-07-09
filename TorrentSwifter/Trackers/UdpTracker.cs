@@ -20,8 +20,7 @@ namespace TorrentSwifter.Trackers
         #region Consts
         private const long ProtocolMagic = 0x41727101980L;
 
-        private const int ConnectionTimeout = 15000;
-        private const int RequestTimeout = 15000;
+        private const int RetryAttempts = 5;
         #endregion
 
         #region Enums
@@ -142,6 +141,7 @@ namespace TorrentSwifter.Trackers
         private IPEndPoint trackerEndpointV6 = null;
 
         private Dictionary<int, TrackerRequest> pendingRequests = new Dictionary<int, TrackerRequest>();
+        private List<CancellationTokenSource> cancellationTokens = new List<CancellationTokenSource>();
 
         private static Random random = new Random();
         #endregion
@@ -203,6 +203,17 @@ namespace TorrentSwifter.Trackers
             {
                 client.Dispose();
                 client = null;
+            }
+            lock (cancellationTokens)
+            {
+                foreach (var tokenSource in cancellationTokens)
+                {
+                    if (!tokenSource.IsCancellationRequested)
+                    {
+                        tokenSource.Cancel();
+                    }
+                }
+                cancellationTokens.Clear();
             }
         }
         #endregion
@@ -285,7 +296,11 @@ namespace TorrentSwifter.Trackers
                 failureMessage = null;
                 if (!await WaitForConnection().ConfigureAwait(false))
                 {
-                    failureMessage = "Failed to connect with tracker.";
+                    status = TrackerStatus.Offline;
+                    if (failureMessage == null)
+                    {
+                        failureMessage = "Failed to connect with tracker.";
+                    }
                     return null;
                 }
 
@@ -340,13 +355,32 @@ namespace TorrentSwifter.Trackers
             {
                 // Wait for a connection
                 var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(ConnectionTimeout);
-                var cancellationToken = cancellationTokenSource.Token;
-
-                while (isConnecting)
+                lock (cancellationTokens)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await Task.Delay(20);
+                    cancellationTokens.Add(cancellationTokenSource);
+                }
+
+                try
+                {
+                    var cancellationToken = cancellationTokenSource.Token;
+                    while (isConnecting)
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+                        await Task.Delay(20);
+                    }
+                }
+                catch (OperationCanceledException)
+                {
+                    // NOTE: If this happens, then we don't "own" the connection process, so we don't set status or failure message.
+                    //       Because the "owner" of the process will.
+                    return false;
+                }
+                finally
+                {
+                    lock (cancellationTokens)
+                    {
+                        cancellationTokens.Remove(cancellationTokenSource);
+                    }
                 }
             }
             else if (!isConnected)
@@ -360,12 +394,12 @@ namespace TorrentSwifter.Trackers
 
         private async Task<bool> Connect()
         {
-            // TODO: Retry logic for connections?
-
             isConnecting = true;
             isConnected = false;
             trackerEndpointV4 = null;
             trackerEndpointV6 = null;
+            failureMessage = null;
+            warningMessage = null;
 
             var ipAddresses = await Dns.GetHostAddressesAsync(Uri.Host);
             if (ipAddresses == null || ipAddresses.Length == 0)
@@ -388,25 +422,37 @@ namespace TorrentSwifter.Trackers
                 return false;
             }
 
-            // Try connecting with both IPv4 and IPv6
-            var connectTaskV4 = ConnectV4();
-            var connectTaskV6 = ConnectV6();
-
-            var completedTask = await Task.WhenAny(connectTaskV4, connectTaskV6);
-            if (!completedTask.Result)
+            try
             {
-                await Task.WhenAll(connectTaskV4, connectTaskV6);
-                if (!isConnectedV4 && !isConnectedV6)
-                {
-                    isConnected = false;
-                    isConnecting = false;
-                    return false;
-                }
-            }
+                // Try connecting with both IPv4 and IPv6
+                var connectTaskV4 = ConnectV4();
+                var connectTaskV6 = ConnectV6();
 
-            isConnected = true;
-            isConnecting = false;
-            return true;
+                var completedTask = await Task.WhenAny(connectTaskV4, connectTaskV6);
+                if (!completedTask.Result)
+                {
+                    await Task.WhenAll(connectTaskV4, connectTaskV6);
+                    if (!isConnectedV4 && !isConnectedV6)
+                    {
+                        status = TrackerStatus.Offline;
+                        isConnected = false;
+                        isConnecting = false;
+                        return false;
+                    }
+                }
+
+                isConnected = true;
+                isConnecting = false;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                status = TrackerStatus.Offline;
+                failureMessage = string.Format("Failed to connecting: {0}", ex.Message);
+                isConnected = false;
+                isConnecting = false;
+                return false;
+            }
         }
 
         private async Task<bool> ConnectV4()
@@ -417,21 +463,31 @@ namespace TorrentSwifter.Trackers
             if (trackerEndpointV4 == null)
                 return false;
 
-            var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16, false);
-            await SendRequest(connectionRequest, trackerEndpointV4);
-
-            var responsePacket = await WaitForResponse(connectionRequest, 16, ConnectionTimeout);
-            if (responsePacket == null)
+            try
             {
-                status = TrackerStatus.InvalidResponse;
-                failureMessage = "The tracker returned an invalid connect response.";
+                var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16, false);
+                await SendRequest(connectionRequest, trackerEndpointV4);
+
+                var responsePacket = await WaitForResponse(connectionRequest, 16);
+                if (responsePacket == null)
+                {
+                    status = TrackerStatus.InvalidResponse;
+                    failureMessage = "The tracker returned an invalid connect response.";
+                    isConnectedV4 = false;
+                    return false;
+                }
+
+                connectionIDv4 = responsePacket.ReadInt64();
+                isConnectedV4 = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                status = TrackerStatus.Offline;
+                failureMessage = string.Format("Failed to connecting: {0}", ex.Message);
                 isConnectedV4 = false;
                 return false;
             }
-
-            connectionIDv4 = responsePacket.ReadInt64();
-            isConnectedV4 = true;
-            return true;
         }
 
         private async Task<bool> ConnectV6()
@@ -442,21 +498,31 @@ namespace TorrentSwifter.Trackers
             if (trackerEndpointV6 == null)
                 return false;
 
-            var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16, true);
-            await SendRequest(connectionRequest, trackerEndpointV6);
-
-            var responsePacket = await WaitForResponse(connectionRequest, 16, ConnectionTimeout);
-            if (responsePacket == null)
+            try
             {
-                status = TrackerStatus.InvalidResponse;
-                failureMessage = "The tracker returned an invalid connect response.";
+                var connectionRequest = CreateRequest(TrackerUdpAction.Connect, 16, true);
+                await SendRequest(connectionRequest, trackerEndpointV6);
+
+                var responsePacket = await WaitForResponse(connectionRequest, 16);
+                if (responsePacket == null)
+                {
+                    status = TrackerStatus.InvalidResponse;
+                    failureMessage = "The tracker returned an invalid connect response.";
+                    isConnectedV6 = false;
+                    return false;
+                }
+
+                connectionIDv6 = responsePacket.ReadInt64();
+                isConnectedV6 = true;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                status = TrackerStatus.Offline;
+                failureMessage = string.Format("Failed to connect: {0}", ex.Message);
                 isConnectedV6 = false;
                 return false;
             }
-
-            connectionIDv6 = responsePacket.ReadInt64();
-            isConnectedV6 = true;
-            return true;
         }
 
         private TrackerRequest CreateRequest(TrackerUdpAction action, int length, bool isIPv6)
@@ -488,36 +554,68 @@ namespace TorrentSwifter.Trackers
             // We add the new request to pending requests, so that we can easily find the source for incoming responses
             lock (pendingRequests)
             {
-                pendingRequests.Add(request.TransactionID, request);
+                if (!pendingRequests.ContainsKey(request.TransactionID))
+                {
+                    pendingRequests.Add(request.TransactionID, request);
+                }
             }
 
             // TODO: Send twice?
             await client.SendAsync(request.Data, request.Length, endpoint);
         }
 
-        private async Task<Packet> WaitForResponse(TrackerRequest request, int minimumResponseLength, int timeout)
+        private async Task<Packet> WaitForResponse(TrackerRequest request, int minimumResponseLength)
         {
             if (request == null)
                 return null;
 
+            int retryCount = 0;
             Packet responsePacket = null;
-            try
+            while (retryCount < RetryAttempts && isConnected)
             {
                 var waitForPacketCancelToken = new CancellationTokenSource();
-                waitForPacketCancelToken.CancelAfter(timeout);
-                responsePacket = await WaitForPacketArrival(request, waitForPacketCancelToken.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                throw new TrackerException(TrackerStatus.Offline, "The request timed out.");
-            }
-            finally
-            {
-                // We remove the request from pending requests after this
-                lock (pendingRequests)
+                try
                 {
-                    pendingRequests.Remove(request.TransactionID);
+                    int timeout = (15 * (int)Math.Pow(2, retryCount)) * 1000;
+                    lock (cancellationTokens)
+                    {
+                        cancellationTokens.Add(waitForPacketCancelToken);
+                    }
+                    waitForPacketCancelToken.CancelAfter(timeout);
+                    responsePacket = await WaitForPacketArrival(request, waitForPacketCancelToken.Token);
+                    break;
                 }
+                catch (OperationCanceledException)
+                {
+                    ++retryCount;
+                }
+                finally
+                {
+                    // We remove the request from pending requests after this
+                    lock (pendingRequests)
+                    {
+                        pendingRequests.Remove(request.TransactionID);
+                    }
+                    
+                    // We also remove the cancellation token
+                    lock (cancellationTokens)
+                    {
+                        cancellationTokens.Remove(waitForPacketCancelToken);
+                    }
+                }
+            }
+
+            if (!isConnected)
+            {
+                throw new TrackerException(TrackerStatus.Offline, "The request was cancelled, because we are no longer connected to the tracker.");
+            }
+            else if (retryCount >= RetryAttempts)
+            {
+                isConnected = false;
+                isConnectedV4 = false;
+                isConnectedV6 = false;
+
+                throw new TrackerException(TrackerStatus.Offline, "The request timed out.");
             }
 
             // We make sure that there is a packet and that it's large enough to fit the header
@@ -833,7 +931,7 @@ namespace TorrentSwifter.Trackers
             else
                 await SendRequestV4(announceRequest);
 
-            var responsePacket = await WaitForResponse(announceRequest, 20, RequestTimeout);
+            var responsePacket = await WaitForResponse(announceRequest, 20);
             if (responsePacket == null)
             {
                 status = TrackerStatus.Offline;
@@ -862,13 +960,12 @@ namespace TorrentSwifter.Trackers
                 scrapeRequest.Write(hashBytes, 0, 20);
             }
 
-            // TODO: Implement retrying logic?
             if (isIPv6)
                 await SendRequestV6(scrapeRequest);
             else
                 await SendRequestV4(scrapeRequest);
 
-            var responsePacket = await WaitForResponse(scrapeRequest, 8 + (12 * infoHashes.Length), RequestTimeout);
+            var responsePacket = await WaitForResponse(scrapeRequest, 8 + (12 * infoHashes.Length));
             if (responsePacket == null)
             {
                 failureMessage = "Timed out making scrape request.";
