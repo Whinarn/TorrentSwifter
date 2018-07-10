@@ -66,7 +66,13 @@ namespace TorrentSwifter.Torrents
         /// <returns>If equals.</returns>
         public bool Equals(InfoHash other)
         {
-            if (hash.Length != other.hash.Length)
+            if (hash == null && other.hash == null)
+                return true;
+            else if (hash == null || other.hash == null)
+                return false;
+            else if (hash == other.hash)
+                return true;
+            else if (hash.Length != other.hash.Length)
                 return false;
 
             bool result = true;
@@ -88,7 +94,13 @@ namespace TorrentSwifter.Torrents
         /// <returns>If equals.</returns>
         public bool Equals(byte[] other)
         {
-            if (hash.Length != other.Length)
+            if (hash == null && other == null)
+                return true;
+            else if (hash == null || other == null)
+                return false;
+            else if (hash == other)
+                return true;
+            else if (hash.Length != other.Length)
                 return false;
 
             bool result = true;
@@ -110,9 +122,12 @@ namespace TorrentSwifter.Torrents
         public override int GetHashCode()
         {
             int hashCode = 17;
-            for (int i = 0; i < hash.Length; i++)
+            if (hash != null)
             {
-                hashCode = ((hashCode * 31) ^ hash[i]);
+                for (int i = 0; i < hash.Length; i++)
+                {
+                    hashCode = ((hashCode * 31) ^ hash[i]);
+                }
             }
             return hashCode;
         }
@@ -123,16 +138,34 @@ namespace TorrentSwifter.Torrents
         /// <returns>The url-encoded string.</returns>
         public string ToUrlEncodedString()
         {
-            return UriHelper.UrlEncodeText(hash);
+            if (hash != null)
+                return UriHelper.UrlEncodeText(hash);
+            else
+                return string.Empty;
+        }
+
+        /// <summary>
+        /// Returns the hexadecimal string for this info hash.
+        /// </summary>
+        /// <returns>The hash in hexadecimals.</returns>
+        public string ToHexString()
+        {
+            if (hash != null)
+                return HexHelper.BytesToHex(hash);
+            else
+                return string.Empty;
         }
 
         /// <summary>
         /// Returns the text-representation of this info hash.
         /// </summary>
-        /// <returns>The hash in hexadecimals.</returns>
+        /// <returns>The hash string.</returns>
         public override string ToString()
         {
-            return HexHelper.BytesToHex(hash);
+            if (hash != null)
+                return HexHelper.BytesToHex(hash);
+            else
+                return "<NONE>";
         }
     }
 }
