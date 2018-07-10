@@ -82,6 +82,26 @@ namespace TorrentSwifter.Peers
             tcpConnection.BitFieldReceived += OnTCPConnectionBitFieldReceived;
             tcpConnection.HavePiece += OnTCPConnectionHavePiece;
         }
+
+        /// <summary>
+        /// Creates a new torrent peer.
+        /// </summary>
+        /// <param name="torrent">The owner torrent.</param>
+        /// <param name="connection">The peer connection.</param>
+        internal Peer(Torrent torrent, PeerConnectionTCP connection)
+        {
+            this.torrent = torrent;
+            this.endPoint = connection.EndPoint;
+
+            tcpConnection = connection;
+            tcpConnection.Connected += OnTCPConnectionConnected;
+            tcpConnection.ConnectionFailed += OnTCPConnectionAttemptFailed;
+            tcpConnection.Disconnected += OnTCPConnectionDisconnected;
+            tcpConnection.BitFieldReceived += OnTCPConnectionBitFieldReceived;
+            tcpConnection.HavePiece += OnTCPConnectionHavePiece;
+
+            bitField = tcpConnection.RemoteBitField;
+        }
         #endregion
 
         #region Finalizer
