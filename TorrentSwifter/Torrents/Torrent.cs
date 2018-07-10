@@ -253,7 +253,7 @@ namespace TorrentSwifter.Torrents
                 var file = metaDataFiles[0];
                 files[0] = new TorrentFile(downloadPath, file.Size, 0L);
 
-                if (TorrentPreferences.AllocateFullFileSizes)
+                if (Preferences.Torrent.AllocateFullFileSizes)
                 {
                     IOHelper.CreateAllocatedFile(downloadPath, file.Size);
                 }
@@ -273,7 +273,7 @@ namespace TorrentSwifter.Torrents
                     files[i] = new TorrentFile(filePath, metaDataFile.Size, currentFileOffset);
                     currentFileOffset += metaDataFile.Size;
 
-                    if (TorrentPreferences.AllocateFullFileSizes)
+                    if (Preferences.Torrent.AllocateFullFileSizes)
                     {
                         IOHelper.CreateAllocatedFile(filePath, metaDataFile.Size);
                     }
