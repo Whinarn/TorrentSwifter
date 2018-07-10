@@ -5,16 +5,16 @@ namespace TorrentSwifter.Helpers
 {
     internal static class AssemblyHelper
     {
-        public static string GetAssemblyVersion(Type type)
+        public static Version GetAssemblyVersion(Type type)
         {
             var assembly = type.GetTypeInfo().Assembly;
             return GetAssemblyVersion(assembly);
         }
 
-        public static string GetAssemblyVersion(Assembly assembly)
+        public static Version GetAssemblyVersion(Assembly assembly)
         {
             var assemblyName = assembly.GetName();
-            return assemblyName.Version.ToString();
+            return assemblyName.Version;
         }
     }
 }
