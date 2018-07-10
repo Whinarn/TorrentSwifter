@@ -40,6 +40,8 @@ namespace TorrentSwifter.Peers
         private bool isConnecting = false;
         private bool isConnected = false;
         private bool isHandshakeReceived = false;
+        private bool isChoked = true;
+        private bool isInterested = false;
 
         private InfoHash infoHash = default(InfoHash);
         private PeerID peerID = default(PeerID);
@@ -55,7 +57,7 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public override bool IsConnecting
         {
-            get;
+            get { return isConnecting; }
         }
 
         /// <summary>
@@ -63,7 +65,23 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public override bool IsConnected
         {
-            get;
+            get { return isConnected; }
+        }
+
+        /// <summary>
+        /// Gets if this peer connection is currently choked.
+        /// </summary>
+        public bool IsChoked
+        {
+            get { return isChoked; }
+        }
+
+        /// <summary>
+        /// Gets if this peer is interested in some of our pieces.
+        /// </summary>
+        public bool IsInterested
+        {
+            get { return isInterested; }
         }
         #endregion
 
@@ -186,6 +204,8 @@ namespace TorrentSwifter.Peers
         protected override void OnConnected()
         {
             isHandshakeReceived = false;
+            isChoked = true;
+            isInterested = false;
 
             base.OnConnected();
         }
@@ -379,22 +399,42 @@ namespace TorrentSwifter.Peers
 
         private void HandleChoke(Packet packet)
         {
-            // TODO: Implement!
+            if (isChoked)
+                return;
+
+            Logger.LogInfo("[Peer] Choked by {0}", endPoint);
+            isChoked = true;
+            OnStateChanged();
         }
 
         private void HandleUnchoke(Packet packet)
         {
-            // TODO: Implement!
+            if (!isChoked)
+                return;
+
+            Logger.LogInfo("[Peer] Unchoked by {0}", endPoint);
+            isChoked = false;
+            OnStateChanged();
         }
 
         private void HandleInterested(Packet packet)
         {
-            // TODO: Implement!
+            if (isInterested)
+                return;
+
+            Logger.LogInfo("[Peer] {0} is interested.", endPoint);
+            isInterested = true;
+            OnStateChanged();
         }
 
         private void HandleNotInterested(Packet packet)
         {
-            // TODO: Implement!
+            if (!isInterested)
+                return;
+
+            Logger.LogInfo("[Peer] {0} is no longer interested.", endPoint);
+            isInterested = false;
+            OnStateChanged();
         }
 
         private void HandleHave(Packet packet)

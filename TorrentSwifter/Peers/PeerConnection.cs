@@ -56,6 +56,10 @@ namespace TorrentSwifter.Peers
         /// Occurs when our connection with this peer has been disconnected.
         /// </summary>
         public event EventHandler Disconnected;
+        /// <summary>
+        /// Occurs when the state of this peer has changed.
+        /// </summary>
+        public event EventHandler StateChanged;
         #endregion
 
         #region Constructor
@@ -137,6 +141,14 @@ namespace TorrentSwifter.Peers
         protected virtual void OnDisconnected()
         {
             Disconnected.SafeInvoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// The state of the peer has been changed.
+        /// </summary>
+        protected virtual void OnStateChanged()
+        {
+            StateChanged.SafeInvoke(this, EventArgs.Empty);
         }
         #endregion
     }
