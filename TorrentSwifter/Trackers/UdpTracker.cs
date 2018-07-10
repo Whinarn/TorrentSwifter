@@ -746,7 +746,7 @@ namespace TorrentSwifter.Trackers
             }
             catch (Exception ex)
             {
-                Logger.LogException(ex, false);
+                Logger.LogErrorException(ex);
             }
             finally
             {
@@ -762,7 +762,7 @@ namespace TorrentSwifter.Trackers
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogException(ex, false);
+                        Logger.LogErrorException(ex);
                     }
                 }
             }

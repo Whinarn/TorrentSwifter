@@ -217,7 +217,7 @@ namespace TorrentSwifter.Peers
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogException(ex, false);
+                        Logger.LogErrorException(ex);
                         Disconnect();
                     }
 

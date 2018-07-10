@@ -45,6 +45,7 @@ namespace TorrentSwifter.Logging
         #endregion
 
         #region Public Methods
+        #region Unhandled Exceptions
         /// <summary>
         /// Starts logging all unhandled exceptions.
         /// </summary>
@@ -68,33 +69,86 @@ namespace TorrentSwifter.Logging
             isLoggingUnhandledExceptions = false;
             AppDomain.CurrentDomain.UnhandledException -= OnUnhandledException;
         }
+        #endregion
 
+        #region Log Exception
         /// <summary>
-        /// Logs an exception.
+        /// Logs a fatal exception.
         /// </summary>
         /// <param name="exception">The exception.</param>
-        /// <param name="isFatal">If the exception is fatal.</param>
-        public static void LogException(Exception exception, bool isFatal)
+        public static void LogFatalException(Exception exception)
         {
             if (exception == null)
                 throw new ArgumentNullException("exception");
+            else if (logLevel < LogLevel.Fatal)
+                return;
 
-            if (logExceptionStacktraces)
-            {
-                if (isFatal)
-                    LogFatal(exception.ToString());
-                else
-                    LogError(exception.ToString());
-            }
-            else
-            {
-                if (isFatal)
-                    LogFatal(exception.Message);
-                else
-                    LogError(exception.Message);
-            }
+            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            LogText(LogLevel.Fatal, exceptionMessage);
         }
 
+        /// <summary>
+        /// Logs an error exception.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        public static void LogErrorException(Exception exception)
+        {
+            if (exception == null)
+                throw new ArgumentNullException("exception");
+            else if (logLevel < LogLevel.Error)
+                return;
+
+            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            LogText(LogLevel.Error, exceptionMessage);
+        }
+
+        /// <summary>
+        /// Logs a warning exception.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        public static void LogWarningException(Exception exception)
+        {
+            if (exception == null)
+                throw new ArgumentNullException("exception");
+            else if (logLevel < LogLevel.Warning)
+                return;
+
+            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            LogText(LogLevel.Warning, exceptionMessage);
+        }
+
+        /// <summary>
+        /// Logs an informational exception.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        public static void LogInfoException(Exception exception)
+        {
+            if (exception == null)
+                throw new ArgumentNullException("exception");
+            else if (logLevel < LogLevel.Info)
+                return;
+
+            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            LogText(LogLevel.Info, exceptionMessage);
+        }
+
+        /// <summary>
+        /// Logs a debugging exception.
+        /// </summary>
+        /// <param name="exception">The exception.</param>
+        public static void LogDebugException(Exception exception)
+        {
+            if (exception == null)
+                throw new ArgumentNullException("exception");
+            else if (logLevel < LogLevel.Debug)
+                return;
+
+            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            LogText(LogLevel.Debug, exceptionMessage);
+        }
+        #endregion
+
+        #region Log Fatal
         /// <summary>
         /// Writes a fatal message.
         /// </summary>
@@ -146,7 +200,9 @@ namespace TorrentSwifter.Logging
             string text = string.Format(format, args);
             LogFatal(text);
         }
+        #endregion
 
+        #region Log Error
         /// <summary>
         /// Writes an error message.
         /// </summary>
@@ -198,7 +254,9 @@ namespace TorrentSwifter.Logging
             string text = string.Format(format, args);
             LogError(text);
         }
+        #endregion
 
+        #region Log Warning
         /// <summary>
         /// Writes a warning message.
         /// </summary>
@@ -250,7 +308,9 @@ namespace TorrentSwifter.Logging
             string text = string.Format(format, args);
             LogWarning(text);
         }
+        #endregion
 
+        #region Log Info
         /// <summary>
         /// Writes an informational message.
         /// </summary>
@@ -302,7 +362,9 @@ namespace TorrentSwifter.Logging
             string text = string.Format(format, args);
             LogInfo(text);
         }
+        #endregion
 
+        #region Log Debug
         /// <summary>
         /// Writes a debugging message.
         /// </summary>
@@ -355,6 +417,7 @@ namespace TorrentSwifter.Logging
             LogDebug(text);
         }
         #endregion
+        #endregion
 
         #region Private Methods
         private static void OnUnhandledException(object sender, UnhandledExceptionEventArgs e)
@@ -364,7 +427,10 @@ namespace TorrentSwifter.Logging
             var exception = exceptionObj as Exception;
             if (exception != null)
             {
-                LogException(exception, isFatal);
+                if (isFatal)
+                    LogFatalException(exception);
+                else
+                    LogErrorException(exception);
             }
             else if (exceptionObj != null)
             {
