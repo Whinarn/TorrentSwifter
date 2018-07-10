@@ -7,6 +7,10 @@ namespace TorrentSwifter.Logging
     /// </summary>
     public static class Log
     {
+        #region Consts
+        private const string ExceptionLogPrefix = "[EXCEPTION] ";
+        #endregion
+
         #region Fields
         private static LogLevel logLevel = LogLevel.Info;
         private static bool logExceptionStacktraces = true;
@@ -85,7 +89,7 @@ namespace TorrentSwifter.Logging
             else if (logLevel < LogLevel.Fatal)
                 return;
 
-            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
             LogText(LogLevel.Fatal, exceptionMessage);
         }
 
@@ -100,7 +104,7 @@ namespace TorrentSwifter.Logging
             else if (logLevel < LogLevel.Error)
                 return;
 
-            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
             LogText(LogLevel.Error, exceptionMessage);
         }
 
@@ -115,7 +119,7 @@ namespace TorrentSwifter.Logging
             else if (logLevel < LogLevel.Warning)
                 return;
 
-            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
             LogText(LogLevel.Warning, exceptionMessage);
         }
 
@@ -130,7 +134,7 @@ namespace TorrentSwifter.Logging
             else if (logLevel < LogLevel.Info)
                 return;
 
-            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
             LogText(LogLevel.Info, exceptionMessage);
         }
 
@@ -145,7 +149,7 @@ namespace TorrentSwifter.Logging
             else if (logLevel < LogLevel.Debug)
                 return;
 
-            string exceptionMessage = (logExceptionStacktraces ? exception.ToString() : exception.Message);
+            string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
             LogText(LogLevel.Debug, exceptionMessage);
         }
         #endregion
