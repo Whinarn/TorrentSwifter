@@ -463,7 +463,35 @@ namespace TorrentSwifter.Peers
         {
             switch (socketError)
             {
-                //case SocketError.
+                case SocketError.ConnectionRefused:
+                    return ConnectionFailedReason.Refused;
+                case SocketError.ConnectionAborted:
+                case SocketError.OperationAborted:
+                    return ConnectionFailedReason.Aborted;
+                case SocketError.TimedOut:
+                    return ConnectionFailedReason.TimedOut;
+                case SocketError.HostDown:
+                    return ConnectionFailedReason.HostDown;
+                case SocketError.HostUnreachable:
+                    return ConnectionFailedReason.HostUnreachable;
+                case SocketError.TryAgain:
+                case SocketError.HostNotFound:
+                    return ConnectionFailedReason.NameResolve;
+                case SocketError.NetworkDown:
+                case SocketError.NetworkReset:
+                case SocketError.NetworkUnreachable:
+                    return ConnectionFailedReason.NoInternetConnection;
+                case SocketError.AddressFamilyNotSupported:
+                case SocketError.OperationNotSupported:
+                case SocketError.ProtocolFamilyNotSupported:
+                case SocketError.ProtocolNotSupported:
+                case SocketError.SocketNotSupported:
+                case SocketError.VersionNotSupported:
+                    return ConnectionFailedReason.NotSupported;
+                case SocketError.AccessDenied:
+                    return ConnectionFailedReason.AccessDenied;
+                default:
+                    return ConnectionFailedReason.Unknown;
             }
         }
         #endregion
