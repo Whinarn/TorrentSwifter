@@ -264,12 +264,16 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Data Receiving
-        private void StartDataReceive()
+        private void StartDataReceive(bool firstTime)
         {
             if (socket == null)
                 return;
 
-            if (receiveOffset >= receiveBuffer.Length)
+            if (firstTime)
+            {
+                receiveOffset = 0;
+            }
+            else if (receiveOffset >= receiveBuffer.Length)
             {
                 // There is nothing more to receive in the buffer, and to prevent getting stuck, we simply reset the receive offset
                 // This should never happen though...
@@ -278,14 +282,15 @@ namespace TorrentSwifter.Peers
 
             try
             {
-                socket.BeginReceive(receiveBuffer, receiveOffset, receiveBuffer.Length - receiveOffset, SocketFlags.None, OnDataReceived, socket);
+                socket?.BeginReceive(receiveBuffer, receiveOffset, receiveBuffer.Length - receiveOffset, SocketFlags.None, OnDataReceived, socket);
             }
             catch (ObjectDisposedException)
             {
                 // NOTE: If the socket as been disposed of, then we can safely discard this exception and just stop listen
             }
-            catch
+            catch (Exception ex)
             {
+                Log.LogDebugException(ex);
                 Disconnect();
             }
         }
@@ -316,12 +321,19 @@ namespace TorrentSwifter.Peers
                         // Handle the packet
                         receivedPacket.Offset = 0;
                         receivedPacket.Length = packetLength;
-                        HandlePacket(receivedPacket);
+                        bool handledOK = HandlePacket(receivedPacket);
+                        if (!handledOK)
+                        {
+                            Disconnect();
+                            break;
+                        }
                     }
                     catch (Exception ex)
                     {
+                        Log.LogError("[Peer][{0}] Exception occured when handling a packet: {1}", endPoint, ex.Message);
                         Log.LogErrorException(ex);
                         Disconnect();
+                        break;
                     }
 
                     // Copy remaining bytes in the buffer to the start of the buffer
@@ -332,92 +344,87 @@ namespace TorrentSwifter.Peers
 
                 if (packetLength > ReceiveBufferMaxSize)
                 {
-                    Log.LogError("[Peer] A peer [{0}] sent a packet that is too large to handle ({1} > {2}). Exploiter?", endPoint, packetLength, ReceiveBufferMaxSize);
+                    Log.LogError("[Peer][{0}] A peer sent a packet that is too large to handle ({1} > {2}). Exploiter?", endPoint, packetLength, ReceiveBufferMaxSize);
                     Disconnect();
                 }
             }
+            catch (SocketException ex)
+            {
+                Log.LogDebugException(ex);
+                Disconnect();
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
+                Disconnect();
+            }
             finally
             {
-                StartDataReceive();
+                StartDataReceive(false);
             }
         }
         #endregion
 
         #region Handle Packets
-        private void HandlePacket(Packet packet)
+        private bool HandlePacket(Packet packet)
         {
             var messageType = GetMessageType(packet);
             if (messageType == MessageType.Unknown)
             {
-                Log.LogWarning("[Peer] Received unhandled message of {0} bytes.", packet.Length);
-                return;
+                Log.LogWarning("[Peer][{0}] Received unhandled message of {1} bytes.", endPoint, packet.Length);
+                return true;
             }
 
             switch (messageType)
             {
                 case MessageType.Handshake:
-                    HandleHandshake(packet);
-                    break;
+                    return HandleHandshake(packet);
                 case MessageType.KeepAlive:
-                    HandleKeepAlive(packet);
-                    break;
+                    return HandleKeepAlive(packet);
                 case MessageType.Choke:
-                    HandleChoke(packet);
-                    break;
+                    return HandleChoke(packet);
                 case MessageType.Unchoke:
-                    HandleUnchoke(packet);
-                    break;
+                    return HandleUnchoke(packet);
                 case MessageType.Interested:
-                    HandleInterested(packet);
-                    break;
+                    return HandleInterested(packet);
                 case MessageType.NotInterested:
-                    HandleNotInterested(packet);
-                    break;
+                    return HandleNotInterested(packet);
                 case MessageType.Have:
-                    HandleHave(packet);
-                    break;
+                    return HandleHave(packet);
                 case MessageType.BitField:
-                    HandleBitField(packet);
-                    break;
+                    return HandleBitField(packet);
                 case MessageType.Request:
-                    HandleRequest(packet);
-                    break;
+                    return HandleRequest(packet);
                 case MessageType.Piece:
-                    HandlePiece(packet);
-                    break;
+                    return HandlePiece(packet);
                 case MessageType.Cancel:
-                    HandleCancel(packet);
-                    break;
+                    return HandleCancel(packet);
                 default:
-                    Log.LogError("[Peer] Received unhandled message type: {0}", messageType);
-                    Disconnect();
-                    break;
+                    Log.LogError("[Peer][{0}] Received unhandled message type: {1}", endPoint, messageType);
+                    return false;
             }
         }
 
-        private void HandleHandshake(Packet packet)
+        private bool HandleHandshake(Packet packet)
         {
             if (packet.Length != 68)
             {
-                Log.LogWarning("[Peer] Invalid handshake received with {0} bytes.", packet.Length);
-                Disconnect();
-                return;
+                Log.LogWarning("[Peer][{0}] Invalid handshake received with {1} bytes (should have been 68).", endPoint, packet.Length);
+                return false;
             }
 
             int protocolNameLength = packet.ReadByte();
             if (packet.RemainingBytes < (protocolNameLength + 40))
             {
-                Log.LogWarning("[Peer] Invalid handshake received with {0} bytes (protocol name length: {1}).", packet.Length, protocolNameLength);
-                Disconnect();
-                return;
+                Log.LogWarning("[Peer][{0}] Invalid handshake received with {1} bytes (protocol name length: {2}).", endPoint, packet.Length, protocolNameLength);
+                return false;
             }
 
             string protocolName = packet.ReadString(protocolNameLength);
             if (!string.Equals(protocolName, ProtocolName))
             {
-                Log.LogWarning("[Peer] Handshake protocol is not supported: {0}", protocolName);
-                Disconnect();
-                return;
+                Log.LogWarning("[Peer][{0}] Handshake protocol is not supported: {1}", endPoint, protocolName);
+                return false;
             }
 
             // Skip 8 bytes of flags
@@ -431,76 +438,119 @@ namespace TorrentSwifter.Peers
             isHandshakeReceived = true;
 
             // TODO: Send bit field!
+            return true;
         }
 
-        private void HandleKeepAlive(Packet packet)
+        private bool HandleKeepAlive(Packet packet)
         {
             // TODO: Implement!
+            return true;
         }
 
-        private void HandleChoke(Packet packet)
+        private bool HandleChoke(Packet packet)
         {
-            if (isChoked)
-                return;
+            if (packet.Length != 5)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'choke' received with {1} bytes (should have been 5).", endPoint, packet.Length);
+                return false;
+            }
+            else if (isChoked)
+            {
+                Log.LogDebug("[Peer][{0}] A 'choke' was received while already being choked.", endPoint);
+                return true;
+            }
 
-            Log.LogInfo("[Peer] Choked by {0}", endPoint);
+            Log.LogDebug("[Peer][{0}] Peer choked us.", endPoint);
             isChoked = true;
             OnStateChanged();
+            return true;
         }
 
-        private void HandleUnchoke(Packet packet)
+        private bool HandleUnchoke(Packet packet)
         {
-            if (!isChoked)
-                return;
+            if (packet.Length != 5)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'unchoke' received with {1} bytes (should have been 5).", endPoint, packet.Length);
+                return false;
+            }
+            else if (!isChoked)
+            {
+                Log.LogDebug("[Peer][{0}] A 'unchoke' was received while already not being choked.", endPoint);
+                return true;
+            }
 
-            Log.LogInfo("[Peer] Unchoked by {0}", endPoint);
+            Log.LogDebug("[Peer][{0}] Peer unchoked us.", endPoint);
             isChoked = false;
             OnStateChanged();
+            return true;
         }
 
-        private void HandleInterested(Packet packet)
+        private bool HandleInterested(Packet packet)
         {
-            if (isInterested)
-                return;
+            if (packet.Length != 5)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'interested' received with {1} bytes (should have been 5).", endPoint, packet.Length);
+                return false;
+            }
+            else if (isInterested)
+            {
+                Log.LogDebug("[Peer][{0}] An 'interested' was received while already being interested.", endPoint);
+                return true;
+            }
 
-            Log.LogInfo("[Peer] {0} is interested.", endPoint);
+            Log.LogDebug("[Peer][{0}] Peer is interested.", endPoint);
             isInterested = true;
             OnStateChanged();
+            return true;
         }
 
-        private void HandleNotInterested(Packet packet)
+        private bool HandleNotInterested(Packet packet)
         {
-            if (!isInterested)
-                return;
+            if (packet.Length != 5)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'not interested' received with {1} bytes (should have been 5).", endPoint, packet.Length);
+                return false;
+            }
+            else if (!isInterested)
+            {
+                Log.LogDebug("[Peer][{0}] A 'not interested' was received while already not being interested.", endPoint);
+                return true;
+            }
 
-            Log.LogInfo("[Peer] {0} is no longer interested.", endPoint);
+            Log.LogDebug("[Peer][{0}] Peer is no longer interested.", endPoint);
             isInterested = false;
             OnStateChanged();
+            return true;
         }
 
-        private void HandleHave(Packet packet)
+        private bool HandleHave(Packet packet)
         {
             // TODO: Implement!
+            return true;
         }
 
-        private void HandleBitField(Packet packet)
+        private bool HandleBitField(Packet packet)
         {
             // TODO: Implement!
+            return true;
         }
 
-        private void HandleRequest(Packet packet)
+        private bool HandleRequest(Packet packet)
         {
             // TODO: Implement!
+            return true;
         }
 
-        private void HandlePiece(Packet packet)
+        private bool HandlePiece(Packet packet)
         {
             // TODO: Implement!
+            return true;
         }
 
-        private void HandleCancel(Packet packet)
+        private bool HandleCancel(Packet packet)
         {
             // TODO: Implement!
+            return true;
         }
         #endregion
 
