@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using TorrentSwifter.Logging;
 
 namespace TorrentSwifter.Peers
 {
@@ -47,6 +48,10 @@ namespace TorrentSwifter.Peers
         /// Occurs when a connection has been established with this peer.
         /// </summary>
         public event EventHandler Connected;
+        /// <summary>
+        /// Occurs when a connection attempt has failed with this peer.
+        /// </summary>
+        public event EventHandler<ConnectionFailedEventArgs> ConnectionFailed;
         /// <summary>
         /// Occurs when our connection with this peer has been disconnected.
         /// </summary>
@@ -109,27 +114,29 @@ namespace TorrentSwifter.Peers
         protected abstract void Dispose(bool disposing);
 
         /// <summary>
-        /// Invoke this method when the peer connection has been successfully established.
+        /// The peer connection has been successfully established.
         /// </summary>
-        protected void OnConnected()
+        protected virtual void OnConnected()
         {
-            var eventHandler = this.Connected;
-            if (eventHandler != null)
-            {
-                eventHandler.Invoke(this, EventArgs.Empty);
-            }
+            Connected.SafeInvoke(this, EventArgs.Empty);
         }
 
         /// <summary>
-        /// Invoke this method when the peer connection has been disconnected.
+        /// The connection attempt to this peer has failed.
         /// </summary>
-        protected void OnDisconnected()
+        /// <param name="failedReason">The reason of failure.</param>
+        protected virtual void OnConnectionFailed(ConnectionFailedReason failedReason)
         {
-            var eventHandler = this.Disconnected;
-            if (eventHandler != null)
-            {
-                eventHandler.Invoke(this, EventArgs.Empty);
-            }
+            var eventArgs = new ConnectionFailedEventArgs(failedReason);
+            ConnectionFailed.SafeInvoke(this, eventArgs);
+        }
+
+        /// <summary>
+        /// The peer connection has been disconnected.
+        /// </summary>
+        protected virtual void OnDisconnected()
+        {
+            Disconnected.SafeInvoke(this, EventArgs.Empty);
         }
         #endregion
     }

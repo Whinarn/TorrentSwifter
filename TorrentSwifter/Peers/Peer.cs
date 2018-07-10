@@ -57,6 +57,7 @@ namespace TorrentSwifter.Peers
 
             tcpConnection = new PeerConnectionTCP(endPoint);
             tcpConnection.Connected += OnTCPConnectionConnected;
+            tcpConnection.ConnectionFailed += OnTCPConnectionAttemptFailed;
             tcpConnection.Disconnected += OnTCPConnectionDisconnected;
         }
         #endregion
@@ -89,6 +90,9 @@ namespace TorrentSwifter.Peers
         {
             if (tcpConnection != null)
             {
+                tcpConnection.Connected -= OnTCPConnectionConnected;
+                tcpConnection.ConnectionFailed -= OnTCPConnectionAttemptFailed;
+                tcpConnection.Disconnected -= OnTCPConnectionDisconnected;
                 tcpConnection.Dispose();
                 tcpConnection = null;
             }
@@ -166,8 +170,11 @@ namespace TorrentSwifter.Peers
         private void OnTCPConnectionConnected(object sender, EventArgs e)
         {
             Logger.LogInfo("[Peer] Connected to {0}", endPoint);
+        }
 
-            // TODO: Send handshake!
+        private void OnTCPConnectionAttemptFailed(object sender, ConnectionFailedEventArgs e)
+        {
+            Logger.LogInfo("[Peer] Connection attempt failed to {0} with reason: {1}", endPoint, e.FailedReason);
         }
 
         private void OnTCPConnectionDisconnected(object sender, EventArgs e)

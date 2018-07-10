@@ -96,6 +96,17 @@ namespace TorrentSwifter.Peers
                 socket.Connect(endPoint);
                 isConnected = true;
                 StartDataReceive();
+                OnConnected();
+            }
+            catch (SocketException ex)
+            {
+                var failedReason = GetConnectionFailedReason(ex.SocketErrorCode);
+                OnConnectionFailed(failedReason);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogErrorException(ex);
+                OnConnectionFailed(ConnectionFailedReason.Unknown);
             }
             finally
             {
@@ -119,6 +130,17 @@ namespace TorrentSwifter.Peers
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, endPoint, socket);
                 isConnected = true;
                 StartDataReceive();
+                OnConnected();
+            }
+            catch (SocketException ex)
+            {
+                var failedReason = GetConnectionFailedReason(ex.SocketErrorCode);
+                OnConnectionFailed(failedReason);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogErrorException(ex);
+                OnConnectionFailed(ConnectionFailedReason.Unknown);
             }
             finally
             {
@@ -156,6 +178,26 @@ namespace TorrentSwifter.Peers
         protected override void Dispose(bool disposing)
         {
             Disconnect();
+        }
+
+        /// <summary>
+        /// The peer connection has been successfully established.
+        /// </summary>
+        protected override void OnConnected()
+        {
+            isHandshakeReceived = false;
+
+            base.OnConnected();
+        }
+
+        /// <summary>
+        /// The peer connection has been disconnected.
+        /// </summary>
+        protected override void OnDisconnected()
+        {
+            base.OnDisconnected();
+
+            isHandshakeReceived = false;
         }
         #endregion
 
@@ -412,6 +454,16 @@ namespace TorrentSwifter.Peers
             else
             {
                 return MessageType.Unknown;
+            }
+        }
+        #endregion
+
+        #region Helper Methods
+        private static ConnectionFailedReason GetConnectionFailedReason(SocketError socketError)
+        {
+            switch (socketError)
+            {
+                //case SocketError.
             }
         }
         #endregion
