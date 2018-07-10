@@ -525,13 +525,41 @@ namespace TorrentSwifter.Peers
 
         private bool HandleHave(Packet packet)
         {
-            // TODO: Implement!
+            if (packet.Length != 9)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'have' received with {1} bytes (should have been 9).", endPoint, packet.Length);
+                return false;
+            }
+
+            int pieceIndex = packet.ReadInt32();
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceSize)
+            {
+                Log.LogWarning("[Peer][{0}] A peer sent 'have' with invalid arguments. Index: {1}", endPoint, pieceIndex);
+                return false;
+            }
+
+            Log.LogDebug("[Peer][{0}] Peer is reporting that it has piece {1}", endPoint, pieceIndex);
+
+            OnHavePiece(pieceIndex);
             return true;
         }
 
         private bool HandleBitField(Packet packet)
         {
-            // TODO: Implement!
+            int pieceCount = torrent.PieceCount;
+            int bitFieldByteCount = ((pieceCount + 7) >> 3);
+            int expectedLength = (1 + bitFieldByteCount);
+            if (packet.Length != expectedLength)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'bit field' received with {1} bytes (should have been {2}).", endPoint, packet.Length, expectedLength);
+                return false;
+            }
+
+            Log.LogDebug("[Peer][{0}] The peer sent their bit field of {1} bytes.", endPoint, bitFieldByteCount);
+
+            byte[] bitFieldBytes = packet.ReadBytes(bitFieldByteCount);
+            var bitField = new BitField(bitFieldBytes, pieceCount);
+            OnBitFieldReceived(bitField);
             return true;
         }
 
