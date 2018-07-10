@@ -547,11 +547,34 @@ namespace TorrentSwifter.Peers
             byte[] hashBytes = packet.ReadBytes(20);
             byte[] idBytes = packet.ReadBytes(20);
 
-            infoHash = new InfoHash(hashBytes);
-            peerID = new PeerID(idBytes);
+            var infoHash = new InfoHash(hashBytes);
+            var peerID = new PeerID(idBytes);
+
+            if (torrent != null && !torrent.InfoHash.Equals(infoHash))
+            {
+                Log.LogWarning("[Peer][{0}] Handshake with invalid info hash: {1}", endPoint, infoHash);
+                return false;
+            }
+            else if (torrent == null)
+            {
+                var foundTorrent = TorrentRegistry.FindTorrentByInfoHash(infoHash);
+                if (foundTorrent == null)
+                {
+                    Log.LogWarning("[Peer][{0}] Handshake with unknown info hash: {1}", endPoint, infoHash);
+                    return false;
+                }
+
+                torrent = foundTorrent;
+            }
+
+            this.infoHash = infoHash;
+            this.peerID = peerID;
             isHandshakeReceived = true;
 
-            // TODO: Send bit field!
+            Log.LogDebug("[Peer][{0}] A peer handshaked with us with info hash [{1}] and peer ID [{2}].", endPoint, infoHash, peerID);
+
+            SendHandshake();
+            SendBitField();
             return true;
         }
 
