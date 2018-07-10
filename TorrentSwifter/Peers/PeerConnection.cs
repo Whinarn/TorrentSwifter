@@ -12,16 +12,16 @@ namespace TorrentSwifter.Peers
     {
         #region Fields
         /// <summary>
-        /// The peer IP end-point.
+        /// The peer end-point.
         /// </summary>
-        protected readonly IPEndPoint endPoint;
+        protected readonly EndPoint endPoint;
         #endregion
 
         #region Properties
         /// <summary>
-        /// Gets the peer IP end-point.
+        /// Gets the peer end-point.
         /// </summary>
-        public IPEndPoint EndPoint
+        public EndPoint EndPoint
         {
             get { return endPoint; }
         }
@@ -66,9 +66,12 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Creates a new torrent peer connection.
         /// </summary>
-        /// <param name="endPoint">The peer IP end-point.</param>
-        public PeerConnection(IPEndPoint endPoint)
+        /// <param name="endPoint">The peer end-point.</param>
+        public PeerConnection(EndPoint endPoint)
         {
+            if (endPoint == null)
+                throw new ArgumentNullException("endPoint");
+
             this.endPoint = endPoint;
         }
         #endregion
