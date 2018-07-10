@@ -89,9 +89,10 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Creates a new TCP peer connection.
         /// </summary>
-        /// <param name="endPoint">The peer IP end-point.</param>
-        public PeerConnectionTCP(IPEndPoint endPoint)
-            : base(endPoint)
+        /// <param name="torrent">The parent torrent.</param>
+        /// <param name="endPoint">The peer end-point.</param>
+        public PeerConnectionTCP(Torrent torrent, EndPoint endPoint)
+            : base(torrent, endPoint)
         {
             socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
             receivedPacket = new Packet(receiveBuffer, 0);

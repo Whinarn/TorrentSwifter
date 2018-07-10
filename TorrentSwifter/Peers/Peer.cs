@@ -49,13 +49,13 @@ namespace TorrentSwifter.Peers
         /// Creates a new torrent peer.
         /// </summary>
         /// <param name="torrent">The owner torrent.</param>
-        /// <param name="endPoint">The peer IP end-point.</param>
-        internal Peer(Torrent torrent, IPEndPoint endPoint)
+        /// <param name="endPoint">The peer end-point.</param>
+        internal Peer(Torrent torrent, EndPoint endPoint)
         {
             this.torrent = torrent;
             this.endPoint = endPoint;
 
-            tcpConnection = new PeerConnectionTCP(endPoint);
+            tcpConnection = new PeerConnectionTCP(torrent, endPoint);
             tcpConnection.Connected += OnTCPConnectionConnected;
             tcpConnection.ConnectionFailed += OnTCPConnectionAttemptFailed;
             tcpConnection.Disconnected += OnTCPConnectionDisconnected;

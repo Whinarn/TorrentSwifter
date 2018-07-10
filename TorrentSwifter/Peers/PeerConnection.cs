@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
-using TorrentSwifter.Logging;
+using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers
 {
@@ -12,12 +12,24 @@ namespace TorrentSwifter.Peers
     {
         #region Fields
         /// <summary>
+        /// The parent torrent.
+        /// </summary>
+        protected Torrent torrent = null;
+        /// <summary>
         /// The peer end-point.
         /// </summary>
         protected readonly EndPoint endPoint;
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the parent torrent for this peer connection.
+        /// </summary>
+        public Torrent Torrent
+        {
+            get { return torrent; }
+        }
+
         /// <summary>
         /// Gets the peer end-point.
         /// </summary>
@@ -72,6 +84,23 @@ namespace TorrentSwifter.Peers
             if (endPoint == null)
                 throw new ArgumentNullException("endPoint");
 
+            this.torrent = null;
+            this.endPoint = endPoint;
+        }
+
+        /// <summary>
+        /// Creates a new torrent peer connection.
+        /// </summary>
+        /// <param name="torrent">The parent torrent.</param>
+        /// <param name="endPoint">The peer end-point.</param>
+        public PeerConnection(Torrent torrent, EndPoint endPoint)
+        {
+            if (torrent == null)
+                throw new ArgumentNullException("torrent");
+            else if (endPoint == null)
+                throw new ArgumentNullException("endPoint");
+
+            this.torrent = torrent;
             this.endPoint = endPoint;
         }
         #endregion
