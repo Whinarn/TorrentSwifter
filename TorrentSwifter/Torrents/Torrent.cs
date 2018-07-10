@@ -128,8 +128,13 @@ namespace TorrentSwifter.Torrents
         private readonly int blockSize;
         private readonly long totalSize;
 
+        private bool hasVerifiedIntegrity = false;
         private bool isStarted = false;
         private bool isStopped = true;
+        private bool isVerifyingIntegrity = false;
+        private bool isSeeding = false;
+
+        private BitField bitField = null;
         private Piece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
@@ -140,6 +145,10 @@ namespace TorrentSwifter.Torrents
         /// An event that occurs once a piece has been downloaded and verified.
         /// </summary>
         public event EventHandler<PieceEventArgs> PieceVerified;
+        /// <summary>
+        /// An event that occurs once an integrity check has completed.
+        /// </summary>
+        public event EventHandler IntegrityCheckCompleted;
         #endregion
 
         #region Properties
@@ -176,6 +185,14 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets the count of pieces in this torrent.
+        /// </summary>
+        public int PieceCount
+        {
+            get { return metaData.PieceCount; }
+        }
+
+        /// <summary>
         /// Gets the size of each piece.
         /// </summary>
         public int PieceSize
@@ -208,6 +225,22 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets if this torrent is being seeded (only uploaded).
+        /// </summary>
+        public bool IsSeeding
+        {
+            get { return isSeeding; }
+        }
+
+        /// <summary>
+        /// Gets the bit-field for this torrent.
+        /// </summary>
+        public BitField BitField
+        {
+            get { return bitField; }
+        }
+
+        /// <summary>
         /// Gets the state of this torrent.
         /// </summary>
         public TorrentState State
@@ -216,6 +249,10 @@ namespace TorrentSwifter.Torrents
             {
                 if (!isStarted)
                     return TorrentState.Inactive;
+                else if (isVerifyingIntegrity)
+                    return TorrentState.IntegrityChecking;
+                else if (isSeeding)
+                    return TorrentState.Seeding;
                 else
                     return TorrentState.Downloading;
             }
@@ -269,6 +306,8 @@ namespace TorrentSwifter.Torrents
 
             // TODO: Perform any initialization here
 
+            VerifyIntegrity();
+
             var thread = new Thread(UpdateLoop);
             thread.Priority = ThreadPriority.BelowNormal;
             thread.Name = "TorrentUpdateLoop";
@@ -289,7 +328,22 @@ namespace TorrentSwifter.Torrents
             // TODO: Perform any unitialization here
         }
 
+        /// <summary>
+        /// Rechecks the integrity of this torrent.
+        /// Note that this only works when the torrent is stopped.
+        /// </summary>
+        public void RecheckIntegrity()
+        {
+            if (isStarted)
+                return;
+
+            hasVerifiedIntegrity = false;
+            VerifyIntegrity();
+        }
+        #endregion
+
         #region Private Methods
+        #region Initialization
         private void InitializePieces()
         {
             long totalSize = metaData.TotalSize;
@@ -308,6 +362,8 @@ namespace TorrentSwifter.Torrents
                 int blockCount = (((currentPieceSize - 1) / blockSize) + 1);
                 pieces[i] = new Piece(i, currentPieceSize, blockCount);
             }
+
+            bitField = new BitField(pieceCount);
         }
 
         private void InitializeFiles()
@@ -357,8 +413,24 @@ namespace TorrentSwifter.Torrents
                 }
             }
         }
+        #endregion
 
-        private void VerifyPiece(int pieceIndex)
+        #region Pieces
+        private bool HasDownloadedAllPieces()
+        {
+            bool result = true;
+            for (int i = 0; i < pieces.Length; i++)
+            {
+                if (!pieces[i].IsVerified)
+                {
+                    result = false;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private bool VerifyPiece(int pieceIndex)
         {
             var piece = pieces[pieceIndex];
             var pieceHash = metaData.PieceHashes[pieceIndex];
@@ -368,6 +440,7 @@ namespace TorrentSwifter.Torrents
             if (piece.IsVerified != isVerified)
             {
                 piece.IsVerified = isVerified;
+                bitField.Set(pieceIndex, isVerified);
 
                 if (isVerified)
                 {
@@ -375,6 +448,7 @@ namespace TorrentSwifter.Torrents
                     PieceVerified.SafeInvoke(this, eventArgs);
                 }
             }
+            return isVerified;
         }
 
         private byte[] ReadPiece(int pieceIndex)
@@ -396,6 +470,44 @@ namespace TorrentSwifter.Torrents
         }
         #endregion
 
+        #region Integrity
+        private void VerifyIntegrity()
+        {
+            if (isVerifyingIntegrity || hasVerifiedIntegrity)
+                return;
+
+            isVerifyingIntegrity = true;
+            var verificationThread = new Thread(() =>
+            {
+                try
+                {
+                    for (int i = 0; i < pieces.Length; i++)
+                    {
+                        VerifyPiece(i);
+                    }
+
+                    isSeeding = HasDownloadedAllPieces();
+                    hasVerifiedIntegrity = true;
+
+                    IntegrityCheckCompleted.SafeInvoke(this, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    Log.LogErrorException(ex);
+
+                    // Stop the torrent if it's active, because of the failure
+                    Stop();
+                }
+                finally
+                {
+                    isVerifyingIntegrity = false;
+                }
+            });
+            verificationThread.Priority = ThreadPriority.BelowNormal;
+            verificationThread.Name = "TorrentIntegrityCheckThread";
+            verificationThread.Start();
+        }
+        #endregion
 
         #region Update Loop
         private void UpdateLoop()
@@ -406,6 +518,20 @@ namespace TorrentSwifter.Torrents
                 {
                     try
                     {
+                        if (!isVerifyingIntegrity)
+                        {
+                            if (hasVerifiedIntegrity)
+                            {
+                                // TODO: Update trackers
+                                // TODO: Update peers
+                                // TODO: Update queued requests
+                            }
+                            else
+                            {
+                                VerifyIntegrity();
+                            }
+                        }
+
                         Thread.Sleep(100);
                     }
                     catch (ThreadAbortException)
@@ -423,6 +549,7 @@ namespace TorrentSwifter.Torrents
                 isStopped = true;
             }
         }
+        #endregion
         #endregion
 
         #region Internal Methods
