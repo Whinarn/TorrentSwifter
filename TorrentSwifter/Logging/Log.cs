@@ -3,9 +3,9 @@
 namespace TorrentSwifter.Logging
 {
     /// <summary>
-    /// The logger to use for writing log messages that can be read by the end-user or a developer.
+    /// The log to use for writing messages that can be read by the end-user or a developer.
     /// </summary>
-    public static class Logger
+    public static class Log
     {
         #region Fields
         private static LogLevel logLevel = LogLevel.Info;

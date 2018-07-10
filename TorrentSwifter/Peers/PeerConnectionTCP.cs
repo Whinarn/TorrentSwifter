@@ -123,7 +123,7 @@ namespace TorrentSwifter.Peers
             }
             catch (Exception ex)
             {
-                Logger.LogErrorException(ex);
+                Log.LogErrorException(ex);
                 OnConnectionFailed(ConnectionFailedReason.Unknown);
             }
             finally
@@ -157,7 +157,7 @@ namespace TorrentSwifter.Peers
             }
             catch (Exception ex)
             {
-                Logger.LogErrorException(ex);
+                Log.LogErrorException(ex);
                 OnConnectionFailed(ConnectionFailedReason.Unknown);
             }
             finally
@@ -279,7 +279,7 @@ namespace TorrentSwifter.Peers
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogErrorException(ex);
+                        Log.LogErrorException(ex);
                         Disconnect();
                     }
 
@@ -291,7 +291,7 @@ namespace TorrentSwifter.Peers
 
                 if (packetLength > ReceiveBufferMaxSize)
                 {
-                    Logger.LogError("[Peer] A peer [{0}] sent a packet that is too large to handle ({1} > {2}). Exploiter?", endPoint, packetLength, ReceiveBufferMaxSize);
+                    Log.LogError("[Peer] A peer [{0}] sent a packet that is too large to handle ({1} > {2}). Exploiter?", endPoint, packetLength, ReceiveBufferMaxSize);
                     Disconnect();
                 }
             }
@@ -308,7 +308,7 @@ namespace TorrentSwifter.Peers
             var messageType = GetMessageType(packet);
             if (messageType == MessageType.Unknown)
             {
-                Logger.LogWarning("[Peer] Received unhandled message of {0} bytes.", packet.Length);
+                Log.LogWarning("[Peer] Received unhandled message of {0} bytes.", packet.Length);
                 return;
             }
 
@@ -348,7 +348,7 @@ namespace TorrentSwifter.Peers
                     HandleCancel(packet);
                     break;
                 default:
-                    Logger.LogError("[Peer] Received unhandled message type: {0}", messageType);
+                    Log.LogError("[Peer] Received unhandled message type: {0}", messageType);
                     Disconnect();
                     break;
             }
@@ -358,7 +358,7 @@ namespace TorrentSwifter.Peers
         {
             if (packet.Length != 68)
             {
-                Logger.LogWarning("[Peer] Invalid handshake received with {0} bytes.", packet.Length);
+                Log.LogWarning("[Peer] Invalid handshake received with {0} bytes.", packet.Length);
                 Disconnect();
                 return;
             }
@@ -366,7 +366,7 @@ namespace TorrentSwifter.Peers
             int protocolNameLength = packet.ReadByte();
             if (packet.RemainingBytes < (protocolNameLength + 40))
             {
-                Logger.LogWarning("[Peer] Invalid handshake received with {0} bytes (protocol name length: {1}).", packet.Length, protocolNameLength);
+                Log.LogWarning("[Peer] Invalid handshake received with {0} bytes (protocol name length: {1}).", packet.Length, protocolNameLength);
                 Disconnect();
                 return;
             }
@@ -374,7 +374,7 @@ namespace TorrentSwifter.Peers
             string protocolName = packet.ReadString(protocolNameLength);
             if (!string.Equals(protocolName, "BitTorrent protocol"))
             {
-                Logger.LogWarning("[Peer] Handshake protocol is not supported: {0}", protocolName);
+                Log.LogWarning("[Peer] Handshake protocol is not supported: {0}", protocolName);
                 Disconnect();
                 return;
             }
@@ -402,7 +402,7 @@ namespace TorrentSwifter.Peers
             if (isChoked)
                 return;
 
-            Logger.LogInfo("[Peer] Choked by {0}", endPoint);
+            Log.LogInfo("[Peer] Choked by {0}", endPoint);
             isChoked = true;
             OnStateChanged();
         }
@@ -412,7 +412,7 @@ namespace TorrentSwifter.Peers
             if (!isChoked)
                 return;
 
-            Logger.LogInfo("[Peer] Unchoked by {0}", endPoint);
+            Log.LogInfo("[Peer] Unchoked by {0}", endPoint);
             isChoked = false;
             OnStateChanged();
         }
@@ -422,7 +422,7 @@ namespace TorrentSwifter.Peers
             if (isInterested)
                 return;
 
-            Logger.LogInfo("[Peer] {0} is interested.", endPoint);
+            Log.LogInfo("[Peer] {0} is interested.", endPoint);
             isInterested = true;
             OnStateChanged();
         }
@@ -432,7 +432,7 @@ namespace TorrentSwifter.Peers
             if (!isInterested)
                 return;
 
-            Logger.LogInfo("[Peer] {0} is no longer interested.", endPoint);
+            Log.LogInfo("[Peer] {0} is no longer interested.", endPoint);
             isInterested = false;
             OnStateChanged();
         }

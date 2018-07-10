@@ -724,7 +724,7 @@ namespace TorrentSwifter.Trackers
                             else
                             {
                                 trackerRequest = null;
-                                Logger.LogWarning("[UDP Tracker] Received a response to transaction [{0}] from invalid endpoint: {1} != {2}",
+                                Log.LogWarning("[UDP Tracker] Received a response to transaction [{0}] from invalid endpoint: {1} != {2}",
                                     transactionID, endpoint, trackerRequest.ExpectedResponseEndPoint);
                             }
                         }
@@ -740,13 +740,13 @@ namespace TorrentSwifter.Trackers
                     }
                     else
                     {
-                        Logger.LogWarning("[UDP Tracker] Received a response with missing transaction: {0}", transactionID);
+                        Log.LogWarning("[UDP Tracker] Received a response with missing transaction: {0}", transactionID);
                     }
                 }
             }
             catch (Exception ex)
             {
-                Logger.LogErrorException(ex);
+                Log.LogErrorException(ex);
             }
             finally
             {
@@ -762,7 +762,7 @@ namespace TorrentSwifter.Trackers
                     }
                     catch (Exception ex)
                     {
-                        Logger.LogErrorException(ex);
+                        Log.LogErrorException(ex);
                     }
                 }
             }

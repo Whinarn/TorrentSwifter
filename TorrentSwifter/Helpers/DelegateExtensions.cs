@@ -17,7 +17,7 @@ namespace TorrentSwifter
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogErrorException(ex);
+                    Log.LogErrorException(ex);
                 }
             }
         }
@@ -33,7 +33,7 @@ namespace TorrentSwifter
                 }
                 catch (Exception ex)
                 {
-                    Logger.LogErrorException(ex);
+                    Log.LogErrorException(ex);
                 }
             }
         }

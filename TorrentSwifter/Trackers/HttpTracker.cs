@@ -359,7 +359,7 @@ namespace TorrentSwifter.Trackers
                         }
                         else
                         {
-                            Logger.LogError("[HTTP Tracker] Unable to parse peer IP: {0}", peerIP);
+                            Log.LogError("[HTTP Tracker] Unable to parse peer IP: {0}", peerIP);
                         }
                     }
                 }
@@ -373,12 +373,12 @@ namespace TorrentSwifter.Trackers
                     }
                     else
                     {
-                        Logger.LogError("[HTTP Tracker] Unable to decode peer information from {0} bytes of compact data.", peerBytes.Length);
+                        Log.LogError("[HTTP Tracker] Unable to decode peer information from {0} bytes of compact data.", peerBytes.Length);
                     }
                 }
                 else
                 {
-                    Logger.LogError("[HTTP Tracker] Unable decode get peer information with invalid BEncode type: {0}", (peer != null ? peer.GetType().Name : "<null>"));
+                    Log.LogError("[HTTP Tracker] Unable decode get peer information with invalid BEncode type: {0}", (peer != null ? peer.GetType().Name : "<null>"));
                 }
             }
 
