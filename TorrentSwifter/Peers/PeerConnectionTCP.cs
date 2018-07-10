@@ -187,6 +187,14 @@ namespace TorrentSwifter.Peers
 
             OnDisconnected();
         }
+
+        /// <summary>
+        /// Updates this peer connection.
+        /// </summary>
+        public override void Update()
+        {
+            // TODO: Disconnect automatically after 1 minute (or something?) of not receiving handshake from the remote
+        }
         #endregion
 
         #region Protected Methods

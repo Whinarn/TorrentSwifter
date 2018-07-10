@@ -159,6 +159,11 @@ namespace TorrentSwifter.Peers
         /// Disconnects from this peer.
         /// </summary>
         public abstract void Disconnect();
+
+        /// <summary>
+        /// Updates this peer connection.
+        /// </summary>
+        public abstract void Update();
         #endregion
 
         #region Protected Methods
