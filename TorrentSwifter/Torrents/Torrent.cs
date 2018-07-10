@@ -129,6 +129,7 @@ namespace TorrentSwifter.Torrents
         #region Fields
         private readonly TorrentMetaData metaData;
         private readonly InfoHash infoHash;
+        private readonly PeerID peerID;
         private readonly string downloadPath;
         private readonly int blockSize;
         private readonly long totalSize;
@@ -160,6 +161,14 @@ namespace TorrentSwifter.Torrents
         public InfoHash InfoHash
         {
             get { return infoHash; }
+        }
+
+        /// <summary>
+        /// Gets the peer ID for us with this torrent.
+        /// </summary>
+        public PeerID PeerID
+        {
+            get { return peerID; }
         }
 
         /// <summary>
@@ -215,6 +224,7 @@ namespace TorrentSwifter.Torrents
 
             this.metaData = metaData;
             this.infoHash = metaData.InfoHash;
+            this.peerID = PeerManager.GetPeerID();
             this.downloadPath = Path.GetFullPath(downloadPath);
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
