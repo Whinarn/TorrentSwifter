@@ -13,7 +13,7 @@ namespace TorrentSwifter.Peers
     {
         #region Fields
         private readonly Torrent torrent;
-        private readonly IPEndPoint endPoint;
+        private readonly EndPoint endPoint;
 
         private PeerConnectionTCP tcpConnection = null;
         #endregion
@@ -28,9 +28,9 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets the IP end-point of the peer.
+        /// Gets the end-point of the peer.
         /// </summary>
-        public IPEndPoint EndPoint
+        public EndPoint EndPoint
         {
             get { return endPoint; }
         }
