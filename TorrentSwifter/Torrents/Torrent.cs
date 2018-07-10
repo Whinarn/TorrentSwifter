@@ -128,6 +128,7 @@ namespace TorrentSwifter.Torrents
 
         #region Fields
         private readonly TorrentMetaData metaData;
+        private readonly InfoHash infoHash;
         private readonly string downloadPath;
         private readonly int blockSize;
         private readonly long totalSize;
@@ -151,6 +152,14 @@ namespace TorrentSwifter.Torrents
         public TorrentMetaData MetaData
         {
             get { return metaData; }
+        }
+
+        /// <summary>
+        /// Gets the info hash of this torrent.
+        /// </summary>
+        public InfoHash InfoHash
+        {
+            get { return infoHash; }
         }
 
         /// <summary>
@@ -205,6 +214,7 @@ namespace TorrentSwifter.Torrents
                 throw new ArgumentException("The block size must be a power of two.", "blockSize");
 
             this.metaData = metaData;
+            this.infoHash = metaData.InfoHash;
             this.downloadPath = Path.GetFullPath(downloadPath);
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
