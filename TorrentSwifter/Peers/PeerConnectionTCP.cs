@@ -41,6 +41,8 @@ namespace TorrentSwifter.Peers
         private Socket socket = null;
         private bool isConnecting = false;
         private bool isConnected = false;
+        private bool isHandshakeSent = false;
+        private bool isBitFieldSent = false;
         private bool isHandshakeReceived = false;
         private bool isChoked = true;
         private bool isInterested = false;
@@ -70,6 +72,14 @@ namespace TorrentSwifter.Peers
         public override bool IsConnected
         {
             get { return isConnected; }
+        }
+
+        /// <summary>
+        /// Gets if the handshake has been received from the remote.
+        /// </summary>
+        public bool IsHandshakeReceived
+        {
+            get { return isHandshakeReceived; }
         }
 
         /// <summary>
@@ -239,8 +249,13 @@ namespace TorrentSwifter.Peers
             isHandshakeReceived = false;
             isChoked = true;
             isInterested = false;
+            isHandshakeSent = false;
+            isBitFieldSent = false;
 
             base.OnConnected();
+
+            SendHandshake();
+            SendBitField();
         }
 
         /// <summary>
@@ -251,6 +266,8 @@ namespace TorrentSwifter.Peers
             base.OnDisconnected();
 
             isHandshakeReceived = false;
+            isHandshakeSent = false;
+            isBitFieldSent = false;
         }
         #endregion
 
@@ -412,6 +429,42 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Sending Packets
+        private void SendHandshake()
+        {
+            // Ignore if we have already sent the handshake or if we don't have torrent information yet
+            if (isHandshakeSent || torrent == null)
+                return;
+
+            var infoHash = torrent.InfoHash;
+            var peerID = torrent.PeerID;
+
+            var packet = new Packet(68);
+            packet.WriteByte((byte)ProtocolName.Length);
+            packet.WriteString(ProtocolName);
+            packet.WriteInt64(0); // flags
+            packet.Write(infoHash.Hash, 0, 20);
+            packet.Write(peerID.ID, 0, 20);
+            SendPacket(packet);
+
+            isHandshakeSent = true;
+        }
+
+        private void SendBitField()
+        {
+            // Ignore if we have already sent the bit field or if we haven't sent the handshake yet
+            if (isBitFieldSent || !isHandshakeSent)
+                return;
+
+            var bitField = torrent.BitField;
+            var bitFieldBytes = bitField.Buffer;
+            int length = bitField.ByteLength + 1;
+            var packet = CreatePacket(MessageType.BitField, length);
+            packet.Write(bitFieldBytes, 0, bitField.ByteLength);
+            SendPacket(packet);
+
+            isBitFieldSent = true;
+        }
+
         private Packet CreatePacket(MessageType messageType, int length)
         {
             if (messageType < 0)
