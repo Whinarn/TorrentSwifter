@@ -52,7 +52,13 @@ namespace TorrentSwifter.Peers
         /// <returns>If equals.</returns>
         public bool Equals(PeerID other)
         {
-            if (id.Length != other.id.Length)
+            if (id == null && other.id == null)
+                return true;
+            else if (id == null || other.id == null)
+                return false;
+            else if (id == other.id)
+                return true;
+            else if (id.Length != other.id.Length)
                 return false;
 
             bool result = true;
@@ -74,7 +80,13 @@ namespace TorrentSwifter.Peers
         /// <returns>If equals.</returns>
         public bool Equals(byte[] other)
         {
-            if (id.Length != other.Length)
+            if (id == null && other == null)
+                return true;
+            else if (id == null || other == null)
+                return false;
+            else if (id == other)
+                return true;
+            else if (id.Length != other.Length)
                 return false;
 
             bool result = true;
@@ -96,29 +108,38 @@ namespace TorrentSwifter.Peers
         public override int GetHashCode()
         {
             int hashCode = 17;
-            for (int i = 0; i < id.Length; i++)
+            if (id != null)
             {
-                hashCode = ((hashCode * 31) ^ id[i]);
+                for (int i = 0; i < id.Length; i++)
+                {
+                    hashCode = ((hashCode * 31) ^ id[i]);
+                }
             }
             return hashCode;
         }
 
         /// <summary>
-        /// Returns the url-encoded string for this info hash.
+        /// Returns the url-encoded string for this peer ID.
         /// </summary>
         /// <returns>The url-encoded string.</returns>
         public string ToUrlEncodedString()
         {
-            return UriHelper.UrlEncodeText(id);
+            if (id != null)
+                return UriHelper.UrlEncodeText(id);
+            else
+                return string.Empty;
         }
 
         /// <summary>
-        /// Returns the hexadecimal string for this info hash.
+        /// Returns the hexadecimal string for this peer ID.
         /// </summary>
         /// <returns>The hexadecimal string.</returns>
         public string ToHexString()
         {
-            return HexHelper.BytesToHex(id);
+            if (id != null)
+                return HexHelper.BytesToHex(id);
+            else
+                return string.Empty;
         }
 
         /// <summary>
@@ -127,8 +148,15 @@ namespace TorrentSwifter.Peers
         /// <returns>The peer ID in hexadecimals.</returns>
         public override string ToString()
         {
-            // TODO: Format with client name, version, etc..
-            return HexHelper.BytesToHex(id);
+            if (id != null)
+            {
+                // TODO: Format with client name, version, etc..
+                return HexHelper.BytesToHex(id);
+            }
+            else
+            {
+                return "<NONE>";
+            }
         }
     }
 }
