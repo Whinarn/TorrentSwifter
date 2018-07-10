@@ -19,6 +19,8 @@ namespace TorrentSwifter.Peers
         /// The peer end-point.
         /// </summary>
         protected readonly EndPoint endPoint;
+
+        private BitField remoteBitField = null;
         #endregion
 
         #region Properties
@@ -53,6 +55,15 @@ namespace TorrentSwifter.Peers
         {
             get;
         }
+
+        /// <summary>
+        /// Gets the full bit field for the remote.
+        /// Note that this can be null.
+        /// </summary>
+        public BitField RemoteBitField
+        {
+            get { return remoteBitField; }
+        }
         #endregion
 
         #region Events
@@ -72,6 +83,14 @@ namespace TorrentSwifter.Peers
         /// Occurs when the state of this peer has changed.
         /// </summary>
         public event EventHandler StateChanged;
+        /// <summary>
+        /// Occurs when the full bit field has been received.
+        /// </summary>
+        public event EventHandler<BitFieldEventArgs> BitFieldReceived;
+        /// <summary>
+        /// Occurs when the peer has reported having a new piece.
+        /// </summary>
+        public event EventHandler<PieceEventArgs> HavePiece;
         #endregion
 
         #region Constructor
@@ -181,6 +200,30 @@ namespace TorrentSwifter.Peers
         protected virtual void OnStateChanged()
         {
             StateChanged.SafeInvoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// The full bit field has been received from the peer.
+        /// </summary>
+        /// <param name="bitField">The bit field.</param>
+        protected virtual void OnBitFieldReceived(BitField bitField)
+        {
+            remoteBitField = bitField;
+            BitFieldReceived.SafeInvoke(this, new BitFieldEventArgs(bitField));
+        }
+
+        /// <summary>
+        /// The peer has reported having an additional piece.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        protected virtual void OnHavePiece(int pieceIndex)
+        {
+            if (remoteBitField != null)
+            {
+                remoteBitField.Set(pieceIndex, true);
+            }
+
+            HavePiece.SafeInvoke(this, new PieceEventArgs(pieceIndex));
         }
         #endregion
     }
