@@ -738,6 +738,16 @@ namespace TorrentSwifter.Peers
 
         private bool HandleCancel(Packet packet)
         {
+            if (packet.Length != 17)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'cancel' received with {1} bytes (should have been 17).", endPoint, packet.Length);
+                return false;
+            }
+
+            int index = packet.ReadInt32();
+            int begin = packet.ReadInt32();
+            int length = packet.ReadInt32();
+
             // TODO: Implement!
             return true;
         }
