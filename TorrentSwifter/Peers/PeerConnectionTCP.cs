@@ -160,6 +160,7 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Private Methods
+        #region Data Receiving
         private void StartDataReceive()
         {
             if (socket == null)
@@ -237,7 +238,9 @@ namespace TorrentSwifter.Peers
                 StartDataReceive();
             }
         }
+        #endregion
 
+        #region Handle Packets
         private void HandlePacket(Packet packet)
         {
             var messageType = GetMessageType(packet);
@@ -376,7 +379,9 @@ namespace TorrentSwifter.Peers
         {
             // TODO: Implement!
         }
+        #endregion
 
+        #region Packet/Message Methods
         private int GetPacketLength()
         {
             if (!isHandshakeReceived)
@@ -409,6 +414,7 @@ namespace TorrentSwifter.Peers
                 return MessageType.Unknown;
             }
         }
+        #endregion
         #endregion
     }
 }
