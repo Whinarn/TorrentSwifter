@@ -51,6 +51,8 @@ namespace TorrentSwifter.Peers
         private int receiveOffset = 0;
         private byte[] receiveBuffer = new byte[ReceiveBufferMaxSize];
         private Packet receivedPacket = null;
+
+        private object sendSyncObj = new object();
         #endregion
 
         #region Properties
@@ -362,6 +364,65 @@ namespace TorrentSwifter.Peers
             {
                 StartDataReceive(false);
             }
+        }
+        #endregion
+
+        #region Data Sending
+        private void SendPacket(Packet packet)
+        {
+            if (socket == null)
+                return;
+
+            try
+            {
+                var packetData = packet.Data;
+                int packetLength = packet.Length;
+                lock (sendSyncObj)
+                {
+                    socket.BeginSend(packetData, 0, packetLength, SocketFlags.None, OnDataSent, socket);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogDebugException(ex);
+                Disconnect();
+            }
+        }
+
+        private void OnDataSent(IAsyncResult ar)
+        {
+            var socket = ar.AsyncState as Socket;
+            if (socket == null)
+                return;
+
+            try
+            {
+                socket.EndSend(ar);
+            }
+            catch (ObjectDisposedException)
+            {
+                // We can safely consume this, since we are already disconnected
+            }
+            catch (Exception ex)
+            {
+                Log.LogDebugException(ex);
+                Disconnect();
+            }
+        }
+        #endregion
+
+        #region Sending Packets
+        private Packet CreatePacket(MessageType messageType, int length)
+        {
+            if (messageType < 0)
+                throw new ArgumentException("The message type is invalid.", "messageType");
+            else if (length < 1)
+                throw new ArgumentOutOfRangeException("The length has to be at least 1.", "length");
+
+            var packet = new Packet(4 + length);
+            packet.WriteInt32(length);
+            packet.WriteByte((byte)messageType);
+            return packet;
         }
         #endregion
 
