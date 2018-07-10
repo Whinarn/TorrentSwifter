@@ -14,6 +14,7 @@ namespace TorrentSwifter.Peers
         #region Fields
         private readonly Torrent torrent;
         private readonly EndPoint endPoint;
+        private PeerID peerID = PeerID.None;
 
         private PeerConnectionTCP tcpConnection = null;
         #endregion
@@ -33,6 +34,14 @@ namespace TorrentSwifter.Peers
         public EndPoint EndPoint
         {
             get { return endPoint; }
+        }
+
+        /// <summary>
+        /// Gets the ID of this peer.
+        /// </summary>
+        public PeerID ID
+        {
+            get { return peerID; }
         }
 
         /// <summary>
