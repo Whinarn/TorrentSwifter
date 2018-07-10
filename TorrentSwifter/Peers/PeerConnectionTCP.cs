@@ -134,8 +134,8 @@ namespace TorrentSwifter.Peers
             {
                 socket.Connect(endPoint);
                 isConnected = true;
-                StartDataReceive();
                 OnConnected();
+                StartDataReceive(true);
             }
             catch (SocketException ex)
             {
@@ -168,8 +168,8 @@ namespace TorrentSwifter.Peers
             {
                 await Task.Factory.FromAsync(socket.BeginConnect, socket.EndConnect, endPoint, socket);
                 isConnected = true;
-                StartDataReceive();
                 OnConnected();
+                StartDataReceive(true);
             }
             catch (SocketException ex)
             {
