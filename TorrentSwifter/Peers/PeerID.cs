@@ -8,6 +8,11 @@ namespace TorrentSwifter.Peers
     /// </summary>
     public struct PeerID : IEquatable<PeerID>, IEquatable<byte[]>
     {
+        /// <summary>
+        /// No peer ID.
+        /// </summary>
+        public static readonly PeerID None = new PeerID();
+
         private readonly byte[] id;
 
         /// <summary>
