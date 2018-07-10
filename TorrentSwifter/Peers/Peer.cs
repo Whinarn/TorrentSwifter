@@ -17,6 +17,8 @@ namespace TorrentSwifter.Peers
         private PeerID peerID = PeerID.None;
 
         private PeerConnectionTCP tcpConnection = null;
+
+        private BitField bitField = null;
         #endregion
 
         #region Properties
@@ -51,6 +53,15 @@ namespace TorrentSwifter.Peers
         {
             get { return tcpConnection; }
         }
+
+        /// <summary>
+        /// Gets the bit field for this peer.
+        /// Note that this can be null before it has been received.
+        /// </summary>
+        public BitField BitField
+        {
+            get { return bitField; }
+        }
         #endregion
 
         #region Constructor
@@ -68,6 +79,8 @@ namespace TorrentSwifter.Peers
             tcpConnection.Connected += OnTCPConnectionConnected;
             tcpConnection.ConnectionFailed += OnTCPConnectionAttemptFailed;
             tcpConnection.Disconnected += OnTCPConnectionDisconnected;
+            tcpConnection.BitFieldReceived += OnTCPConnectionBitFieldReceived;
+            tcpConnection.HavePiece += OnTCPConnectionHavePiece;
         }
         #endregion
 
@@ -102,6 +115,8 @@ namespace TorrentSwifter.Peers
                 tcpConnection.Connected -= OnTCPConnectionConnected;
                 tcpConnection.ConnectionFailed -= OnTCPConnectionAttemptFailed;
                 tcpConnection.Disconnected -= OnTCPConnectionDisconnected;
+                tcpConnection.BitFieldReceived -= OnTCPConnectionBitFieldReceived;
+                tcpConnection.HavePiece -= OnTCPConnectionHavePiece;
                 tcpConnection.Dispose();
                 tcpConnection = null;
             }
@@ -189,6 +204,21 @@ namespace TorrentSwifter.Peers
         private void OnTCPConnectionDisconnected(object sender, EventArgs e)
         {
             Log.LogInfo("[Peer] Disconnected from {0}", endPoint);
+        }
+
+        private void OnTCPConnectionBitFieldReceived(object sender, BitFieldEventArgs e)
+        {
+            bitField = e.BitField;
+        }
+
+        private void OnTCPConnectionHavePiece(object sender, PieceEventArgs e)
+        {
+            if (bitField == null)
+            {
+                bitField = new BitField(torrent.PieceCount);
+            }
+
+            bitField.Set(e.PieceIndex, true);
         }
         #endregion
     }
