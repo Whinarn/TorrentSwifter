@@ -13,6 +13,8 @@ namespace TorrentSwifter.Logging
         private static ILogger logger = new ConsoleLogger();
 
         private static bool isLoggingUnhandledExceptions = false;
+
+        private static readonly object syncObj = new object();
         #endregion
 
         #region Properties
@@ -453,8 +455,11 @@ namespace TorrentSwifter.Logging
         {
             if (logger != null && logLevel >= messageLevel)
             {
-                logger.WritePrefixes(messageLevel);
-                logger.WriteLine(messageLevel, text);
+                lock (syncObj)
+                {
+                    logger.WritePrefixes(messageLevel);
+                    logger.WriteLine(messageLevel, text);
+                }
             }
         }
         #endregion
