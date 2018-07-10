@@ -15,6 +15,8 @@ namespace TorrentSwifter.Peers
     {
         #region Consts
         private const int ReceiveBufferMaxSize = 128 * 1024; // 128kB
+
+        private const string ProtocolName = "BitTorrent protocol";
         #endregion
 
         #region Enums
@@ -411,7 +413,7 @@ namespace TorrentSwifter.Peers
             }
 
             string protocolName = packet.ReadString(protocolNameLength);
-            if (!string.Equals(protocolName, "BitTorrent protocol"))
+            if (!string.Equals(protocolName, ProtocolName))
             {
                 Log.LogWarning("[Peer] Handshake protocol is not supported: {0}", protocolName);
                 Disconnect();
