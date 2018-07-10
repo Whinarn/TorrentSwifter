@@ -95,7 +95,27 @@ namespace TorrentSwifter.Peers
             : base(torrent, endPoint)
         {
             socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            receivedPacket = new Packet(receiveBuffer, 0);
+            Initialize();
+        }
+
+        /// <summary>
+        /// Creates a new TCP peer connection.
+        /// </summary>
+        /// <param name="socket">The socket.</param>
+        internal PeerConnectionTCP(Socket socket)
+            : base(socket.RemoteEndPoint)
+        {
+            if (socket == null)
+                throw new ArgumentNullException("socket");
+
+            this.socket = socket;
+            Initialize();
+
+            isConnected = true;
+            isConnecting = false;
+
+            OnConnected();
+            StartDataReceive(true);
         }
         #endregion
 
@@ -231,6 +251,16 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Private Methods
+        #region Initialize
+        private void Initialize()
+        {
+            socket.DualMode = true;
+            socket.LingerState = new LingerOption(true, 10);
+
+            receivedPacket = new Packet(receiveBuffer, 0);
+        }
+        #endregion
+
         #region Data Receiving
         private void StartDataReceive()
         {
