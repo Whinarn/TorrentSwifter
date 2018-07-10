@@ -15,15 +15,6 @@ namespace TorrentSwifter.Torrents
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
         #endregion
 
-        #region Delegates
-        /// <summary>
-        /// An event handler for pieces.
-        /// </summary>
-        /// <param name="torrent">The torrent.</param>
-        /// <param name="pieceIndex">The piece index.</param>
-        public delegate void PieceEventHandler(Torrent torrent, int pieceIndex);
-        #endregion
-
         #region Classes
         private class Piece
         {
@@ -143,7 +134,7 @@ namespace TorrentSwifter.Torrents
         /// <summary>
         /// An event that occurs once a piece has been downloaded and verified.
         /// </summary>
-        public event PieceEventHandler PieceVerified;
+        public event EventHandler<PieceEventArgs> PieceVerified;
         #endregion
 
         #region Properties
@@ -318,13 +309,8 @@ namespace TorrentSwifter.Torrents
 
                 if (isVerified)
                 {
-                    // TODO: Check if we have downloaded and verified all pieces
-
-                    var verifiedHandler = PieceVerified;
-                    if (verifiedHandler != null)
-                    {
-                        verifiedHandler.Invoke(this, pieceIndex);
-                    }
+                    var eventArgs = new PieceEventArgs(pieceIndex);
+                    PieceVerified.SafeInvoke(this, eventArgs);
                 }
             }
         }
