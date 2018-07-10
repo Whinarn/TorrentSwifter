@@ -314,8 +314,8 @@ namespace TorrentSwifter.Torrents
         /// </summary>
         public TorrentMetaData()
         {
-            string assemblyVersion = AssemblyHelper.GetAssemblyVersion(typeof(TorrentMetaData));
-            createdBy = string.Format("TorrentSwifter/{0}", assemblyVersion);
+            var assemblyVersion = AssemblyHelper.GetAssemblyVersion(typeof(TorrentMetaData));
+            createdBy = string.Format("TorrentSwifter/{0}", assemblyVersion.ToString());
             creationDate = DateTime.Now;
         }
         #endregion
