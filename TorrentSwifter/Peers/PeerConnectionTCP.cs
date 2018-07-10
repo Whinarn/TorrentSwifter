@@ -15,6 +15,7 @@ namespace TorrentSwifter.Peers
     {
         #region Consts
         private const int ReceiveBufferMaxSize = 128 * 1024; // 128kB
+        private const int MaximumAllowedRequestSize = 16 * 1024; // 16kB
 
         private const string ProtocolName = "BitTorrent protocol";
         #endregion
@@ -702,6 +703,29 @@ namespace TorrentSwifter.Peers
 
         private bool HandleRequest(Packet packet)
         {
+            if (packet.Length != 17)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'request' received with {1} bytes (should have been 17).", endPoint, packet.Length);
+                return false;
+            }
+
+            int index = packet.ReadInt32();
+            int begin = packet.ReadInt32();
+            int length = packet.ReadInt32();
+
+            if (index < 0 || begin < 0 || length < 0)
+            {
+                Log.LogWarning("[Peer][{0}] A peer sent a request with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, index, begin, length);
+                return false;
+            }
+            else if (length > MaximumAllowedRequestSize)
+            {
+                Log.LogWarning("[Peer][{0}] A peer requested more data than allowed. {1} bytes was requested.", endPoint, length);
+                return false;
+            }
+
+            Log.LogDebug("[Peer][{0}] A peer sent a request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, index, begin, length);
+
             // TODO: Implement!
             return true;
         }
