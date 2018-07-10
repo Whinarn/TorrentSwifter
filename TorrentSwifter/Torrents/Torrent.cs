@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Threading;
 using TorrentSwifter.Helpers;
+using TorrentSwifter.Logging;
+using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Torrents
 {
@@ -125,6 +128,8 @@ namespace TorrentSwifter.Torrents
         private readonly int blockSize;
         private readonly long totalSize;
 
+        private bool isStarted = false;
+        private bool isStopped = true;
         private Piece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
@@ -193,6 +198,28 @@ namespace TorrentSwifter.Torrents
         {
             get { return totalSize; }
         }
+
+        /// <summary>
+        /// Gets if this torrent has been started.
+        /// </summary>
+        public bool IsStarted
+        {
+            get { return isStarted; }
+        }
+
+        /// <summary>
+        /// Gets the state of this torrent.
+        /// </summary>
+        public TorrentState State
+        {
+            get
+            {
+                if (!isStarted)
+                    return TorrentState.Inactive;
+                else
+                    return TorrentState.Downloading;
+            }
+        }
         #endregion
 
         #region Constructor
@@ -226,6 +253,41 @@ namespace TorrentSwifter.Torrents
             // TODO: Initialize cached data, like integrity etc?
         }
         #endregion
+
+        #region Public Methods
+        /// <summary>
+        /// Starts downloading and/or uploading of this torrent.
+        /// </summary>
+        public void Start()
+        {
+            if (isStarted || !isStopped)
+                return;
+
+            isStarted = true;
+            isStopped = false;
+            TorrentRegistry.RegisterTorrent(this);
+
+            // TODO: Perform any initialization here
+
+            var thread = new Thread(UpdateLoop);
+            thread.Priority = ThreadPriority.BelowNormal;
+            thread.Name = "TorrentUpdateLoop";
+            thread.Start();
+        }
+
+        /// <summary>
+        /// Stops downloading and uploading of this torrent.
+        /// </summary>
+        public void Stop()
+        {
+            if (!isStarted)
+                return;
+
+            isStarted = false;
+            TorrentRegistry.UnregisterTorrent(this);
+
+            // TODO: Perform any unitialization here
+        }
 
         #region Private Methods
         private void InitializePieces()
@@ -331,6 +393,35 @@ namespace TorrentSwifter.Torrents
         {
             byte[] pieceData = ReadPiece(pieceIndex);
             return HashHelper.ComputeSHA1(pieceData);
+        }
+        #endregion
+
+
+        #region Update Loop
+        private void UpdateLoop()
+        {
+            try
+            {
+                while (isStarted)
+                {
+                    try
+                    {
+                        Thread.Sleep(100);
+                    }
+                    catch (ThreadAbortException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogErrorException(ex);
+                    }
+                }
+            }
+            finally
+            {
+                isStopped = true;
+            }
         }
         #endregion
 
