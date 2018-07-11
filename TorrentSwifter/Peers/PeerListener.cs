@@ -180,6 +180,8 @@ namespace TorrentSwifter.Peers
                 connection.Dispose();
                 return;
             }
+
+            torrent.OnPeerConnected(peerID, connection);
         }
         #endregion
         #endregion

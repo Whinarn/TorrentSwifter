@@ -476,6 +476,26 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Internal Methods
+        #region Peers
+        internal void OnPeerConnected(PeerID peerID, PeerConnection connection)
+        {
+            lock (peersSyncObj)
+            {
+                Peer peer;
+                if (peersByID.TryGetValue(peerID, out peer))
+                {
+                    peer.ReplaceConnection(connection);
+                }
+                else
+                {
+                    peer = new Peer(this, connection);
+                    peers.Add(peer);
+                    peersByID.Add(peerID, peer);
+                }
+            }
+        }
+        #endregion
+
         #region Read & Write
         internal int ReadData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
         {
