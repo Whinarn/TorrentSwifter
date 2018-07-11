@@ -58,6 +58,8 @@ namespace TorrentSwifter.Peers
         private byte[] receiveBuffer = new byte[ReceiveBufferMaxSize];
         private Packet receivedPacket = null;
 
+        private DateTime sentHandshakeTime = DateTime.Now;
+
         private object sendSyncObj = new object();
         #endregion
 
@@ -255,7 +257,18 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public override void Update()
         {
-            // TODO: Disconnect automatically after 1 minute (or something?) of not receiving handshake from the remote
+            if (!isConnected)
+                return;
+
+            if (!isHandshakeReceived)
+            {
+                var timeSinceHandshakeSent = DateTime.Now.Subtract(sentHandshakeTime);
+                if (timeSinceHandshakeSent.TotalMilliseconds > Preferences.Peer.HandshakeTimeout)
+                {
+                    Disconnect();
+                }
+                return;
+            }
         }
 
         /// <summary>
@@ -497,6 +510,7 @@ namespace TorrentSwifter.Peers
             SendPacket(packet);
 
             isHandshakeSent = true;
+            sentHandshakeTime = DateTime.Now;
         }
 
         private void SendKeepAlive()
