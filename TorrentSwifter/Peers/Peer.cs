@@ -16,7 +16,7 @@ namespace TorrentSwifter.Peers
         private readonly EndPoint endPoint;
         private PeerID peerID = PeerID.None;
 
-        private PeerConnectionTCP tcpConnection = null;
+        private PeerConnection connection = null;
 
         private BitField bitField = null;
         #endregion
@@ -47,11 +47,11 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets the peer TCP connection.
+        /// Gets the peer connection.
         /// </summary>
-        public PeerConnectionTCP TCPConnection
+        public PeerConnection Connection
         {
-            get { return tcpConnection; }
+            get { return connection; }
         }
 
         /// <summary>
@@ -88,7 +88,7 @@ namespace TorrentSwifter.Peers
         /// </summary>
         /// <param name="torrent">The owner torrent.</param>
         /// <param name="connection">The peer connection.</param>
-        internal Peer(Torrent torrent, PeerConnectionTCP connection)
+        internal Peer(Torrent torrent, PeerConnection connection)
         {
             this.torrent = torrent;
             this.endPoint = connection.EndPoint;
