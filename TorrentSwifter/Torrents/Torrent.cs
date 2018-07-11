@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using TorrentSwifter.Helpers;
@@ -36,6 +37,10 @@ namespace TorrentSwifter.Torrents
         private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
+
+        private List<Peer> peers = new List<Peer>();
+        private Dictionary<PeerID, Peer> peersByID = new Dictionary<PeerID, Peer>();
+        private object peersSyncObj = new object();
         #endregion
 
         #region Events
@@ -471,6 +476,7 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Internal Methods
+        #region Read & Write
         internal int ReadData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
         {
             if (torrentOffset < 0 || torrentOffset >= totalSize)
@@ -547,6 +553,7 @@ namespace TorrentSwifter.Torrents
                 }
             }
         }
+        #endregion
         #endregion
     }
 }
