@@ -164,6 +164,12 @@ namespace TorrentSwifter.Peers
         /// Updates this peer connection.
         /// </summary>
         public abstract void Update();
+
+        /// <summary>
+        /// Reports that we have a new piece to this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        public abstract void ReportHavePiece(int pieceIndex);
         #endregion
 
         #region Protected Methods

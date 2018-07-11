@@ -249,6 +249,18 @@ namespace TorrentSwifter.Peers
         {
             // TODO: Disconnect automatically after 1 minute (or something?) of not receiving handshake from the remote
         }
+
+        /// <summary>
+        /// Reports that we have a new piece to this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        public override void ReportHavePiece(int pieceIndex)
+        {
+            if (!isBitFieldSent)
+                return;
+
+            SendHave(pieceIndex);
+        }
         #endregion
 
         #region Protected Methods
