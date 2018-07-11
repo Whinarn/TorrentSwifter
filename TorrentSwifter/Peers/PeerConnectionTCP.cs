@@ -46,8 +46,8 @@ namespace TorrentSwifter.Peers
         private bool isHandshakeSent = false;
         private bool isBitFieldSent = false;
         private bool isHandshakeReceived = false;
-        private bool isChoked = true;
-        private bool isInterested = false;
+        private bool isChokedByRemote = true;
+        private bool isInterestedByRemote = false;
 
         private InfoHash infoHash = default(InfoHash);
         private PeerID peerID = default(PeerID);
@@ -85,19 +85,19 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets if this peer connection is currently choked.
+        /// Gets if this peer connection is currently choked by the remote.
         /// </summary>
-        public bool IsChoked
+        public bool IsChokedByRemote
         {
-            get { return isChoked; }
+            get { return isChokedByRemote; }
         }
 
         /// <summary>
         /// Gets if this peer is interested in some of our pieces.
         /// </summary>
-        public bool IsInterested
+        public bool IsInterestedByRemote
         {
-            get { return isInterested; }
+            get { return isInterestedByRemote; }
         }
         #endregion
 
@@ -249,8 +249,8 @@ namespace TorrentSwifter.Peers
         protected override void OnConnected()
         {
             isHandshakeReceived = false;
-            isChoked = true;
-            isInterested = false;
+            isChokedByRemote = true;
+            isInterestedByRemote = false;
             isHandshakeSent = false;
             isBitFieldSent = false;
 
@@ -683,14 +683,14 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] Invalid 'choke' received with {1} bytes (should have been 5).", endPoint, packet.Length);
                 return false;
             }
-            else if (isChoked)
+            else if (isChokedByRemote)
             {
                 Log.LogDebug("[Peer][{0}] A 'choke' was received while already being choked.", endPoint);
                 return true;
             }
 
             Log.LogDebug("[Peer][{0}] Peer choked us.", endPoint);
-            isChoked = true;
+            isChokedByRemote = true;
             OnStateChanged();
             return true;
         }
@@ -702,14 +702,14 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] Invalid 'unchoke' received with {1} bytes (should have been 5).", endPoint, packet.Length);
                 return false;
             }
-            else if (!isChoked)
+            else if (!isChokedByRemote)
             {
                 Log.LogDebug("[Peer][{0}] A 'unchoke' was received while already not being choked.", endPoint);
                 return true;
             }
 
             Log.LogDebug("[Peer][{0}] Peer unchoked us.", endPoint);
-            isChoked = false;
+            isChokedByRemote = false;
             OnStateChanged();
             return true;
         }
@@ -721,14 +721,14 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] Invalid 'interested' received with {1} bytes (should have been 5).", endPoint, packet.Length);
                 return false;
             }
-            else if (isInterested)
+            else if (isInterestedByRemote)
             {
                 Log.LogDebug("[Peer][{0}] An 'interested' was received while already being interested.", endPoint);
                 return true;
             }
 
             Log.LogDebug("[Peer][{0}] Peer is interested.", endPoint);
-            isInterested = true;
+            isInterestedByRemote = true;
             OnStateChanged();
             return true;
         }
@@ -740,14 +740,14 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] Invalid 'not interested' received with {1} bytes (should have been 5).", endPoint, packet.Length);
                 return false;
             }
-            else if (!isInterested)
+            else if (!isInterestedByRemote)
             {
                 Log.LogDebug("[Peer][{0}] A 'not interested' was received while already not being interested.", endPoint);
                 return true;
             }
 
             Log.LogDebug("[Peer][{0}] Peer is no longer interested.", endPoint);
-            isInterested = false;
+            isInterestedByRemote = false;
             OnStateChanged();
             return true;
         }
