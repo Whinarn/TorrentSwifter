@@ -74,13 +74,9 @@ namespace TorrentSwifter.Peers
         {
             this.torrent = torrent;
             this.endPoint = endPoint;
+            this.connection = null;
 
-            tcpConnection = new PeerConnectionTCP(torrent, endPoint);
-            tcpConnection.Connected += OnTCPConnectionConnected;
-            tcpConnection.ConnectionFailed += OnTCPConnectionAttemptFailed;
-            tcpConnection.Disconnected += OnTCPConnectionDisconnected;
-            tcpConnection.BitFieldReceived += OnTCPConnectionBitFieldReceived;
-            tcpConnection.HavePiece += OnTCPConnectionHavePiece;
+            Initialize();
         }
 
         /// <summary>
@@ -93,14 +89,11 @@ namespace TorrentSwifter.Peers
             this.torrent = torrent;
             this.endPoint = connection.EndPoint;
 
-            tcpConnection = connection;
-            tcpConnection.Connected += OnTCPConnectionConnected;
-            tcpConnection.ConnectionFailed += OnTCPConnectionAttemptFailed;
-            tcpConnection.Disconnected += OnTCPConnectionDisconnected;
-            tcpConnection.BitFieldReceived += OnTCPConnectionBitFieldReceived;
-            tcpConnection.HavePiece += OnTCPConnectionHavePiece;
+            this.connection = connection;
+            bitField = this.connection.RemoteBitField;
 
-            bitField = tcpConnection.RemoteBitField;
+            Initialize();
+            InitializeConnection(connection);
         }
         #endregion
 
@@ -130,16 +123,8 @@ namespace TorrentSwifter.Peers
         /// <param name="disposing">If disposing, otherwise finalizing.</param>
         private void Dispose(bool disposing)
         {
-            if (tcpConnection != null)
-            {
-                tcpConnection.Connected -= OnTCPConnectionConnected;
-                tcpConnection.ConnectionFailed -= OnTCPConnectionAttemptFailed;
-                tcpConnection.Disconnected -= OnTCPConnectionDisconnected;
-                tcpConnection.BitFieldReceived -= OnTCPConnectionBitFieldReceived;
-                tcpConnection.HavePiece -= OnTCPConnectionHavePiece;
-                tcpConnection.Dispose();
-                tcpConnection = null;
-            }
+            Disconnect();
+            Uninitialize();
         }
         #endregion
 
@@ -150,15 +135,14 @@ namespace TorrentSwifter.Peers
         /// <returns>If the connection was successfully established.</returns>
         public bool Connect()
         {
-            if (tcpConnection == null)
-                return false;
-            else if (tcpConnection.IsConnecting || tcpConnection.IsConnected)
+            if (connection != null)
                 return false;
 
             try
             {
-                tcpConnection.Connect();
-                return tcpConnection.IsConnected;
+                connection = new PeerConnectionTCP(torrent, endPoint);
+                connection.Connect();
+                return connection.IsConnected;
             }
             catch
             {
@@ -172,15 +156,14 @@ namespace TorrentSwifter.Peers
         /// <returns>If the connection was successfully established.</returns>
         public async Task<bool> ConnectAsync()
         {
-            if (tcpConnection == null)
-                return false;
-            else if (tcpConnection.IsConnecting || tcpConnection.IsConnected)
+            if (connection != null)
                 return false;
 
             try
             {
-                await tcpConnection.ConnectAsync();
-                return tcpConnection.IsConnected;
+                connection = new PeerConnectionTCP(torrent, endPoint);
+                await connection.ConnectAsync();
+                return connection.IsConnected;
             }
             catch
             {
@@ -193,9 +176,17 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public void Disconnect()
         {
-            if (tcpConnection.IsConnected || tcpConnection.IsConnecting)
+            if (connection != null)
             {
-                tcpConnection.Disconnect();
+                connection.Connected -= OnConnectionConnected;
+                connection.ConnectionFailed -= OnConnectionAttemptFailed;
+                connection.Disconnected -= OnConnectionDisconnected;
+                connection.BitFieldReceived -= OnConnectionBitFieldReceived;
+                connection.HavePiece -= OnTCPConnectionHavePiece;
+
+                connection.Disconnect();
+                connection.Dispose();
+                connection = null;
             }
         }
 
@@ -210,23 +201,57 @@ namespace TorrentSwifter.Peers
         }
         #endregion
 
+        #region Internal Methods
+        internal void ReplaceConnection(PeerConnection connection)
+        {
+            if (this.connection == connection) // We already have this connection
+                return;
+
+            Disconnect();
+            this.connection = connection;
+            InitializeConnection(connection);
+        }
+        #endregion
+
+        #region Private Methods
+        #region Initialize & Uninitialize
+        private void Initialize()
+        {
+            torrent.PieceVerified += OnTorrentPieceVerified;
+        }
+
+        private void InitializeConnection(PeerConnection connection)
+        {
+            connection.Connected += OnConnectionConnected;
+            connection.ConnectionFailed += OnConnectionAttemptFailed;
+            connection.Disconnected += OnConnectionDisconnected;
+            connection.BitFieldReceived += OnConnectionBitFieldReceived;
+            connection.HavePiece += OnTCPConnectionHavePiece;
+        }
+
+        private void Uninitialize()
+        {
+            torrent.PieceVerified -= OnTorrentPieceVerified;
+        }
+        #endregion
+
         #region Connection Events
-        private void OnTCPConnectionConnected(object sender, EventArgs e)
+        private void OnConnectionConnected(object sender, EventArgs e)
         {
             Log.LogInfo("[Peer] Connected to {0}", endPoint);
         }
 
-        private void OnTCPConnectionAttemptFailed(object sender, ConnectionFailedEventArgs e)
+        private void OnConnectionAttemptFailed(object sender, ConnectionFailedEventArgs e)
         {
             Log.LogInfo("[Peer] Connection attempt failed to {0} with reason: {1}", endPoint, e.FailedReason);
         }
 
-        private void OnTCPConnectionDisconnected(object sender, EventArgs e)
+        private void OnConnectionDisconnected(object sender, EventArgs e)
         {
             Log.LogInfo("[Peer] Disconnected from {0}", endPoint);
         }
 
-        private void OnTCPConnectionBitFieldReceived(object sender, BitFieldEventArgs e)
+        private void OnConnectionBitFieldReceived(object sender, BitFieldEventArgs e)
         {
             bitField = e.BitField;
         }
@@ -240,6 +265,7 @@ namespace TorrentSwifter.Peers
 
             bitField.Set(e.PieceIndex, true);
         }
+        #endregion
         #endregion
     }
 }
