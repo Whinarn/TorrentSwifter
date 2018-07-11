@@ -57,6 +57,22 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Gets if this connection has handshaked successfully.
+        /// </summary>
+        public abstract bool IsHandshaked
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets the ID of the peer we are connected to.
+        /// </summary>
+        public abstract PeerID PeerID
+        {
+            get;
+        }
+
+        /// <summary>
         /// Gets the full bit field for the remote.
         /// Note that this can be null.
         /// </summary>

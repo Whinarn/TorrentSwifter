@@ -79,11 +79,19 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets if the handshake has been received from the remote.
+        /// Gets if this connection has handshaked successfully.
         /// </summary>
-        public bool IsHandshakeReceived
+        public override bool IsHandshaked
         {
             get { return isHandshakeReceived; }
+        }
+
+        /// <summary>
+        /// Gets the ID of the peer we are connected to.
+        /// </summary>
+        public override PeerID PeerID
+        {
+            get { return peerID; }
         }
 
         /// <summary>
