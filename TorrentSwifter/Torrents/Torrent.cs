@@ -5,6 +5,7 @@ using System.Threading;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
+using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents
 {
@@ -37,6 +38,8 @@ namespace TorrentSwifter.Torrents
         private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
+
+        private List<TrackerGroup> trackerGroups = new List<TrackerGroup>();
 
         private List<Peer> peers = new List<Peer>();
         private Dictionary<PeerID, Peer> peersByID = new Dictionary<PeerID, Peer>();
@@ -189,6 +192,7 @@ namespace TorrentSwifter.Torrents
 
             InitializePieces();
             InitializeFiles();
+            InitializeTrackers();
 
             // TODO: Initialize cached data, like integrity etc?
         }
@@ -336,6 +340,40 @@ namespace TorrentSwifter.Torrents
                 }
             }
         }
+
+        private void InitializeTrackers()
+        {
+            // TODO: Add support to load customized trackers if this is not the first time we launch this torrent
+
+            var announces = metaData.Announces;
+            foreach (var announceItem in announces)
+            {
+                var trackerGroup = new TrackerGroup(this);
+                foreach (string url in announceItem.Urls)
+                {
+                    Uri uri;
+                    if (Uri.TryCreate(url, UriKind.Absolute, out uri))
+                    {
+                        var tracker = Tracker.Create(uri);
+                        if (tracker != null)
+                        {
+                            trackerGroup.AddTracker(tracker);
+                        }
+                        else
+                        {
+                            Log.LogWarning("Unsupported tracker URI: {0}", uri);
+                        }
+                    }
+                    else
+                    {
+                        Log.LogWarning("Unsupported tracker URI: {0}", url);
+                    }
+                }
+
+                trackerGroup.Shuffle();
+                trackerGroups.Add(trackerGroup);
+            }
+        }
         #endregion
 
         #region Pieces
@@ -475,7 +513,10 @@ namespace TorrentSwifter.Torrents
 
         private void UpdateTrackers()
         {
-            // TODO: Implement!
+            foreach (var trackerGroup in trackerGroups)
+            {
+                trackerGroup.Update();
+            }
         }
 
         private void UpdatePeers()
