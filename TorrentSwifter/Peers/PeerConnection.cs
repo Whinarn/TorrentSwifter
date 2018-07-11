@@ -96,6 +96,10 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public event EventHandler Disconnected;
         /// <summary>
+        /// Occurs when we have handshaked with this peer.
+        /// </summary>
+        public event EventHandler Handshaked;
+        /// <summary>
         /// Occurs when the state of this peer has changed.
         /// </summary>
         public event EventHandler StateChanged;
@@ -219,6 +223,14 @@ namespace TorrentSwifter.Peers
         protected virtual void OnDisconnected()
         {
             Disconnected.SafeInvoke(this, EventArgs.Empty);
+        }
+
+        /// <summary>
+        /// The peer connection has been successfully handshaked.
+        /// </summary>
+        protected virtual void OnHandshaked()
+        {
+            Handshaked.SafeInvoke(this, EventArgs.Empty);
         }
 
         /// <summary>

@@ -723,6 +723,7 @@ namespace TorrentSwifter.Peers
 
             SendHandshake();
             SendBitField();
+            OnHandshaked();
             return true;
         }
 
