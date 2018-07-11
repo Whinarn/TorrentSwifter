@@ -458,6 +458,47 @@ namespace TorrentSwifter.Peers
             isHandshakeSent = true;
         }
 
+        private void SendKeepAlive()
+        {
+            var packet = new Packet(4);
+            packet.WriteInt32(0);
+            SendPacket(packet);
+        }
+
+        private void SendChoke()
+        {
+            var packet = CreatePacket(MessageType.Choke, 0);
+            SendPacket(packet);
+        }
+
+        private void SendUnchoke()
+        {
+            var packet = CreatePacket(MessageType.Unchoke, 0);
+            SendPacket(packet);
+        }
+
+        private void SendInterested()
+        {
+            var packet = CreatePacket(MessageType.Interested, 0);
+            SendPacket(packet);
+        }
+
+        private void SendNotInterested()
+        {
+            var packet = CreatePacket(MessageType.NotInterested, 0);
+            SendPacket(packet);
+        }
+
+        private void SendHave(int pieceIndex)
+        {
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
+                throw new ArgumentOutOfRangeException("pieceIndex");
+
+            var packet = CreatePacket(MessageType.NotInterested, 4);
+            packet.WriteInt32(pieceIndex);
+            SendPacket(packet);
+        }
+
         private void SendBitField()
         {
             // Ignore if we have already sent the bit field or if we haven't sent the handshake yet
@@ -466,23 +507,62 @@ namespace TorrentSwifter.Peers
 
             var bitField = torrent.BitField;
             var bitFieldBytes = bitField.Buffer;
-            int length = bitField.ByteLength + 1;
-            var packet = CreatePacket(MessageType.BitField, length);
+            var packet = CreatePacket(MessageType.BitField, bitField.ByteLength);
             packet.Write(bitFieldBytes, 0, bitField.ByteLength);
             SendPacket(packet);
 
             isBitFieldSent = true;
         }
 
+        private void SendRequest(int pieceIndex, int begin, int length)
+        {
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
+                throw new ArgumentOutOfRangeException("pieceIndex");
+            else if (begin < 0)
+                throw new ArgumentOutOfRangeException("begin");
+            else if (length <= 0)
+                throw new ArgumentOutOfRangeException("length");
+
+            var piece = torrent.GetPiece(pieceIndex);
+            if (begin >= piece.Size)
+                throw new ArgumentOutOfRangeException("begin");
+            else if ((begin + length) > piece.Size)
+                throw new ArgumentOutOfRangeException("length");
+
+            var packet = CreatePacket(MessageType.Request, 12);
+            packet.WriteInt32(pieceIndex);
+            packet.WriteInt32(begin);
+            packet.WriteInt32(length);
+            SendPacket(packet);
+        }
+
+        private void SendPiece(int pieceIndex, int begin, byte[] data)
+        {
+            var packet = CreatePacket(MessageType.Piece, 8 + data.Length);
+            packet.WriteInt32(pieceIndex);
+            packet.WriteInt32(begin);
+            packet.Write(data, 0, data.Length);
+            SendPacket(packet);
+        }
+
+        private void SendCancel(int pieceIndex, int begin, int length)
+        {
+            var packet = CreatePacket(MessageType.Cancel, 12);
+            packet.WriteInt32(pieceIndex);
+            packet.WriteInt32(begin);
+            packet.WriteInt32(length);
+            SendPacket(packet);
+        }
+
         private Packet CreatePacket(MessageType messageType, int length)
         {
             if (messageType < 0)
                 throw new ArgumentException("The message type is invalid.", "messageType");
-            else if (length < 1)
-                throw new ArgumentOutOfRangeException("The length has to be at least 1.", "length");
+            else if (length < 0)
+                throw new ArgumentOutOfRangeException("The length cannot be negative.", "length");
 
-            var packet = new Packet(4 + length);
-            packet.WriteInt32(length);
+            var packet = new Packet(5 + length);
+            packet.WriteInt32(1 + length);
             packet.WriteByte((byte)messageType);
             return packet;
         }
