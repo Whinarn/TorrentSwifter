@@ -242,6 +242,21 @@ namespace TorrentSwifter.Torrents
             VerifyIntegrity();
         }
         #endregion
+
+        #region Pieces
+        /// <summary>
+        /// Returns a piece in this torrent by its index.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <returns>The piece.</returns>
+        public TorrentPiece GetPiece(int pieceIndex)
+        {
+            if (pieceIndex < 0 || pieceIndex >= pieces.Length)
+                throw new ArgumentOutOfRangeException("pieceIndex");
+
+            return pieces[pieceIndex];
+        }
+        #endregion
         #endregion
 
         #region Private Methods
