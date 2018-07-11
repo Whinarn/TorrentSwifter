@@ -211,6 +211,14 @@ namespace TorrentSwifter.Peers
             this.connection = connection;
             InitializeConnection(connection);
         }
+
+        internal void Update()
+        {
+            if (connection != null)
+            {
+                connection.Update();
+            }
+        }
         #endregion
 
         #region Private Methods

@@ -445,8 +445,8 @@ namespace TorrentSwifter.Torrents
                         {
                             if (hasVerifiedIntegrity)
                             {
-                                // TODO: Update trackers
-                                // TODO: Update peers
+                                UpdateTrackers();
+                                UpdatePeers();
                                 // TODO: Update queued requests
                             }
                             else
@@ -470,6 +470,22 @@ namespace TorrentSwifter.Torrents
             finally
             {
                 isStopped = true;
+            }
+        }
+
+        private void UpdateTrackers()
+        {
+            // TODO: Implement!
+        }
+
+        private void UpdatePeers()
+        {
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    peer.Update();
+                }
             }
         }
         #endregion
