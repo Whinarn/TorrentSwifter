@@ -34,7 +34,8 @@ namespace TorrentSwifter.Peers
             BitField = 5,
             Request = 6,
             Piece = 7,
-            Cancel = 8
+            Cancel = 8,
+            Port = 9
         }
         #endregion
 
@@ -602,6 +603,8 @@ namespace TorrentSwifter.Peers
                     return HandlePiece(packet);
                 case MessageType.Cancel:
                     return HandleCancel(packet);
+                case MessageType.Port:
+                    return HandlePort(packet);
                 default:
                     Log.LogError("[Peer][{0}] Received unhandled message type: {1}", endPoint, messageType);
                     return false;
@@ -872,6 +875,19 @@ namespace TorrentSwifter.Peers
             Log.LogDebug("[Peer][{0}] A peer cancelled request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
 
             // TODO: Implement!
+            return true;
+        }
+
+        private bool HandlePort(Packet packet)
+        {
+            if (packet.Length != 7)
+            {
+                Log.LogWarning("[Peer][{0}] Invalid 'port' received with {1} bytes (should have been 7).", endPoint, packet.Length);
+                return false;
+            }
+
+            int port = packet.ReadUInt16();
+            Log.LogDebug("[Peer][{0}] A peer sent us a port to its DHT node: {1}", endPoint, port);
             return true;
         }
         #endregion
