@@ -177,7 +177,7 @@ namespace TorrentSwifter.Torrents
 
             this.metaData = metaData;
             this.infoHash = metaData.InfoHash;
-            this.peerID = PeerManager.GetPeerID();
+            this.peerID = PeerHelper.GetNewPeerID();
             this.downloadPath = Path.GetFullPath(downloadPath);
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;

@@ -23,5 +23,10 @@ namespace TorrentSwifter.Helpers
         {
             return ((value & (value - 1)) == 0);
         }
+
+        public static int Clamp(int value, int min, int max)
+        {
+            return (value < min ? min : (value > max ? max : value));
+        }
     }
 }
