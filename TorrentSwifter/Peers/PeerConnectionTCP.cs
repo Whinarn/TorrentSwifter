@@ -797,13 +797,13 @@ namespace TorrentSwifter.Peers
                 return false;
             }
 
-            int index = packet.ReadInt32();
+            int pieceIndex = packet.ReadInt32();
             int begin = packet.ReadInt32();
             int length = packet.ReadInt32();
 
-            if (index < 0 || begin < 0 || length < 0)
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount || begin < 0 || length <= 0)
             {
-                Log.LogWarning("[Peer][{0}] A peer sent a request with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, index, begin, length);
+                Log.LogWarning("[Peer][{0}] A peer sent a request with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
                 return false;
             }
             else if (length > MaximumAllowedRequestSize)
@@ -812,7 +812,14 @@ namespace TorrentSwifter.Peers
                 return false;
             }
 
-            Log.LogDebug("[Peer][{0}] A peer sent a request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, index, begin, length);
+            var piece = torrent.GetPiece(pieceIndex);
+            if (begin >= piece.Size || (begin + length) > piece.Size)
+            {
+                Log.LogWarning("[Peer][{0}] A peer sent a request with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return false;
+            }
+
+            Log.LogDebug("[Peer][{0}] A peer sent a request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
 
             // TODO: Implement!
             return true;
@@ -820,7 +827,27 @@ namespace TorrentSwifter.Peers
 
         private bool HandlePiece(Packet packet)
         {
+            int pieceIndex = packet.ReadInt32();
+            int begin = packet.ReadInt32();
+            int length = (packet.Length - packet.Offset);
+
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount || begin < 0)
+            {
+                Log.LogWarning("[Peer][{0}] A peer sent piece data with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return false;
+            }
+
+            var piece = torrent.GetPiece(pieceIndex);
+            if (begin >= piece.Size || (begin + length) > piece.Size)
+            {
+                Log.LogWarning("[Peer][{0}] A peer sent piece data with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return false;
+            }
+
+            Log.LogDebug("[Peer][{0}] A peer sent piece data. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+
             // TODO: Implement!
+            byte[] data = packet.ReadBytes(packet.Length - packet.Offset);
             return true;
         }
 
@@ -832,9 +859,17 @@ namespace TorrentSwifter.Peers
                 return false;
             }
 
-            int index = packet.ReadInt32();
+            int pieceIndex = packet.ReadInt32();
             int begin = packet.ReadInt32();
             int length = packet.ReadInt32();
+
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount || begin < 0 || length < 0)
+            {
+                Log.LogWarning("[Peer][{0}] A peer cancelled a request with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return false;
+            }
+
+            Log.LogDebug("[Peer][{0}] A peer cancelled request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
 
             // TODO: Implement!
             return true;
