@@ -198,5 +198,35 @@ namespace TorrentSwifter.Trackers
         /// <returns>The announce response.</returns>
         public abstract Task<ScrapeResponse> Scrape(InfoHash[] infoHashes);
         #endregion
+
+        #region Create
+        /// <summary>
+        /// Creates a tracker from an URI.
+        /// </summary>
+        /// <param name="uri">The tracker URI.</param>
+        /// <returns>The created tracker, if any.</returns>
+        public static Tracker Create(Uri uri)
+        {
+            if (uri == null)
+                throw new ArgumentNullException("uri");
+            else if (!uri.IsAbsoluteUri)
+                throw new ArgumentException("The URI must be absolute.", "uri");
+
+            string uriScheme = uri.Scheme;
+            if (string.Equals(uriScheme, "http", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(uriScheme, "https", StringComparison.OrdinalIgnoreCase))
+            {
+                return new HttpTracker(uri);
+            }
+            else if (string.Equals(uriScheme, "udp", StringComparison.OrdinalIgnoreCase))
+            {
+                return new UdpTracker(uri);
+            }
+            else
+            {
+                return null;
+            }
+        }
+        #endregion
     }
 }
