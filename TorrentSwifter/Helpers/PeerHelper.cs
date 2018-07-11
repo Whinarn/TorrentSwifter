@@ -3,6 +3,8 @@ using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Helpers
 {
+    // TODO: Add support to figure out client info from remote peer IDs
+
     internal static class PeerHelper
     {
         internal static PeerID GetNewPeerID()
