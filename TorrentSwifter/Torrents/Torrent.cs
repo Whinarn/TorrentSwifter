@@ -18,42 +18,6 @@ namespace TorrentSwifter.Torrents
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
         #endregion
 
-        #region Classes
-        private class TorrentFile
-        {
-            private readonly string path;
-            private readonly long size;
-            private readonly long offset;
-
-            public string Path
-            {
-                get { return path; }
-            }
-
-            public long Size
-            {
-                get { return size; }
-            }
-
-            public long Offset
-            {
-                get { return offset; }
-            }
-
-            public long EndOffset
-            {
-                get { return (offset + size); }
-            }
-
-            public TorrentFile(string path, long size, long offset)
-            {
-                this.path = path;
-                this.size = size;
-                this.offset = offset;
-            }
-        }
-        #endregion
-
         #region Fields
         private readonly TorrentMetaData metaData;
         private readonly InfoHash infoHash;
