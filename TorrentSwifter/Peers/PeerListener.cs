@@ -11,10 +11,6 @@ namespace TorrentSwifter.Peers
     /// </summary>
     public static class PeerListener
     {
-        #region Consts
-        private const int PeerHandshakeTimeout = 60000; // 1 minute
-        #endregion
-
         #region Fields
         private static TcpListener listener = null;
         private static int listenPort = 0;
@@ -108,7 +104,9 @@ namespace TorrentSwifter.Peers
                         pendingConnections.Add(peerConnection);
                     }
                     RegisterConnectionEvents(peerConnection);
-                    TimeoutConnection(peerConnection, PeerHandshakeTimeout);
+
+                    int handshakeTimeout = Preferences.Peer.HandshakeTimeout;
+                    TimeoutConnection(peerConnection, handshakeTimeout);
                 }
             }
             catch (Exception ex)
