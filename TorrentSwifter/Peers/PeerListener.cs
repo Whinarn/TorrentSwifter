@@ -48,8 +48,6 @@ namespace TorrentSwifter.Peers
             PeerListener.listenPort = listenPort;
 
             ListenForNextConnection();
-
-            PeerManager.Initialize();
         }
 
         /// <summary>
@@ -64,7 +62,6 @@ namespace TorrentSwifter.Peers
             listener.Stop();
             listener = null;
 
-            PeerManager.Uninitialize();
         }
         #endregion
 
