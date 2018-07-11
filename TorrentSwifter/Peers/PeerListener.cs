@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Sockets;
+using System.Threading.Tasks;
 using TorrentSwifter.Logging;
 
 namespace TorrentSwifter.Peers
@@ -10,6 +11,10 @@ namespace TorrentSwifter.Peers
     /// </summary>
     public static class PeerListener
     {
+        #region Consts
+        private const int PeerHandshakeTimeout = 60000; // 1 minute
+        #endregion
+
         #region Fields
         private static TcpListener listener = null;
         private static int listenPort = 0;
@@ -103,6 +108,7 @@ namespace TorrentSwifter.Peers
                         pendingConnections.Add(peerConnection);
                     }
                     RegisterConnectionEvents(peerConnection);
+                    TimeoutConnection(peerConnection, PeerHandshakeTimeout);
                 }
             }
             catch (Exception ex)
@@ -141,6 +147,32 @@ namespace TorrentSwifter.Peers
                 }
                 pendingConnections.Clear();
             }
+        }
+        #endregion
+
+        #region Timeout Connection
+        private static void TimeoutConnection(PeerConnection connection, int handshakeTimeout)
+        {
+            Task.Run(async () =>
+            {
+                await Task.Delay(handshakeTimeout);
+
+                bool isStillPending;
+                lock (pendingConnections)
+                {
+                    isStillPending = pendingConnections.Contains(connection);
+                }
+
+                // Abort if the connection is not still pending
+                if (!isStillPending)
+                    return;
+
+                // If the connection hasn't been handshaked but still is connected, then we disconnect it
+                if (connection.IsConnected && !connection.IsHandshaked)
+                {
+                    connection.Disconnect();
+                }
+            });
         }
         #endregion
 
