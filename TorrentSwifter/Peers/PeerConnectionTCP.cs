@@ -46,6 +46,8 @@ namespace TorrentSwifter.Peers
         private bool isHandshakeSent = false;
         private bool isBitFieldSent = false;
         private bool isHandshakeReceived = false;
+        private bool isChokedByUs = true;
+        private bool isInterestedByUs = false;
         private bool isChokedByRemote = true;
         private bool isInterestedByRemote = false;
 
@@ -82,6 +84,22 @@ namespace TorrentSwifter.Peers
         public bool IsHandshakeReceived
         {
             get { return isHandshakeReceived; }
+        }
+
+        /// <summary>
+        /// Gets if this peer connection is currently choked by us.
+        /// </summary>
+        public bool IsChokedByUs
+        {
+            get { return isChokedByUs; }
+        }
+
+        /// <summary>
+        /// Gets if we are interested in this peer.
+        /// </summary>
+        public bool IsInterestedByUs
+        {
+            get { return isInterestedByUs; }
         }
 
         /// <summary>
@@ -249,6 +267,8 @@ namespace TorrentSwifter.Peers
         protected override void OnConnected()
         {
             isHandshakeReceived = false;
+            isChokedByUs = true;
+            isInterestedByUs = false;
             isChokedByRemote = true;
             isInterestedByRemote = false;
             isHandshakeSent = false;
@@ -468,26 +488,42 @@ namespace TorrentSwifter.Peers
 
         private void SendChoke()
         {
+            if (isChokedByUs)
+                return;
+
             var packet = CreatePacket(MessageType.Choke, 0);
             SendPacket(packet);
+            isChokedByUs = true;
         }
 
         private void SendUnchoke()
         {
+            if (!isChokedByUs)
+                return;
+
             var packet = CreatePacket(MessageType.Unchoke, 0);
             SendPacket(packet);
+            isChokedByUs = false;
         }
 
         private void SendInterested()
         {
+            if (isInterestedByUs)
+                return;
+
             var packet = CreatePacket(MessageType.Interested, 0);
             SendPacket(packet);
+            isInterestedByUs = true;
         }
 
         private void SendNotInterested()
         {
+            if (!isInterestedByUs)
+                return;
+
             var packet = CreatePacket(MessageType.NotInterested, 0);
             SendPacket(packet);
+            isInterestedByUs = false;
         }
 
         private void SendHave(int pieceIndex)
