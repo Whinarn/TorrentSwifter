@@ -19,72 +19,6 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Classes
-        private class Piece
-        {
-            private readonly int index;
-            private readonly int size;
-
-            private bool isVerified = false;
-            private bool[] downloadedBlocks = null;
-
-            public int Size
-            {
-                get { return size; }
-            }
-
-            public bool IsVerified
-            {
-                get { return isVerified; }
-                set
-                {
-                    if (isVerified != value)
-                    {
-                        isVerified = value;
-                        if (isVerified)
-                        {
-                            for (int i = 0; i < downloadedBlocks.Length; i++)
-                            {
-                                downloadedBlocks[i] = true;
-                            }
-                        }
-                        else if (HasDownloadedAllBlocks())
-                        {
-                            // Reset the download state of all blocks if we have downloaded all blocks
-                            // but the hash was still not correct.
-                            for (int i = 0; i < downloadedBlocks.Length; i++)
-                            {
-                                downloadedBlocks[i] = false;
-                            }
-                        }
-                    }
-                }
-            }
-
-            public Piece(int index, int size, int blockCount)
-            {
-                this.index = index;
-                this.size = size;
-
-                downloadedBlocks = new bool[blockCount];
-            }
-
-            public bool HasDownloadedAllBlocks()
-            {
-                bool result = true;
-
-                for (int i = 0; i < downloadedBlocks.Length; i++)
-                {
-                    if (!downloadedBlocks[i])
-                    {
-                        result = false;
-                        break;
-                    }
-                }
-
-                return result;
-            }
-        }
-
         private class TorrentFile
         {
             private readonly string path;
@@ -135,7 +69,7 @@ namespace TorrentSwifter.Torrents
         private bool isSeeding = false;
 
         private BitField bitField = null;
-        private Piece[] pieces = null;
+        private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
         #endregion
@@ -292,6 +226,7 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Public Methods
+        #region Start & Stop
         /// <summary>
         /// Starts downloading and/or uploading of this torrent.
         /// </summary>
@@ -327,7 +262,9 @@ namespace TorrentSwifter.Torrents
 
             // TODO: Perform any unitialization here
         }
+        #endregion
 
+        #region Integrity
         /// <summary>
         /// Rechecks the integrity of this torrent.
         /// Note that this only works when the torrent is stopped.
@@ -341,6 +278,7 @@ namespace TorrentSwifter.Torrents
             VerifyIntegrity();
         }
         #endregion
+        #endregion
 
         #region Private Methods
         #region Initialization
@@ -349,7 +287,7 @@ namespace TorrentSwifter.Torrents
             long totalSize = metaData.TotalSize;
             int pieceSize = metaData.PieceSize;
             int pieceCount = metaData.PieceCount;
-            pieces = new Piece[pieceCount];
+            pieces = new TorrentPiece[pieceCount];
 
             int lastPieceSize = (int)(totalSize % pieceSize);
             if (lastPieceSize == 0)
@@ -360,7 +298,8 @@ namespace TorrentSwifter.Torrents
                 bool isLastPiece = (i == (pieceCount - 1));
                 int currentPieceSize = (isLastPiece ? lastPieceSize : pieceSize);
                 int blockCount = (((currentPieceSize - 1) / blockSize) + 1);
-                pieces[i] = new Piece(i, currentPieceSize, blockCount);
+                long pieceOffset = ((long)i * (long)PieceSize);
+                pieces[i] = new TorrentPiece(i, pieceOffset, currentPieceSize, blockCount);
             }
 
             bitField = new BitField(pieceCount);
@@ -455,8 +394,8 @@ namespace TorrentSwifter.Torrents
         {
             var piece = pieces[pieceIndex];
             byte[] pieceData = new byte[piece.Size];
-            long torrentOffset = ((long)pieceIndex * (long)PieceSize);
-            int readByteCount = ReadData(torrentOffset, pieceData, 0, pieceData.Length);
+            long pieceOffset = ((long)pieceIndex * (long)PieceSize);
+            int readByteCount = ReadData(pieceOffset, pieceData, 0, pieceData.Length);
             if (readByteCount != pieceData.Length)
                 return null;
 
