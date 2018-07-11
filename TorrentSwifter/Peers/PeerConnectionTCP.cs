@@ -495,7 +495,7 @@ namespace TorrentSwifter.Peers
             if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
                 throw new ArgumentOutOfRangeException("pieceIndex");
 
-            var packet = CreatePacket(MessageType.NotInterested, 4);
+            var packet = CreatePacket(MessageType.Have, 4);
             packet.WriteInt32(pieceIndex);
             SendPacket(packet);
         }
