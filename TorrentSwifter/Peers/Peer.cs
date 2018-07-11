@@ -235,6 +235,16 @@ namespace TorrentSwifter.Peers
         }
         #endregion
 
+        #region Torrent Events
+        private void OnTorrentPieceVerified(object sender, PieceEventArgs e)
+        {
+            if (connection != null && connection.IsConnected && connection.IsHandshaked)
+            {
+                connection.ReportHavePiece(e.PieceIndex);
+            }
+        }
+        #endregion
+
         #region Connection Events
         private void OnConnectionConnected(object sender, EventArgs e)
         {
