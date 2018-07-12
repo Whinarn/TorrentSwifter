@@ -587,26 +587,30 @@ namespace TorrentSwifter.Peers
             isBitFieldSent = true;
         }
 
-        private void SendRequest(int pieceIndex, int begin, int length)
+        private void SendRequest(int pieceIndex, int blockIndex)
         {
             if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
                 throw new ArgumentOutOfRangeException("pieceIndex");
-            else if (begin < 0)
-                throw new ArgumentOutOfRangeException("begin");
-            else if (length <= 0)
-                throw new ArgumentOutOfRangeException("length");
+            else if (blockIndex < 0)
+                throw new ArgumentOutOfRangeException("blockIndex");
 
             var piece = torrent.GetPiece(pieceIndex);
-            if (begin >= piece.Size)
-                throw new ArgumentOutOfRangeException("begin");
-            else if ((begin + length) > piece.Size)
-                throw new ArgumentOutOfRangeException("length");
+            if (blockIndex >= piece.BlockCount)
+                throw new ArgumentOutOfRangeException("blockIndex");
+
+            var block = piece.GetBlock(blockIndex);
+            int begin = blockIndex * torrent.BlockSize;
+            int length = block.Size;
+            block.IsRequested = true;
 
             var packet = CreatePacket(MessageType.Request, 12);
             packet.WriteInt32(pieceIndex);
             packet.WriteInt32(begin);
             packet.WriteInt32(length);
             SendPacket(packet);
+
+            // TODO: Timeout a block request after a certain time, in case a peer doesn't respond with it
+            //       or at least send the same block request to another peer as well.
         }
 
         private void SendPiece(int pieceIndex, int begin, byte[] data)
