@@ -13,7 +13,7 @@ namespace TorrentSwifter.Torrents
         private readonly int size;
 
         private bool isVerified = false;
-        private bool[] downloadedBlocks = null;
+        private TorrentBlock[] blocks = null;
         #endregion
 
         #region Properties
@@ -46,7 +46,7 @@ namespace TorrentSwifter.Torrents
         /// </summary>
         public int BlockCount
         {
-            get { return downloadedBlocks.Length; }
+            get { return blocks.Length; }
         }
 
         /// <summary>
@@ -62,18 +62,18 @@ namespace TorrentSwifter.Torrents
                     isVerified = value;
                     if (isVerified)
                     {
-                        for (int i = 0; i < downloadedBlocks.Length; i++)
+                        for (int i = 0; i < blocks.Length; i++)
                         {
-                            downloadedBlocks[i] = true;
+                            blocks[i].IsDownloaded = true;
                         }
                     }
                     else if (HasDownloadedAllBlocks())
                     {
                         // Reset the download state of all blocks if we have downloaded all blocks
                         // but the hash was still not correct.
-                        for (int i = 0; i < downloadedBlocks.Length; i++)
+                        for (int i = 0; i < blocks.Length; i++)
                         {
-                            downloadedBlocks[i] = false;
+                            blocks[i].IsDownloaded = false;
                         }
                     }
                 }
@@ -82,17 +82,38 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Constructor
-        internal TorrentPiece(int index, long offset, int size, int blockCount)
+        internal TorrentPiece(int index, long offset, int size, int blockSize)
         {
             this.index = index;
             this.offset = offset;
             this.size = size;
 
-            downloadedBlocks = new bool[blockCount];
+            int lastBlockSize = (size % blockSize);
+            if (lastBlockSize == 0)
+                lastBlockSize = blockSize;
+
+            int blockCount = (((size - 1) / blockSize) + 1);
+            blocks = new TorrentBlock[blockCount];
+            for (int i = 0; i < blockCount; i++)
+            {
+                bool isLastPiece = (i == (blockCount - 1));
+                int currentBlockSize = (isLastPiece ? lastBlockSize : blockSize);
+                blocks[i] = new TorrentBlock(i, currentBlockSize);
+            }
         }
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Returns a block by its index.
+        /// </summary>
+        /// <param name="blockIndex">The block index.</param>
+        /// <returns>The block.</returns>
+        public TorrentBlock GetBlock(int blockIndex)
+        {
+            return blocks[blockIndex];
+        }
+
         /// <summary>
         /// Returns if we have downloaded all blocks in this piece.
         /// Does not guarantee that the integrity is intact.
@@ -105,9 +126,9 @@ namespace TorrentSwifter.Torrents
 
             bool result = true;
 
-            for (int i = 0; i < downloadedBlocks.Length; i++)
+            for (int i = 0; i < blocks.Length; i++)
             {
-                if (!downloadedBlocks[i])
+                if (!blocks[i].IsDownloaded)
                 {
                     result = false;
                     break;
