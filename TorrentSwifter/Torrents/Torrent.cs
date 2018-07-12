@@ -243,7 +243,9 @@ namespace TorrentSwifter.Torrents
             isStopped = false;
             TorrentRegistry.RegisterTorrent(this);
 
-            // TODO: Perform any initialization here
+            // Reset the session download & upload statistics
+            sessionDownloadedBytes = 0L;
+            sessionUploadedBytes = 0L;
 
             VerifyIntegrity();
 
