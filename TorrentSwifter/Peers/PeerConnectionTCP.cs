@@ -59,6 +59,7 @@ namespace TorrentSwifter.Peers
         private Packet receivedPacket = null;
 
         private DateTime sentHandshakeTime = DateTime.UtcNow;
+        private DateTime lastActiveTime = DateTime.UtcNow;
 
         private object sendSyncObj = new object();
         #endregion
@@ -274,6 +275,18 @@ namespace TorrentSwifter.Peers
                 }
                 return;
             }
+
+            // Make sure that the peer doesn't get inactive
+            int inactiveTimeout = Preferences.Peer.InactiveTimeout;
+            if (inactiveTimeout > 0)
+            {
+                var timeSinceActive = DateTime.UtcNow.Subtract(lastActiveTime);
+                if (timeSinceActive.TotalMilliseconds >= inactiveTimeout)
+                {
+                    Disconnect();
+                    return;
+                }
+            }
         }
 
         /// <summary>
@@ -311,6 +324,8 @@ namespace TorrentSwifter.Peers
             isInterestedByRemote = false;
             isHandshakeSent = false;
             isBitFieldSent = false;
+
+            lastActiveTime = DateTime.UtcNow;
 
             base.OnConnected();
 
@@ -655,6 +670,8 @@ namespace TorrentSwifter.Peers
         #region Handle Packets
         private bool HandlePacket(Packet packet)
         {
+            lastActiveTime = DateTime.UtcNow;
+
             var messageType = GetMessageType(packet);
             if (messageType == MessageType.Unknown)
             {

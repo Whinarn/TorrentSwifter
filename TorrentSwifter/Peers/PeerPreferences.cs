@@ -11,6 +11,7 @@ namespace TorrentSwifter.Peers
         private int listenPort = 0;
 
         private int handshakeTimeout = 15 * 1000; // 15 seconds
+        private int inactiveTimeout = 4 * 60 * 1000; // 4 minutes
         #endregion
 
         #region Properties
@@ -38,6 +39,16 @@ namespace TorrentSwifter.Peers
         {
             get { return handshakeTimeout; }
             set { handshakeTimeout = Math.Max(value, 0); }
+        }
+
+        /// <summary>
+        /// Gets or sets the timeout (in milliseconds) before disconnecting peers that haven't been active.
+        /// Zero means that there is no timeout.
+        /// </summary>
+        public int InactiveTimeout
+        {
+            get { return inactiveTimeout; }
+            set { inactiveTimeout = Math.Max(value, 0); }
         }
         #endregion
     }
