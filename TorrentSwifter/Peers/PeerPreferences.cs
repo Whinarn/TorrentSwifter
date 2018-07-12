@@ -10,7 +10,7 @@ namespace TorrentSwifter.Peers
         #region Fields
         private int listenPort = 0;
 
-        private int handshakeTimeout = 60000;
+        private int handshakeTimeout = 15 * 1000; // 15 seconds
         #endregion
 
         #region Properties
@@ -31,7 +31,8 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets or sets the timeout before disconnecting peers that haven't yet sent an handshake.
+        /// Gets or sets the timeout (in milliseconds) before disconnecting peers that haven't yet sent an handshake.
+        /// Zero means that there is no timeout.
         /// </summary>
         public int HandshakeTimeout
         {
