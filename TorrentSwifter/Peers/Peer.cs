@@ -205,8 +205,7 @@ namespace TorrentSwifter.Peers
         /// <returns>The peer text-representation.</returns>
         public override string ToString()
         {
-            // TODO: Expand this
-            return endPoint.ToString();
+            return string.Format("[{0} - {1}]", endPoint, peerID);
         }
         #endregion
 
