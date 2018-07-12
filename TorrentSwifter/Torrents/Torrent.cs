@@ -40,6 +40,7 @@ namespace TorrentSwifter.Torrents
         private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
+        private long bytesLeftToDownload = 0L;
 
         private long sessionDownloadedBytes = 0L;
         private long sessionUploadedBytes = 0L;
@@ -184,6 +185,14 @@ namespace TorrentSwifter.Torrents
         {
             get { return sessionUploadedBytes; }
         }
+
+        /// <summary>
+        /// Gets the amount of bytes left to download.
+        /// </summary>
+        public long BytesLeftToDownload
+        {
+            get { return bytesLeftToDownload; }
+        }
         #endregion
 
         #region Constructor
@@ -210,6 +219,7 @@ namespace TorrentSwifter.Torrents
             this.downloadPath = Path.GetFullPath(downloadPath);
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
+            this.bytesLeftToDownload = totalSize;
 
             InitializePieces();
             InitializeFiles();
@@ -428,8 +438,14 @@ namespace TorrentSwifter.Torrents
 
                 if (isVerified)
                 {
+                    Interlocked.Add(ref bytesLeftToDownload, -piece.Size); // subtract
+
                     var eventArgs = new PieceEventArgs(pieceIndex);
                     PieceVerified.SafeInvoke(this, eventArgs);
+                }
+                else
+                {
+                    Interlocked.Add(ref bytesLeftToDownload, piece.Size);
                 }
             }
             return isVerified;
