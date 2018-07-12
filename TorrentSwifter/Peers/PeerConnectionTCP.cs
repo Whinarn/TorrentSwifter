@@ -262,10 +262,15 @@ namespace TorrentSwifter.Peers
 
             if (!isHandshakeReceived)
             {
-                var timeSinceHandshakeSent = DateTime.UtcNow.Subtract(sentHandshakeTime);
-                if (timeSinceHandshakeSent.TotalMilliseconds > Preferences.Peer.HandshakeTimeout)
+                // Make sure we get a handshake within a time-frame
+                int handshakeTimeout = Preferences.Peer.HandshakeTimeout;
+                if (handshakeTimeout > 0)
                 {
-                    Disconnect();
+                    var timeSinceHandshakeSent = DateTime.UtcNow.Subtract(sentHandshakeTime);
+                    if (timeSinceHandshakeSent.TotalMilliseconds >= handshakeTimeout)
+                    {
+                        Disconnect();
+                    }
                 }
                 return;
             }

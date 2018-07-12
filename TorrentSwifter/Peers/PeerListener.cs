@@ -106,7 +106,10 @@ namespace TorrentSwifter.Peers
                     RegisterConnectionEvents(peerConnection);
 
                     int handshakeTimeout = Preferences.Peer.HandshakeTimeout;
-                    TimeoutConnection(peerConnection, handshakeTimeout);
+                    if (handshakeTimeout > 0)
+                    {
+                        TimeoutConnection(peerConnection, handshakeTimeout);
+                    }
                 }
             }
             catch (Exception ex)
