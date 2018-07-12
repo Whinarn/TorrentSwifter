@@ -138,12 +138,5 @@ namespace TorrentSwifter.Torrents
             return result;
         }
         #endregion
-
-        #region Internal Methods
-        internal void OnBlockDownloaded(int blockIndex)
-        {
-            blocks[blockIndex].IsDownloaded = true;
-        }
-        #endregion
     }
 }

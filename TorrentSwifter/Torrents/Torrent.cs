@@ -643,8 +643,7 @@ namespace TorrentSwifter.Torrents
 
             long offset = piece.Offset + (blockIndex * blockSize);
             WriteData(offset, data, 0, data.Length);
-
-            piece.OnBlockDownloaded(blockIndex);
+            block.IsDownloaded = true;
 
             if (piece.HasDownloadedAllBlocks())
             {
