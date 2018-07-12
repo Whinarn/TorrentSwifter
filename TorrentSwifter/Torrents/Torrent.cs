@@ -9,6 +9,8 @@ using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents
 {
+    // TODO: Announce complete to trackers when we have finished downloading
+
     /// <summary>
     /// A torrent.
     /// </summary>
@@ -233,6 +235,8 @@ namespace TorrentSwifter.Torrents
             isStarted = false;
             TorrentRegistry.UnregisterTorrent(this);
 
+            AnnounceTrackers(TrackerEvent.Stopped);
+
             // TODO: Perform any unitialization here
         }
         #endregion
@@ -434,7 +438,7 @@ namespace TorrentSwifter.Torrents
         #region Integrity
         private void VerifyIntegrity()
         {
-            if (isVerifyingIntegrity || hasVerifiedIntegrity)
+            if (isVerifyingIntegrity || hasVerifiedIntegrity || isStarted)
                 return;
 
             isVerifyingIntegrity = true;
@@ -467,6 +471,56 @@ namespace TorrentSwifter.Torrents
             verificationThread.Priority = ThreadPriority.BelowNormal;
             verificationThread.Name = "TorrentIntegrityCheckThread";
             verificationThread.Start();
+        }
+        #endregion
+
+        #region Trackers
+        private void UpdateTrackers()
+        {
+            foreach (var trackerGroup in trackerGroups)
+            {
+                trackerGroup.Update();
+            }
+        }
+
+        private void AnnounceTrackers(TrackerEvent trackerEvent)
+        {
+            // We only care about completed and stopped events here
+            if (trackerEvent != TrackerEvent.Completed && trackerEvent != TrackerEvent.Stopped)
+                return;
+
+            foreach (var trackerGroup in trackerGroups)
+            {
+                var announceTask = trackerGroup.Announce(trackerEvent);
+                announceTask.ContinueWith((task) =>
+                {
+                    if (!task.IsFaulted)
+                    {
+                        var announceResponse = task.Result;
+                        if (announceResponse != null)
+                        {
+                            ProcessAnnounceResponse(announceResponse);
+                        }
+                    }
+                    else
+                    {
+                        Log.LogErrorException(task.Exception);
+                    }
+                });
+            }
+        }
+        #endregion
+
+        #region Peers
+        private void UpdatePeers()
+        {
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    peer.Update();
+                }
+            }
         }
         #endregion
 
@@ -510,29 +564,17 @@ namespace TorrentSwifter.Torrents
                 isStopped = true;
             }
         }
-
-        private void UpdateTrackers()
-        {
-            foreach (var trackerGroup in trackerGroups)
-            {
-                trackerGroup.Update();
-            }
-        }
-
-        private void UpdatePeers()
-        {
-            lock (peersSyncObj)
-            {
-                foreach (var peer in peers)
-                {
-                    peer.Update();
-                }
-            }
-        }
         #endregion
         #endregion
 
         #region Internal Methods
+        #region Trackers
+        internal void ProcessAnnounceResponse(AnnounceResponse announceResponse)
+        {
+            // TODO: Implement!
+        }
+        #endregion
+
         #region Peers
         internal void OnPeerConnected(PeerID peerID, PeerConnection connection)
         {
