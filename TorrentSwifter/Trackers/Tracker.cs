@@ -118,7 +118,7 @@ namespace TorrentSwifter.Trackers
         /// <summary>
         /// Gets the warning message of this tracker.
         /// </summary>
-        public string WailureMessage
+        public string WarningMessage
         {
             get { return warningMessage ?? string.Empty; }
         }

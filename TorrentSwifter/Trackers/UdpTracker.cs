@@ -271,6 +271,8 @@ namespace TorrentSwifter.Trackers
                     return null;
                 }
 
+                failureMessage = announceResponse.FailureReason;
+                warningMessage = announceResponse.WarningMessage;
                 status = TrackerStatus.OK;
                 return announceResponse;
             }
