@@ -191,6 +191,15 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Returns the hash code of this peer.
+        /// </summary>
+        /// <returns>The hash code.</returns>
+        public override int GetHashCode()
+        {
+            return endPoint.GetHashCode();
+        }
+
+        /// <summary>
         /// Returns the text-representation of this peer.
         /// </summary>
         /// <returns>The peer text-representation.</returns>
