@@ -41,6 +41,9 @@ namespace TorrentSwifter.Torrents
         private TorrentFile[] files = null;
         private object[] fileWriteLocks = null;
 
+        private long sessionDownloadedBytes = 0L;
+        private long sessionUploadedBytes = 0L;
+
         private List<TrackerGroup> trackerGroups = new List<TrackerGroup>();
 
         private List<Peer> peers = new List<Peer>();
@@ -164,6 +167,22 @@ namespace TorrentSwifter.Torrents
                 else
                     return TorrentState.Downloading;
             }
+        }
+
+        /// <summary>
+        /// Gets the amount of bytes downloaded this session.
+        /// </summary>
+        public long SessionDownloadedBytes
+        {
+            get { return sessionDownloadedBytes; }
+        }
+
+        /// <summary>
+        /// Gets the amount of bytes uploaded this session.
+        /// </summary>
+        public long SessionUploadedBytes
+        {
+            get { return sessionUploadedBytes; }
         }
         #endregion
 
@@ -592,6 +611,18 @@ namespace TorrentSwifter.Torrents
                     peersByID.Add(peerID, peer);
                 }
             }
+        }
+        #endregion
+
+        #region Statistics
+        internal void IncreaseSessionDownloadedBytes(long amount)
+        {
+            Interlocked.Add(ref sessionDownloadedBytes, amount);
+        }
+
+        internal void IncreaseSessionUploadedBytes(long amount)
+        {
+            Interlocked.Add(ref sessionUploadedBytes, amount);
         }
         #endregion
 

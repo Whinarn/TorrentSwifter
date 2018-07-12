@@ -614,6 +614,8 @@ namespace TorrentSwifter.Peers
             packet.WriteInt32(begin);
             packet.Write(data, 0, data.Length);
             SendPacket(packet);
+
+            torrent.IncreaseSessionUploadedBytes(data.Length);
         }
 
         private void SendCancel(int pieceIndex, int begin, int length)
@@ -921,7 +923,8 @@ namespace TorrentSwifter.Peers
             Log.LogDebug("[Peer][{0}] A peer sent piece data. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
 
             // TODO: Implement!
-            byte[] data = packet.ReadBytes(packet.Length - packet.Offset);
+            byte[] data = packet.ReadBytes(length);
+            torrent.IncreaseSessionDownloadedBytes(length);
             return true;
         }
 
