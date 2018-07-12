@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using System.Threading.Tasks;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
@@ -39,7 +40,6 @@ namespace TorrentSwifter.Torrents
         private BitField bitField = null;
         private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
-        private object[] fileWriteLocks = null;
         private long bytesLeftToDownload = 0L;
 
         private long sessionDownloadedBytes = 0L;
@@ -331,17 +331,11 @@ namespace TorrentSwifter.Torrents
         {
             var metaDataFiles = metaData.Files;
             files = new TorrentFile[metaDataFiles.Length];
-            fileWriteLocks = new object[files.Length];
-
-            for (int i = 0; i < fileWriteLocks.Length; i++)
-            {
-                fileWriteLocks[i] = new object();
-            }
 
             if (metaDataFiles.Length == 1)
             {
                 var file = metaDataFiles[0];
-                files[0] = new TorrentFile(downloadPath, file.Size, 0L);
+                files[0] = new TorrentFile(file.Path, downloadPath, file.Size, 0L);
 
                 if (Preferences.Torrent.AllocateFullFileSizes)
                 {
@@ -360,7 +354,7 @@ namespace TorrentSwifter.Torrents
                 {
                     var metaDataFile = metaDataFiles[i];
                     string filePath = IOHelper.GetTorrentFilePath(downloadPath, metaDataFile);
-                    files[i] = new TorrentFile(filePath, metaDataFile.Size, currentFileOffset);
+                    files[i] = new TorrentFile(metaDataFile.Path, filePath, metaDataFile.Size, currentFileOffset);
                     currentFileOffset += metaDataFile.Size;
 
                     if (Preferences.Torrent.AllocateFullFileSizes)
@@ -425,11 +419,11 @@ namespace TorrentSwifter.Torrents
             return result;
         }
 
-        private bool VerifyPiece(int pieceIndex)
+        private async Task<bool> VerifyPiece(int pieceIndex)
         {
             var piece = pieces[pieceIndex];
             var pieceHash = metaData.PieceHashes[pieceIndex];
-            byte[] computedPieceHash = GetPieceHash(pieceIndex);
+            byte[] computedPieceHash = await GetPieceHash(pieceIndex);
 
             bool isVerified = (computedPieceHash != null && pieceHash.Equals(computedPieceHash));
             if (piece.IsVerified != isVerified)
@@ -452,21 +446,21 @@ namespace TorrentSwifter.Torrents
             return isVerified;
         }
 
-        private byte[] ReadPiece(int pieceIndex)
+        private async Task<byte[]> ReadPiece(int pieceIndex)
         {
             var piece = pieces[pieceIndex];
             byte[] pieceData = new byte[piece.Size];
             long pieceOffset = ((long)pieceIndex * (long)PieceSize);
-            int readByteCount = ReadData(pieceOffset, pieceData, 0, pieceData.Length);
+            int readByteCount = await ReadData(pieceOffset, pieceData, 0, pieceData.Length);
             if (readByteCount != pieceData.Length)
                 return null;
 
             return pieceData;
         }
 
-        private byte[] GetPieceHash(int pieceIndex)
+        private async Task<byte[]> GetPieceHash(int pieceIndex)
         {
-            byte[] pieceData = ReadPiece(pieceIndex);
+            byte[] pieceData = await ReadPiece(pieceIndex);
             return HashHelper.ComputeSHA1(pieceData);
         }
         #endregion
@@ -478,13 +472,13 @@ namespace TorrentSwifter.Torrents
                 return;
 
             isVerifyingIntegrity = true;
-            var verificationThread = new Thread(() =>
+            Task.Run(async () =>
             {
                 try
                 {
                     for (int i = 0; i < pieces.Length; i++)
                     {
-                        VerifyPiece(i);
+                        await VerifyPiece(i);
                     }
 
                     isSeeding = HasDownloadedAllPieces();
@@ -503,10 +497,10 @@ namespace TorrentSwifter.Torrents
                 {
                     isVerifyingIntegrity = false;
                 }
-            });
-            verificationThread.Priority = ThreadPriority.BelowNormal;
-            verificationThread.Name = "TorrentIntegrityCheckThread";
-            verificationThread.Start();
+            }).ContinueWith((task) =>
+            {
+                Log.LogErrorException(task.Exception);
+            }, TaskContinuationOptions.OnlyOnFaulted);
         }
         #endregion
 
@@ -641,14 +635,21 @@ namespace TorrentSwifter.Torrents
             if (!block.IsRequested)
                 return;
 
-            long offset = piece.Offset + (blockIndex * blockSize);
-            WriteData(offset, data, 0, data.Length);
-            block.IsDownloaded = true;
-
-            if (piece.HasDownloadedAllBlocks())
+            // Write the data and verify the piece on another thread
+            Task.Run(async () =>
             {
-                VerifyPiece(piece.Index);
-            }
+                long offset = piece.Offset + (blockIndex * blockSize);
+                await WriteData(offset, data, 0, data.Length);
+                block.IsDownloaded = true;
+
+                if (piece.HasDownloadedAllBlocks())
+                {
+                    await VerifyPiece(piece.Index);
+                }
+            }).ContinueWith((task) =>
+            {
+                Log.LogErrorException(task.Exception);
+            }, TaskContinuationOptions.OnlyOnFaulted);
         }
         #endregion
 
@@ -665,7 +666,7 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Read & Write
-        internal int ReadData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
+        internal async Task<int> ReadData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
         {
             if (torrentOffset < 0 || torrentOffset >= totalSize)
                 throw new ArgumentOutOfRangeException("torrentOffset");
@@ -676,7 +677,7 @@ namespace TorrentSwifter.Torrents
             else if (count < 0 || (bufferOffset + count) > buffer.Length)
                 throw new ArgumentOutOfRangeException("bufferOffset");
 
-            int readByteCount = 0;
+            int totalBytesRead = 0;
             for (int i = 0; i < files.Length && count > 0; i++)
             {
                 var file = files[i];
@@ -685,27 +686,23 @@ namespace TorrentSwifter.Torrents
                     long localOffset = torrentOffset - file.Offset;
                     int localCount = (int)Math.Min(file.Size - localOffset, count);
 
-                    if (!File.Exists(file.Path))
+                    if (!file.Exists)
                         break;
 
-                    using (var fileStream = new FileStream(file.Path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                    {
-                        fileStream.Seek(localOffset, SeekOrigin.Begin);
-                        localCount = fileStream.Read(buffer, bufferOffset, localCount);
-                        if (localCount <= 0)
-                            break;
-                    }
+                    int readByteCount = await file.ReadAsync(localOffset, buffer, bufferOffset, localCount);
+                    if (readByteCount <= 0)
+                        break;
 
-                    torrentOffset += localCount;
-                    bufferOffset += localCount;
-                    count -= localCount;
-                    readByteCount += localCount;
+                    torrentOffset += readByteCount;
+                    bufferOffset += readByteCount;
+                    count -= readByteCount;
+                    totalBytesRead += readByteCount;
                 }
             }
-            return readByteCount;
+            return totalBytesRead;
         }
 
-        internal void WriteData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
+        internal async Task WriteData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
         {
             if (torrentOffset < 0 || torrentOffset >= totalSize)
                 throw new ArgumentOutOfRangeException("torrentOffset");
@@ -724,16 +721,8 @@ namespace TorrentSwifter.Torrents
                     long localOffset = torrentOffset - file.Offset;
                     int localCount = (int)Math.Min(file.Size - localOffset, count);
 
-                    IOHelper.CreateParentDirectoryIfItDoesntExist(file.Path);
-
-                    lock (fileWriteLocks[i])
-                    {
-                        using (var fileStream = new FileStream(file.Path, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
-                        {
-                            fileStream.Seek(localOffset, SeekOrigin.Begin);
-                            fileStream.Write(buffer, bufferOffset, localCount);
-                        }
-                    }
+                    IOHelper.CreateParentDirectoryIfItDoesntExist(file.FullPath);
+                    await file.WriteAsync(localOffset, buffer, bufferOffset, localCount);
 
                     torrentOffset += localCount;
                     bufferOffset += localCount;
