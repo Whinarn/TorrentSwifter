@@ -631,6 +631,28 @@ namespace TorrentSwifter.Torrents
         }
         #endregion
 
+        #region Pieces
+        internal void OnReceivedPieceBlock(int pieceIndex, int blockIndex, byte[] data)
+        {
+            var piece = pieces[pieceIndex];
+            var block = piece.GetBlock(blockIndex);
+
+            // Ignore blocks that we haven't requested
+            if (!block.IsRequested)
+                return;
+
+            long offset = piece.Offset + (blockIndex * blockSize);
+            WriteData(offset, data, 0, data.Length);
+
+            piece.OnBlockDownloaded(blockIndex);
+
+            if (piece.HasDownloadedAllBlocks())
+            {
+                VerifyPiece(piece.Index);
+            }
+        }
+        #endregion
+
         #region Statistics
         internal void IncreaseSessionDownloadedBytes(long amount)
         {

@@ -909,24 +909,41 @@ namespace TorrentSwifter.Peers
             int begin = packet.ReadInt32();
             int length = (packet.Length - packet.Offset);
 
-            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount || begin < 0)
+            // The piece index must be valid, begin cannot be negative and must be modular to the block-size
+            int blockSize = torrent.BlockSize;
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount || begin < 0 || (begin % blockSize) != 0)
             {
                 Log.LogWarning("[Peer][{0}] A peer sent piece data with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
                 return false;
             }
 
+            int blockIndex = (begin / blockSize);
             var piece = torrent.GetPiece(pieceIndex);
-            if (begin >= piece.Size || (begin + length) > piece.Size)
+            if (begin >= piece.Size || (begin + length) > piece.Size || blockIndex >= piece.BlockCount)
             {
                 Log.LogWarning("[Peer][{0}] A peer sent piece data with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
                 return false;
+            }
+
+            var block = piece.GetBlock(blockIndex);
+            if (length != block.Size)
+            {
+                Log.LogWarning("[Peer][{0}] A peer sent piece data with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return false;
+            }
+            else if (!block.IsRequested)
+            {
+                // TODO: Should we be more offended with this and disconnect the peer? Or do we simply write it up as bad behaviour and kick them out
+                //       once they have commited enough offences?
+                Log.LogDebug("[Peer][{0}] A peer sent piece data that was not requested. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return true;
             }
 
             Log.LogDebug("[Peer][{0}] A peer sent piece data. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
 
-            // TODO: Implement!
             byte[] data = packet.ReadBytes(length);
             torrent.IncreaseSessionDownloadedBytes(length);
+            torrent.OnReceivedPieceBlock(pieceIndex, begin, data);
             return true;
         }
 
