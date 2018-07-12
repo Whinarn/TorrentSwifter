@@ -24,6 +24,14 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Gets if this peer ID is none.
+        /// </summary>
+        public bool IsNone
+        {
+            get { return (id == null); }
+        }
+
+        /// <summary>
         /// Creates a new peer ID.
         /// </summary>
         /// <param name="id">The ID bytes.</param>
