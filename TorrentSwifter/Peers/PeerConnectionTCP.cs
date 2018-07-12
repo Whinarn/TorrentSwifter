@@ -939,8 +939,7 @@ namespace TorrentSwifter.Peers
             }
 
             Log.LogDebug("[Peer][{0}] A peer sent a request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
-
-            // TODO: Implement!
+            torrent.OnPieceBlockRequested(peer, pieceIndex, begin, length);
             return true;
         }
 
@@ -1007,8 +1006,7 @@ namespace TorrentSwifter.Peers
             }
 
             Log.LogDebug("[Peer][{0}] A peer cancelled request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
-
-            // TODO: Implement!
+            torrent.OnPieceBlockCancelled(peer, pieceIndex, begin, length);
             return true;
         }
 

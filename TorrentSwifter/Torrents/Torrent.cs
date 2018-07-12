@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -50,6 +51,8 @@ namespace TorrentSwifter.Torrents
         private List<Peer> peers = new List<Peer>();
         private Dictionary<PeerID, Peer> peersByID = new Dictionary<PeerID, Peer>();
         private object peersSyncObj = new object();
+
+        private ConcurrentQueue<PieceBlockRequest> incomingPieceRequests = new ConcurrentQueue<PieceBlockRequest>();
         #endregion
 
         #region Events
@@ -463,6 +466,30 @@ namespace TorrentSwifter.Torrents
             byte[] pieceData = await ReadPiece(pieceIndex);
             return HashHelper.ComputeSHA1(pieceData);
         }
+
+        private void ProcessIncomingPieceRequests()
+        {
+            // TODO: Implement!
+        }
+
+        private void ProcessOutgoingPieceRequests()
+        {
+            // TODO: Implement!
+        }
+
+        private PieceBlockRequest FindIncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
+        {
+            PieceBlockRequest result = null;
+            foreach (var request in incomingPieceRequests)
+            {
+                if (request.Equals(peer, pieceIndex, begin, length))
+                {
+                    result = request;
+                    break;
+                }
+            }
+            return result;
+        }
         #endregion
 
         #region Integrity
@@ -627,6 +654,29 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Pieces
+        internal void OnPieceBlockRequested(Peer peer, int pieceIndex, int begin, int length)
+        {
+            var existingRequest = FindIncomingPieceRequest(peer, pieceIndex, begin, length);
+            if (existingRequest == null)
+            {
+                var newRequest = new PieceBlockRequest(peer, pieceIndex, begin, length);
+                incomingPieceRequests.Enqueue(newRequest);
+
+                ProcessIncomingPieceRequests();
+            }
+        }
+
+        internal void OnPieceBlockCancelled(Peer peer, int pieceIndex, int begin, int length)
+        {
+            var existingRequest = FindIncomingPieceRequest(peer, pieceIndex, begin, length);
+            if (existingRequest != null)
+            {
+                existingRequest.IsCancelled = true;
+
+                ProcessIncomingPieceRequests();
+            }
+        }
+
         internal void OnReceivedPieceBlock(int pieceIndex, int blockIndex, byte[] data)
         {
             var piece = pieces[pieceIndex];

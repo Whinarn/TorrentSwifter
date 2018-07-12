@@ -5,13 +5,15 @@ namespace TorrentSwifter.Peers
     /// <summary>
     /// A piece block request.
     /// </summary>
-    public sealed class PieceBlockRequest : IEquatable<PieceBlockRequest>
+    internal sealed class PieceBlockRequest : IEquatable<PieceBlockRequest>
     {
         #region Fields
         private readonly Peer peer;
         private readonly int pieceIndex;
         private readonly int begin;
         private readonly int length;
+
+        private bool isCancelled = false;
         #endregion
 
         #region Properties
@@ -45,6 +47,15 @@ namespace TorrentSwifter.Peers
         public int Length
         {
             get { return length; }
+        }
+
+        /// <summary>
+        /// Gets or sets if this request has been cancelled.
+        /// </summary>
+        public bool IsCancelled
+        {
+            get { return isCancelled; }
+            set { isCancelled = value; }
         }
         #endregion
 
