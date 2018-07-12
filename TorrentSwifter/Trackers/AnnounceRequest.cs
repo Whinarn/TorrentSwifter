@@ -147,7 +147,9 @@ namespace TorrentSwifter.Trackers
             parameters.Add("downloaded", bytesDownloaded);
             parameters.Add("left", bytesLeft);
             parameters.Add("compact", "1");
-            parameters.Add("supportcrypto", "1");
+
+            // TODO: Uncomment this line when we actually support crypto
+            //parameters.Add("supportcrypto", "1");
             // TODO: Add support for "requirecrypto"?
 
             if (trackerEvent != TrackerEvent.None)
