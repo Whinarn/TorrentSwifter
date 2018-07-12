@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Torrents;
 
@@ -15,6 +17,16 @@ namespace TorrentSwifter.Trackers
         private readonly Torrent torrent;
 
         private List<Tracker> trackers = new List<Tracker>();
+        private int currentIndex = 0;
+
+        private bool hasSentStartedEvent = false;
+        private bool isAnnouncing = false;
+        private DateTime nextAnnounceTime = DateTime.MinValue;
+        private DateTime nextAnnounceTimeMinimum = DateTime.MinValue;
+
+        private TrackerStatus status = TrackerStatus.Offline;
+        private string failureMessage = null;
+        private string warningMessage = null;
 
         private AnnounceRequest announceRequest = null;
         #endregion
@@ -26,6 +38,53 @@ namespace TorrentSwifter.Trackers
         public int TrackerCount
         {
             get { return trackers.Count; }
+        }
+
+        /// <summary>
+        /// Gets if we are currently announcing.
+        /// </summary>
+        public bool IsAnnouncing
+        {
+            get { return isAnnouncing; }
+        }
+
+        /// <summary>
+        /// Gets the status of this group of trackers.
+        /// </summary>
+        public TrackerStatus Status
+        {
+            get { return status; }
+        }
+
+        /// <summary>
+        /// Gets the failure message for this group of trackers.
+        /// </summary>
+        public string FailureMessage
+        {
+            get { return failureMessage ?? string.Empty; }
+        }
+
+        /// <summary>
+        /// Gets the warning message for this group of trackers.
+        /// </summary>
+        public string WarningMessage
+        {
+            get { return warningMessage ?? string.Empty; }
+        }
+
+        /// <summary>
+        /// Gets or sets the next time we should announce.
+        /// </summary>
+        public DateTime NextAnnounceTime
+        {
+            get { return nextAnnounceTime; }
+            set
+            {
+                if (value > nextAnnounceTimeMinimum)
+                    nextAnnounceTime = value;
+                else
+                    nextAnnounceTime = nextAnnounceTimeMinimum;
+            }
         }
         #endregion
 
@@ -124,6 +183,88 @@ namespace TorrentSwifter.Trackers
         }
 
         /// <summary>
+        /// Announces to this tracker group.
+        /// This should be done in regular intervals.
+        /// </summary>
+        /// <returns></returns>
+        public async Task<AnnounceResponse> Announce(TrackerEvent trackerEvent)
+        {
+            // If there are no trackers to announce to
+            if (trackers.Count == 0)
+                return null;
+            // Don't bother announcing if we are not listening for peers
+            else if (!PeerListener.IsListening)
+                return null;
+            else if (isAnnouncing)
+                return null;
+
+            try
+            {
+                if (currentIndex > trackers.Count)
+                    currentIndex = 0;
+
+                // Select the tracker
+                var tracker = trackers[currentIndex];
+                isAnnouncing = true;
+
+                // If we haven't sent started event yet, we make sure to send started event first
+                if (!hasSentStartedEvent)
+                {
+                    // If we are sending stopped and haven't sent started, then we don't have to bother
+                    if (trackerEvent == TrackerEvent.Stopped)
+                        return null;
+
+                    trackerEvent = TrackerEvent.Started;
+                }
+
+                int listenPort = PeerListener.Port;
+                announceRequest.Port = listenPort;
+                announceRequest.TrackerEvent = trackerEvent;
+
+                var announceResponse = await tracker.Announce(announceRequest);
+                status = tracker.Status;
+                failureMessage = tracker.FailureMessage;
+                warningMessage = tracker.WarningMessage;
+
+                if (status == TrackerStatus.OK)
+                {
+                    int trackerIndex = trackers.IndexOf(tracker);
+                    if (trackerIndex != -1)
+                    {
+                        // If we get an OK we put this tracker first in the list
+                        if (trackerIndex > 0)
+                        {
+                            trackers.RemoveAt(trackerIndex);
+                            trackers.Insert(0, tracker);
+                        }
+                        currentIndex = 0;
+                    }
+                    else
+                    {
+                        // The tracker has been removed from the group
+                        currentIndex = 0;
+                    }
+                }
+                else
+                {
+                    currentIndex = (currentIndex + 1) % trackers.Count;
+                }
+                return announceResponse;
+            }
+            catch (Exception ex)
+            {
+                failureMessage = ex.Message;
+                currentIndex = (currentIndex + 1) % trackers.Count;
+                Log.LogErrorException(ex);
+                return null;
+            }
+            finally
+            {
+                isAnnouncing = false;
+            }
+        }
+
+        /// <summary>
         /// Returns the enumerator for this tracker group.
         /// </summary>
         /// <returns>The enumerator.</returns>
@@ -139,7 +280,17 @@ namespace TorrentSwifter.Trackers
             if (trackers.Count == 0)
                 return;
 
-            // TODO: Implement!
+            if (DateTime.UtcNow >= nextAnnounceTime)
+            {
+                var announceTask = Announce(TrackerEvent.None);
+                announceTask.ContinueWith((task) =>
+                {
+                    if (task.IsFaulted)
+                    {
+                        Log.LogErrorException(task.Exception);
+                    }
+                }, TaskContinuationOptions.OnlyOnFaulted);
+            }
         }
         #endregion
 
