@@ -221,7 +221,10 @@ namespace TorrentSwifter.Trackers
                 announceRequest.Port = listenPort;
                 announceRequest.TrackerEvent = trackerEvent;
 
-                // TODO: Fill in more info to the announce request
+                // TODO: Fill in the correct info here
+                announceRequest.BytesDownloaded = 0L;
+                announceRequest.BytesUploaded = 0L;
+                announceRequest.BytesLeft = 0L;
 
                 var announceResponse = await tracker.Announce(announceRequest);
                 status = tracker.Status;
@@ -287,11 +290,19 @@ namespace TorrentSwifter.Trackers
                 var announceTask = Announce(TrackerEvent.None);
                 announceTask.ContinueWith((task) =>
                 {
-                    if (task.IsFaulted)
+                    if (!task.IsFaulted)
+                    {
+                        var announceResponse = task.Result;
+                        if (announceResponse != null)
+                        {
+                            torrent.ProcessAnnounceResponse(announceResponse);
+                        }
+                    }
+                    else
                     {
                         Log.LogErrorException(task.Exception);
                     }
-                }, TaskContinuationOptions.OnlyOnFaulted);
+                });
             }
         }
         #endregion
