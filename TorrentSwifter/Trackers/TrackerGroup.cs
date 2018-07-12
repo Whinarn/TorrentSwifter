@@ -217,6 +217,12 @@ namespace TorrentSwifter.Trackers
                     trackerEvent = TrackerEvent.Started;
                 }
 
+                // If we stop the tracker, we have to send a started event again on next announce
+                if (trackerEvent == TrackerEvent.Stopped)
+                {
+                    hasSentStartedEvent = false;
+                }
+
                 int listenPort = PeerListener.Port;
                 announceRequest.Port = listenPort;
                 announceRequest.TrackerEvent = trackerEvent;
@@ -231,6 +237,11 @@ namespace TorrentSwifter.Trackers
 
                 if (status == TrackerStatus.OK)
                 {
+                    if (!hasSentStartedEvent && trackerEvent == TrackerEvent.Started)
+                    {
+                        hasSentStartedEvent = true;
+                    }
+
                     int trackerIndex = trackers.IndexOf(tracker);
                     if (trackerIndex != -1)
                     {
