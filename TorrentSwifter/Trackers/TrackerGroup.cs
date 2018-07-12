@@ -186,7 +186,7 @@ namespace TorrentSwifter.Trackers
         /// Announces to this tracker group.
         /// This should be done in regular intervals.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The announce response.</returns>
         public async Task<AnnounceResponse> Announce(TrackerEvent trackerEvent)
         {
             // If there are no trackers to announce to
@@ -220,11 +220,9 @@ namespace TorrentSwifter.Trackers
                 int listenPort = PeerListener.Port;
                 announceRequest.Port = listenPort;
                 announceRequest.TrackerEvent = trackerEvent;
-
-                // TODO: Fill in the correct info here
-                announceRequest.BytesDownloaded = 0L;
-                announceRequest.BytesUploaded = 0L;
-                announceRequest.BytesLeft = 0L;
+                announceRequest.BytesDownloaded = torrent.SessionDownloadedBytes;
+                announceRequest.BytesUploaded = torrent.SessionUploadedBytes;
+                announceRequest.BytesLeft = torrent.BytesLeftToDownload;
 
                 var announceResponse = await tracker.Announce(announceRequest);
                 status = tracker.Status;
