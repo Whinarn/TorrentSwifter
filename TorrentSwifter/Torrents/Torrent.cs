@@ -250,7 +250,10 @@ namespace TorrentSwifter.Torrents
             sessionDownloadedBytes = 0L;
             sessionUploadedBytes = 0L;
 
-            VerifyIntegrity();
+            if (!hasVerifiedIntegrity)
+            {
+                VerifyIntegrity();
+            }
 
             var thread = new Thread(UpdateLoop);
             thread.Priority = ThreadPriority.BelowNormal;
@@ -590,21 +593,15 @@ namespace TorrentSwifter.Torrents
                 {
                     try
                     {
-                        if (!isVerifyingIntegrity)
+                        if (!isVerifyingIntegrity && hasVerifiedIntegrity)
                         {
-                            if (hasVerifiedIntegrity)
-                            {
-                                UpdateTrackers();
-                                UpdatePeers();
-                                // TODO: Update queued requests
-                            }
-                            else
-                            {
-                                VerifyIntegrity();
-                            }
+                            UpdateTrackers();
+                            UpdatePeers();
+                            ProcessIncomingPieceRequests();
+                            ProcessOutgoingPieceRequests();
                         }
 
-                        Thread.Sleep(100);
+                        Thread.Sleep(500);
                     }
                     catch (ThreadAbortException)
                     {
@@ -685,6 +682,8 @@ namespace TorrentSwifter.Torrents
             // Ignore blocks that we haven't requested
             if (!block.IsRequested)
                 return;
+
+            // TODO: Cancel other requests for the same block on other peers
 
             // Write the data and verify the piece on another thread
             Task.Run(async () =>
