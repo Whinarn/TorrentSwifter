@@ -221,6 +221,8 @@ namespace TorrentSwifter.Trackers
                 announceRequest.Port = listenPort;
                 announceRequest.TrackerEvent = trackerEvent;
 
+                // TODO: Fill in more info to the announce request
+
                 var announceResponse = await tracker.Announce(announceRequest);
                 status = tracker.Status;
                 failureMessage = tracker.FailureMessage;
