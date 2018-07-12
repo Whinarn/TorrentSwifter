@@ -575,7 +575,9 @@ namespace TorrentSwifter.Trackers
             }
 
             // TODO: Send twice?
-            await client.SendAsync(request.Data, request.Length, endpoint);
+
+            int sentByteCount = await client.SendAsync(request.Data, request.Length, endpoint);
+            Stats.IncreaseUploadedBytes(sentByteCount);
         }
 
         private async Task<Packet> WaitForResponse(TrackerRequest request, int minimumResponseLength)
@@ -705,6 +707,10 @@ namespace TorrentSwifter.Trackers
             {
                 IPEndPoint endpoint = null;
                 byte[] receivedData = client.EndReceive(ar, ref endpoint);
+                if (receivedData != null)
+                {
+                    Stats.IncreaseDownloadedBytes(receivedData.Length);
+                }
                 if (receivedData != null && receivedData.Length >= 8)
                 {
                     Packet receivedPacket = new Packet(receivedData, receivedData.Length);

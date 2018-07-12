@@ -386,6 +386,7 @@ namespace TorrentSwifter.Peers
                 }
 
                 receiveOffset += receivedByteCount;
+                Stats.IncreaseDownloadedBytes(receivedByteCount);
 
                 int packetLength = GetPacketLength();
                 while (packetLength != -1 && receiveOffset >= packetLength)
@@ -477,7 +478,8 @@ namespace TorrentSwifter.Peers
 
             try
             {
-                socket.EndSend(ar);
+                int sentByteCount = socket.EndSend(ar);
+                Stats.IncreaseUploadedBytes(sentByteCount);
             }
             catch (ObjectDisposedException)
             {

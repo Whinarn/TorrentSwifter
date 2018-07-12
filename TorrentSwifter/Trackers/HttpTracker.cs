@@ -115,6 +115,7 @@ namespace TorrentSwifter.Trackers
             {
                 Uri uri = request.GetUri(announceUri, key, trackerID);
                 byte[] responseBytes = await client.GetByteArrayAsync(uri).ConfigureAwait(false);
+                Stats.IncreaseDownloadedBytes(responseBytes.Length);
                 var info = BEncoding.Decode(responseBytes) as BEncoding.Dictionary;
                 if (info == null)
                 {
@@ -174,6 +175,7 @@ namespace TorrentSwifter.Trackers
 
                 var uri = UriHelper.AppendQueryString(scrapeUri, queryParameters);
                 byte[] responseBytes = await client.GetByteArrayAsync(uri).ConfigureAwait(false);
+                Stats.IncreaseDownloadedBytes(responseBytes.Length);
                 var info = BEncoding.Decode(responseBytes) as BEncoding.Dictionary;
                 if (info == null)
                 {
