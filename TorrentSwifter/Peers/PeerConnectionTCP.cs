@@ -786,7 +786,7 @@ namespace TorrentSwifter.Peers
 
         private bool HandleKeepAlive(Packet packet)
         {
-            // TODO: Implement!
+            Log.LogDebug("[Peer][{0}] A peer asked to keep the connection alive.", endPoint);
             return true;
         }
 
