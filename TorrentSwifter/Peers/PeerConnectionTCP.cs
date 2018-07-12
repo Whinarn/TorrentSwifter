@@ -18,6 +18,8 @@ namespace TorrentSwifter.Peers
         private const int MaximumAllowedRequestSize = 16 * 1024; // 16kB
 
         private const string ProtocolName = "BitTorrent protocol";
+
+        private const int KeepAliveInterval = 2 * 60 * 1000; // Every 2 minutes
         #endregion
 
         #region Enums
@@ -60,6 +62,7 @@ namespace TorrentSwifter.Peers
 
         private DateTime sentHandshakeTime = DateTime.UtcNow;
         private DateTime lastActiveTime = DateTime.UtcNow;
+        private DateTime lastKeepAliveTime = DateTime.UtcNow;
 
         private object sendSyncObj = new object();
         #endregion
@@ -287,6 +290,13 @@ namespace TorrentSwifter.Peers
                     return;
                 }
             }
+
+            // Send keep alive messages at a regular interval
+            var timeSinceLastKeepAlive = DateTime.UtcNow.Subtract(lastKeepAliveTime);
+            if (timeSinceLastKeepAlive.TotalMilliseconds > KeepAliveInterval)
+            {
+                SendKeepAlive();
+            }
         }
 
         /// <summary>
@@ -326,6 +336,7 @@ namespace TorrentSwifter.Peers
             isBitFieldSent = false;
 
             lastActiveTime = DateTime.UtcNow;
+            lastKeepAliveTime = DateTime.UtcNow;
 
             base.OnConnected();
 
@@ -540,6 +551,8 @@ namespace TorrentSwifter.Peers
             var packet = new Packet(4);
             packet.WriteInt32(0);
             SendPacket(packet);
+
+            lastKeepAliveTime = DateTime.UtcNow;
         }
 
         private void SendChoke()
