@@ -606,7 +606,7 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Peers
-        internal void OnPeerConnected(PeerID peerID, PeerConnection connection)
+        internal Peer OnPeerHandshaked(PeerID peerID, PeerConnection connection)
         {
             lock (peersSyncObj)
             {
@@ -621,6 +621,7 @@ namespace TorrentSwifter.Torrents
                     peers.Add(peer);
                     peersByID.Add(peerID, peer);
                 }
+                return peer;
             }
         }
         #endregion

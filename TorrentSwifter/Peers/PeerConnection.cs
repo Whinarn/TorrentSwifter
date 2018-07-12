@@ -16,6 +16,10 @@ namespace TorrentSwifter.Peers
         /// </summary>
         protected Torrent torrent = null;
         /// <summary>
+        /// The parent peer.
+        /// </summary>
+        protected Peer peer = null;
+        /// <summary>
         /// The peer end-point.
         /// </summary>
         protected readonly EndPoint endPoint;
@@ -30,6 +34,14 @@ namespace TorrentSwifter.Peers
         public Torrent Torrent
         {
             get { return torrent; }
+        }
+
+        /// <summary>
+        /// Gets the parent peer for this peer connection.
+        /// </summary>
+        public Peer Peer
+        {
+            get { return peer; }
         }
 
         /// <summary>
@@ -124,6 +136,7 @@ namespace TorrentSwifter.Peers
                 throw new ArgumentNullException("endPoint");
 
             this.torrent = null;
+            this.peer = null;
             this.endPoint = endPoint;
         }
 
@@ -131,15 +144,19 @@ namespace TorrentSwifter.Peers
         /// Creates a new torrent peer connection.
         /// </summary>
         /// <param name="torrent">The parent torrent.</param>
+        /// <param name="peer">The parent peer.</param>
         /// <param name="endPoint">The peer end-point.</param>
-        public PeerConnection(Torrent torrent, EndPoint endPoint)
+        public PeerConnection(Torrent torrent, Peer peer, EndPoint endPoint)
         {
             if (torrent == null)
+                throw new ArgumentNullException("torrent");
+            else if (peer == null)
                 throw new ArgumentNullException("torrent");
             else if (endPoint == null)
                 throw new ArgumentNullException("endPoint");
 
             this.torrent = torrent;
+            this.peer = peer;
             this.endPoint = endPoint;
         }
         #endregion

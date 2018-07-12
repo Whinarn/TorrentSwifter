@@ -204,17 +204,6 @@ namespace TorrentSwifter.Peers
             {
                 pendingConnections.Remove(connection);
             }
-
-            var peerID = connection.PeerID;
-            var torrent = connection.Torrent;
-            if (torrent == null || peerID.Equals(PeerID.None))
-            {
-                // If there is no torrent attached or the peer has no ID then we simply close it now
-                connection.Dispose();
-                return;
-            }
-
-            torrent.OnPeerConnected(peerID, connection);
         }
         #endregion
         #endregion

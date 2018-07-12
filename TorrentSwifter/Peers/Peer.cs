@@ -140,7 +140,7 @@ namespace TorrentSwifter.Peers
 
             try
             {
-                connection = new PeerConnectionTCP(torrent, endPoint);
+                connection = new PeerConnectionTCP(torrent, this, endPoint);
                 connection.Connect();
                 return connection.IsConnected;
             }
@@ -161,7 +161,7 @@ namespace TorrentSwifter.Peers
 
             try
             {
-                connection = new PeerConnectionTCP(torrent, endPoint);
+                connection = new PeerConnectionTCP(torrent, this, endPoint);
                 await connection.ConnectAsync();
                 return connection.IsConnected;
             }
