@@ -189,7 +189,7 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Connects to this peer asynchronously.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>The connect task.</returns>
         public abstract Task ConnectAsync();
 
         /// <summary>
