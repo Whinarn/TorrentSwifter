@@ -564,10 +564,7 @@ namespace TorrentSwifter.Torrents
                 {
                     isVerifyingIntegrity = false;
                 }
-            }).ContinueWith((task) =>
-            {
-                Log.LogErrorException(task.Exception);
-            }, TaskContinuationOptions.OnlyOnFaulted);
+            }).CatchExceptions();
         }
         #endregion
 
@@ -738,10 +735,7 @@ namespace TorrentSwifter.Torrents
                 {
                     await VerifyPiece(piece.Index);
                 }
-            }).ContinueWith((task) =>
-            {
-                Log.LogErrorException(task.Exception);
-            }, TaskContinuationOptions.OnlyOnFaulted);
+            }).CatchExceptions();
         }
         #endregion
 
