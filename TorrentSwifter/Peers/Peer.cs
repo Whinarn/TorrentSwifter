@@ -291,6 +291,11 @@ namespace TorrentSwifter.Peers
         private void OnConnectionDisconnected(object sender, EventArgs e)
         {
             Log.LogInfo("[Peer] Disconnected from {0}", endPoint);
+
+            if (torrent != null)
+            {
+                torrent.OnPeerDisconnected(this);
+            }
         }
 
         private void OnConnectionBitFieldReceived(object sender, BitFieldEventArgs e)

@@ -519,6 +519,17 @@ namespace TorrentSwifter.Torrents
             }
             return result;
         }
+
+        private void CancelIncomingPieceRequestsWithPeer(Peer peer)
+        {
+            foreach (var request in incomingPieceRequests)
+            {
+                if (request.Peer == peer)
+                {
+                    request.IsCancelled = true;
+                }
+            }
+        }
         #endregion
 
         #region Integrity
@@ -673,6 +684,11 @@ namespace TorrentSwifter.Torrents
                 }
                 return peer;
             }
+        }
+
+        internal void OnPeerDisconnected(Peer peer)
+        {
+            CancelIncomingPieceRequestsWithPeer(peer);
         }
         #endregion
 
