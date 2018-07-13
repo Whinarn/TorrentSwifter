@@ -130,6 +130,56 @@ namespace TorrentSwifter.Torrents
             int byteLength = ByteLength;
             System.Buffer.BlockCopy(buffer, 0, bitField.buffer, 0, byteLength);
         }
+
+        /// <summary>
+        /// Returns the count of set bits in this bit field.
+        /// </summary>
+        /// <returns>The count of set bits.</returns>
+        public int CountSet()
+        {
+            int count = 0;
+            for (int index = 0; index < length; index++)
+            {
+                int byteIndex = (index >> 3);
+                int bitIndex = (index & 7);
+                if (((buffer[byteIndex] & (1 << bitIndex)) != 0))
+                {
+                    ++count;
+                }
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Returns the count of bits we need from another bit field to have as many set bits as possible.
+        /// </summary>
+        /// <param name="bitField">The other bit field.</param>
+        /// <returns>The count of needed bits.</returns>
+        public int CountNeeded(BitField bitField)
+        {
+            if (bitField == null)
+                throw new ArgumentNullException("bitField");
+            else if (length != bitField.length)
+                throw new ArgumentException("The bit field has a different length.", "bitField");
+
+            int count = 0;
+            var otherBuffer = bitField.buffer;
+            for (int index = 0; index < length; index++)
+            {
+                int byteIndex = (index >> 3);
+                int bitIndex = (index & 7);
+                bool weHaveBit = ((buffer[byteIndex] & (1 << bitIndex)) != 0);
+                if (!weHaveBit)
+                {
+                    bool theyHaveBit = ((otherBuffer[byteIndex] & (1 << bitIndex)) != 0);
+                    if (theyHaveBit)
+                    {
+                        ++count;
+                    }
+                }
+            }
+            return count;
+        }
         #endregion
     }
 }
