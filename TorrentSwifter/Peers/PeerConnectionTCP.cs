@@ -312,6 +312,21 @@ namespace TorrentSwifter.Peers
 
             SendHave(pieceIndex);
         }
+
+        /// <summary>
+        /// Sends a piece of data to this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <param name="begin">The byte offset within the piece.</param>
+        /// <param name="data">The byte data.</param>
+        /// <returns>The send task.</returns>
+        public override async Task SendPieceData(int pieceIndex, int begin, byte[] data)
+        {
+            if (!isConnected || !isHandshakeReceived)
+                return;
+
+            await SendPiece(pieceIndex, begin, data);
+        }
         #endregion
 
         #region Protected Methods
@@ -689,13 +704,20 @@ namespace TorrentSwifter.Peers
             //       or at least send the same block request to another peer as well.
         }
 
-        private void SendPiece(int pieceIndex, int begin, byte[] data)
+        private async Task SendPiece(int pieceIndex, int begin, byte[] data)
         {
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
+                throw new ArgumentOutOfRangeException("pieceIndex");
+            else if (begin < 0)
+                throw new ArgumentOutOfRangeException("begin");
+            else if (data == null)
+                throw new ArgumentNullException("data");
+
             var packet = CreatePacket(MessageType.Piece, 8 + data.Length);
             packet.WriteInt32(pieceIndex);
             packet.WriteInt32(begin);
             packet.Write(data, 0, data.Length);
-            SendPacket(packet);
+            await SendPacketAsync(packet);
 
             torrent.IncreaseSessionUploadedBytes(data.Length);
         }

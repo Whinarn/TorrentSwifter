@@ -47,6 +47,14 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Gets if we are currently connected to this peer.
+        /// </summary>
+        public bool IsConnected
+        {
+            get { return (connection != null ? connection.IsConnected : false); }
+        }
+
+        /// <summary>
         /// Gets the peer connection.
         /// </summary>
         public PeerConnection Connection
@@ -226,6 +234,14 @@ namespace TorrentSwifter.Peers
             {
                 connection.Update();
             }
+        }
+
+        internal async Task SendPieceData(int pieceIndex, int begin, byte[] data)
+        {
+            if (connection == null)
+                return;
+
+            await connection.SendPieceData(pieceIndex, begin, data);
         }
         #endregion
 

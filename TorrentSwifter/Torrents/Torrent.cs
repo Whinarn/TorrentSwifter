@@ -469,10 +469,36 @@ namespace TorrentSwifter.Torrents
             byte[] pieceData = await ReadPiece(pieceIndex);
             return HashHelper.ComputeSHA1(pieceData);
         }
+        #endregion
 
-        private void ProcessIncomingPieceRequests()
+        #region Piece Requests
+        private async Task ProcessIncomingPieceRequests()
         {
-            // TODO: Implement!
+            PieceBlockRequest request;
+            while (incomingPieceRequests.TryDequeue(out request))
+            {
+                if (request.IsCancelled || !request.Peer.IsConnected)
+                    continue;
+
+                int pieceIndex = request.PieceIndex;
+                int begin = request.Begin;
+                int length = request.Length;
+
+                var piece = pieces[pieceIndex];
+                if (!piece.IsVerified)
+                    continue;
+
+                long offset = piece.Offset + begin;
+                byte[] data = new byte[length];
+                int readByteCount = await ReadData(offset, data, 0, length);
+                if (readByteCount != length)
+                {
+                    Log.LogError("[Torrent] Read {0} bytes from piece {1} at offset {2} when {3} bytes were expected.", readByteCount, pieceIndex, begin, length);
+                    continue;
+                }
+
+                await request.Peer.SendPieceData(pieceIndex, begin, data);
+            }
         }
 
         private void ProcessOutgoingPieceRequests()

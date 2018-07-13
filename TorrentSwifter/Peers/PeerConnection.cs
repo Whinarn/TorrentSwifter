@@ -207,6 +207,15 @@ namespace TorrentSwifter.Peers
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
         public abstract void ReportHavePiece(int pieceIndex);
+
+        /// <summary>
+        /// Sends a piece of data to this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <param name="begin">The byte offset within the piece.</param>
+        /// <param name="data">The byte data.</param>
+        /// <returns>The send task.</returns>
+        public abstract Task SendPieceData(int pieceIndex, int begin, byte[] data);
         #endregion
 
         #region Protected Methods
