@@ -1001,6 +1001,11 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] A peer sent a request with invalid arguments. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
                 return false;
             }
+            else if (!piece.IsVerified)
+            {
+                Log.LogWarning("[Peer][{0}] A peer requested data from a piece that is not verified. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
+                return false;
+            }
 
             Log.LogDebug("[Peer][{0}] A peer sent a request to us. Index: {1}, Begin: {2}, Length: {3}", endPoint, pieceIndex, begin, length);
             torrent.OnPieceBlockRequested(peer, pieceIndex, begin, length);
