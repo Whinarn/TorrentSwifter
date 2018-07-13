@@ -476,7 +476,7 @@ namespace TorrentSwifter.Peers
         #region Data Sending
         private void SendPacket(Packet packet)
         {
-            if (socket == null)
+            if (socket == null || !isConnected)
                 return;
 
             try
