@@ -255,10 +255,8 @@ namespace TorrentSwifter.Torrents
                 VerifyIntegrity();
             }
 
-            var thread = new Thread(UpdateLoop);
-            thread.Priority = ThreadPriority.BelowNormal;
-            thread.Name = "TorrentUpdateLoop";
-            thread.Start();
+            var updateTask = UpdateLoop();
+            updateTask.CatchExceptions();
         }
 
         /// <summary>
@@ -501,9 +499,10 @@ namespace TorrentSwifter.Torrents
             }
         }
 
-        private void ProcessOutgoingPieceRequests()
+        private async Task ProcessOutgoingPieceRequests()
         {
             // TODO: Implement!
+            await Task.CompletedTask;
         }
 
         private PieceBlockRequest FindIncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
@@ -619,7 +618,7 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Update Loop
-        private void UpdateLoop()
+        private async Task UpdateLoop()
         {
             try
             {
@@ -631,15 +630,12 @@ namespace TorrentSwifter.Torrents
                         {
                             UpdateTrackers();
                             UpdatePeers();
-                            ProcessIncomingPieceRequests();
-                            ProcessOutgoingPieceRequests();
+
+                            await ProcessIncomingPieceRequests();
+                            await ProcessOutgoingPieceRequests();
                         }
 
-                        Thread.Sleep(500);
-                    }
-                    catch (ThreadAbortException)
-                    {
-                        break;
+                        await Task.Delay(500);
                     }
                     catch (Exception ex)
                     {
@@ -698,7 +694,8 @@ namespace TorrentSwifter.Torrents
                 var newRequest = new PieceBlockRequest(peer, pieceIndex, begin, length);
                 incomingPieceRequests.Enqueue(newRequest);
 
-                ProcessIncomingPieceRequests();
+                var processTask = ProcessIncomingPieceRequests();
+                processTask.CatchExceptions();
             }
         }
 
@@ -709,7 +706,8 @@ namespace TorrentSwifter.Torrents
             {
                 existingRequest.IsCancelled = true;
 
-                ProcessIncomingPieceRequests();
+                var processTask = ProcessIncomingPieceRequests();
+                processTask.CatchExceptions();
             }
         }
 
