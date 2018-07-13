@@ -53,7 +53,7 @@ namespace TorrentSwifter.Torrents
         private object peersSyncObj = new object();
 
         private int isProcessingIncomingPieceRequests = 0;
-        private ConcurrentQueue<PieceBlockRequest> incomingPieceRequests = new ConcurrentQueue<PieceBlockRequest>();
+        private ConcurrentQueue<IncomingPieceRequest> incomingPieceRequests = new ConcurrentQueue<IncomingPieceRequest>();
         #endregion
 
         #region Events
@@ -477,7 +477,7 @@ namespace TorrentSwifter.Torrents
             if (Interlocked.CompareExchange(ref isProcessingIncomingPieceRequests, 1, 0) != 0)
                 return;
 
-            PieceBlockRequest request;
+            IncomingPieceRequest request;
             while (incomingPieceRequests.TryDequeue(out request))
             {
                 if (request.IsCancelled || !request.Peer.IsConnected)
@@ -513,9 +513,9 @@ namespace TorrentSwifter.Torrents
             await Task.CompletedTask;
         }
 
-        private PieceBlockRequest FindIncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
+        private IncomingPieceRequest FindIncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
         {
-            PieceBlockRequest result = null;
+            IncomingPieceRequest result = null;
             foreach (var request in incomingPieceRequests)
             {
                 if (request.Equals(peer, pieceIndex, begin, length))
@@ -699,7 +699,7 @@ namespace TorrentSwifter.Torrents
             var existingRequest = FindIncomingPieceRequest(peer, pieceIndex, begin, length);
             if (existingRequest == null)
             {
-                var newRequest = new PieceBlockRequest(peer, pieceIndex, begin, length);
+                var newRequest = new IncomingPieceRequest(peer, pieceIndex, begin, length);
                 incomingPieceRequests.Enqueue(newRequest);
 
                 var processTask = ProcessIncomingPieceRequests();

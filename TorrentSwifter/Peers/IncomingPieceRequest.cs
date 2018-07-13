@@ -3,9 +3,9 @@
 namespace TorrentSwifter.Peers
 {
     /// <summary>
-    /// A piece block request.
+    /// An incoming piece request.
     /// </summary>
-    internal sealed class PieceBlockRequest : IEquatable<PieceBlockRequest>
+    internal sealed class IncomingPieceRequest : IEquatable<IncomingPieceRequest>
     {
         #region Fields
         private readonly Peer peer;
@@ -18,7 +18,7 @@ namespace TorrentSwifter.Peers
 
         #region Properties
         /// <summary>
-        /// Gets the peer this request is from or to.
+        /// Gets the peer this request is from.
         /// </summary>
         public Peer Peer
         {
@@ -60,7 +60,7 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Constructor
-        internal PieceBlockRequest(Peer peer, int pieceIndex, int begin, int length)
+        internal IncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
         {
             if (peer == null)
                 throw new ArgumentNullException("peer");
@@ -80,7 +80,7 @@ namespace TorrentSwifter.Peers
         /// <returns>If equals.</returns>
         public override bool Equals(object obj)
         {
-            var request = (obj as PieceBlockRequest);
+            var request = (obj as IncomingPieceRequest);
             if (request != null)
                 return Equals(request);
             else
@@ -92,7 +92,7 @@ namespace TorrentSwifter.Peers
         /// </summary>
         /// <param name="other">The other request.</param>
         /// <returns>If equals.</returns>
-        public bool Equals(PieceBlockRequest other)
+        public bool Equals(IncomingPieceRequest other)
         {
             if (other == null)
                 return false;
