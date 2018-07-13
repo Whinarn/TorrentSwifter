@@ -307,7 +307,7 @@ namespace TorrentSwifter.Peers
         /// <param name="pieceIndex">The piece index.</param>
         public override void ReportHavePiece(int pieceIndex)
         {
-            if (!isBitFieldSent)
+            if (!isConnected || !isBitFieldSent)
                 return;
 
             SendHave(pieceIndex);
