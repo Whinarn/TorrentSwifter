@@ -52,6 +52,7 @@ namespace TorrentSwifter.Torrents
         private Dictionary<PeerID, Peer> peersByID = new Dictionary<PeerID, Peer>();
         private object peersSyncObj = new object();
 
+        private int isProcessingIncomingPieceRequests = 0;
         private ConcurrentQueue<PieceBlockRequest> incomingPieceRequests = new ConcurrentQueue<PieceBlockRequest>();
         #endregion
 
@@ -472,6 +473,10 @@ namespace TorrentSwifter.Torrents
         #region Piece Requests
         private async Task ProcessIncomingPieceRequests()
         {
+            // Prevents this task to be processed concurrently
+            if (Interlocked.CompareExchange(ref isProcessingIncomingPieceRequests, 1, 0) != 0)
+                return;
+
             PieceBlockRequest request;
             while (incomingPieceRequests.TryDequeue(out request))
             {
@@ -497,6 +502,9 @@ namespace TorrentSwifter.Torrents
 
                 await request.Peer.SendPieceData(pieceIndex, begin, data);
             }
+
+            // Reset the flag that we are currently processing
+            Interlocked.Exchange(ref isProcessingIncomingPieceRequests, 0);
         }
 
         private async Task ProcessOutgoingPieceRequests()
