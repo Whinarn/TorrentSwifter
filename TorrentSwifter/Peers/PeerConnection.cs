@@ -264,7 +264,15 @@ namespace TorrentSwifter.Peers
         /// <param name="bitField">The bit field.</param>
         protected virtual void OnBitFieldReceived(BitField bitField)
         {
-            remoteBitField = bitField;
+            if (remoteBitField != null)
+            {
+                bitField.CopyTo(remoteBitField);
+            }
+            else
+            {
+                remoteBitField = bitField;
+            }
+
             BitFieldReceived.SafeInvoke(this, new BitFieldEventArgs(bitField));
         }
 
