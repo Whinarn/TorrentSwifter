@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using System.Threading;
 using System.Threading.Tasks;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Network;
@@ -64,7 +65,7 @@ namespace TorrentSwifter.Peers
         private DateTime lastActiveTime = DateTime.UtcNow;
         private DateTime lastKeepAliveTime = DateTime.UtcNow;
 
-        private object sendSyncObj = new object();
+        private SemaphoreSlim sendSemaphore = new SemaphoreSlim(1, 1);
         #endregion
 
         #region Properties
@@ -490,9 +491,14 @@ namespace TorrentSwifter.Peers
                     throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
 #endif
 
-                lock (sendSyncObj)
+                sendSemaphore.Wait();
+                try
                 {
                     socket.BeginSend(packetData, 0, packetLength, SocketFlags.None, OnDataSent, socket);
+                }
+                finally
+                {
+                    sendSemaphore.Release();
                 }
             }
             catch (Exception ex)
