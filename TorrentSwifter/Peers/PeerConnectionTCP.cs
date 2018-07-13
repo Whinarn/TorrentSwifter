@@ -508,6 +508,42 @@ namespace TorrentSwifter.Peers
             }
         }
 
+        private async Task SendPacketAsync(Packet packet)
+        {
+            if (socket == null || !isConnected)
+                return;
+
+            try
+            {
+                var packetData = packet.Data;
+                int packetLength = packet.Length;
+
+#if DEBUG
+                packet.Offset = 0;
+                int encodedLength = packet.ReadInt32();
+                if ((encodedLength + 4) != packetLength)
+                    throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
+#endif
+
+                await sendSemaphore.WaitAsync();
+                try
+                {
+                    var result = socket.BeginSend(packetData, 0, packetLength, SocketFlags.None, OnDataSent, socket);
+                    int sentByteCount = await Task.Factory.FromAsync(result, socket.EndSend);
+                    Stats.IncreaseUploadedBytes(sentByteCount);
+                }
+                finally
+                {
+                    sendSemaphore.Release();
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.LogDebugException(ex);
+                Disconnect();
+            }
+        }
+
         private void OnDataSent(IAsyncResult ar)
         {
             var socket = ar.AsyncState as Socket;
