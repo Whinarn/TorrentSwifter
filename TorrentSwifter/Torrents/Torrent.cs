@@ -53,7 +53,9 @@ namespace TorrentSwifter.Torrents
         private object peersSyncObj = new object();
 
         private int isProcessingIncomingPieceRequests = 0;
+        private int isProcessingOutgoingPieceRequests = 0;
         private ConcurrentQueue<IncomingPieceRequest> incomingPieceRequests = new ConcurrentQueue<IncomingPieceRequest>();
+        private ConcurrentQueue<OutgoingPieceRequest> outgoingPieceRequests = new ConcurrentQueue<OutgoingPieceRequest>();
         #endregion
 
         #region Events
@@ -509,8 +511,44 @@ namespace TorrentSwifter.Torrents
 
         private async Task ProcessOutgoingPieceRequests()
         {
-            // TODO: Implement!
-            await Task.CompletedTask;
+            // Prevents this task to be processed concurrently
+            if (Interlocked.CompareExchange(ref isProcessingOutgoingPieceRequests, 1, 0) != 0)
+                return;
+
+            OutgoingPieceRequest request;
+            while (outgoingPieceRequests.TryDequeue(out request))
+            {
+                if (request.IsCancelled || !request.Peer.IsConnected)
+                    continue;
+
+                int pieceIndex = request.PieceIndex;
+                int blockIndex = request.BlockIndex;
+
+                var piece = pieces[pieceIndex];
+                if (piece.IsVerified)
+                    continue;
+
+                var block = piece.GetBlock(blockIndex);
+                if (block.IsDownloaded)
+                    continue;
+
+                block.IsRequested = true;
+                try
+                {
+                    if (!await request.Peer.RequestPieceData(pieceIndex, blockIndex))
+                    {
+                        block.IsRequested = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.LogErrorException(ex);
+                    block.IsRequested = false;
+                }
+            }
+
+            // Reset the flag that we are currently processing
+            Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
         }
 
         private IncomingPieceRequest FindIncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
