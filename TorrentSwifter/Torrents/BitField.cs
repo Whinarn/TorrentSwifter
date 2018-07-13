@@ -115,6 +115,21 @@ namespace TorrentSwifter.Torrents
                 buffer[byteIndex] &= (byte)(~(1 << bitIndex));
             }
         }
+
+        /// <summary>
+        /// Copies this bit field to another bit field.
+        /// </summary>
+        /// <param name="bitField">The destination bit field.</param>
+        public void CopyTo(BitField bitField)
+        {
+            if (bitField == null)
+                throw new ArgumentNullException("bitField");
+            else if (length != bitField.length)
+                throw new ArgumentException("The destination bit field has a different length.", "bitField");
+
+            int byteLength = ByteLength;
+            System.Buffer.BlockCopy(buffer, 0, bitField.buffer, 0, byteLength);
+        }
         #endregion
     }
 }
