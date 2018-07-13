@@ -236,6 +236,14 @@ namespace TorrentSwifter.Peers
             }
         }
 
+        internal async Task<bool> RequestPieceData(int pieceIndex, int blockIndex)
+        {
+            if (connection == null)
+                return false;
+
+            return await connection.RequestPieceData(pieceIndex, blockIndex);
+        }
+
         internal async Task SendPieceData(int pieceIndex, int begin, byte[] data)
         {
             if (connection == null)

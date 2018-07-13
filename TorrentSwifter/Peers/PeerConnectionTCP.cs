@@ -314,6 +314,20 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Requests a piece of data from this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <param name="blockIndex">The block index.</param>
+        /// <returns>The request task, with a result if the request was sent.</returns>
+        public override async Task<bool> RequestPieceData(int pieceIndex, int blockIndex)
+        {
+            if (!isConnected || !isHandshakeReceived)
+                return false;
+
+            return await SendRequest(pieceIndex, blockIndex);
+        }
+
+        /// <summary>
         /// Sends a piece of data to this peer.
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
@@ -678,7 +692,7 @@ namespace TorrentSwifter.Peers
             isBitFieldSent = true;
         }
 
-        private void SendRequest(int pieceIndex, int blockIndex)
+        private async Task<bool> SendRequest(int pieceIndex, int blockIndex)
         {
             if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
                 throw new ArgumentOutOfRangeException("pieceIndex");
@@ -698,10 +712,11 @@ namespace TorrentSwifter.Peers
             packet.WriteInt32(pieceIndex);
             packet.WriteInt32(begin);
             packet.WriteInt32(length);
-            SendPacket(packet);
+            await SendPacketAsync(packet);
 
             // TODO: Timeout a block request after a certain time, in case a peer doesn't respond with it
             //       or at least send the same block request to another peer as well.
+            return true;
         }
 
         private async Task SendPiece(int pieceIndex, int begin, byte[] data)

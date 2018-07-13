@@ -209,6 +209,14 @@ namespace TorrentSwifter.Peers
         public abstract void ReportHavePiece(int pieceIndex);
 
         /// <summary>
+        /// Requests a piece of data from this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <param name="blockIndex">The block index.</param>
+        /// <returns>The request task, with a result if the request was sent.</returns>
+        public abstract Task<bool> RequestPieceData(int pieceIndex, int blockIndex);
+
+        /// <summary>
         /// Sends a piece of data to this peer.
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
