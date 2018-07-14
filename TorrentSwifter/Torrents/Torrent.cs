@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using TorrentSwifter.Collections;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
@@ -56,6 +57,7 @@ namespace TorrentSwifter.Torrents
         private int isProcessingOutgoingPieceRequests = 0;
         private ConcurrentQueue<IncomingPieceRequest> incomingPieceRequests = new ConcurrentQueue<IncomingPieceRequest>();
         private ConcurrentQueue<OutgoingPieceRequest> outgoingPieceRequests = new ConcurrentQueue<OutgoingPieceRequest>();
+        private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         #endregion
 
         #region Events
@@ -535,15 +537,19 @@ namespace TorrentSwifter.Torrents
                 block.IsRequested = true;
                 try
                 {
+                    request.OnSent();
+                    pendingOutgoingPieceRequests.Add(request);
                     if (!await request.Peer.RequestPieceData(pieceIndex, blockIndex))
                     {
                         block.IsRequested = false;
+                        pendingOutgoingPieceRequests.Remove(request);
                     }
                 }
                 catch (Exception ex)
                 {
                     Log.LogErrorException(ex);
                     block.IsRequested = false;
+                    pendingOutgoingPieceRequests.Remove(request);
                 }
             }
 
@@ -585,6 +591,31 @@ namespace TorrentSwifter.Torrents
                     request.IsCancelled = true;
                 }
             }
+        }
+
+        private void CancelOutgoingPieceRequestsForBlock(int pieceIndex, int blockIndex)
+        {
+            foreach (var request in outgoingPieceRequests)
+            {
+                if (request.Equals(pieceIndex, blockIndex))
+                {
+                    request.IsCancelled = true;
+                }
+            }
+
+            pendingOutgoingPieceRequests.RemoveAny((request) =>
+            {
+                if (request.Equals(pieceIndex, blockIndex))
+                {
+                    // Send the cancel message to the peer because we have already sent this request to them
+                    request.Peer.CancelPieceDataRequest(pieceIndex, blockIndex);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
         }
         #endregion
 
@@ -778,7 +809,13 @@ namespace TorrentSwifter.Torrents
             if (!block.IsRequested)
                 return;
 
-            // TODO: Cancel other requests for the same block on other peers
+            // Remove the pending outgoing request, and make sure that there was one
+            int removedCount = pendingOutgoingPieceRequests.RemoveAny((request) => request.Equals(peer, pieceIndex, blockIndex), 1);
+            if (removedCount == 0)
+                return;
+
+            // Cancel other requests for the same block on other peers
+            CancelOutgoingPieceRequestsForBlock(pieceIndex, blockIndex);
 
             // Write the data and verify the piece on another thread
             Task.Run(async () =>
@@ -786,6 +823,7 @@ namespace TorrentSwifter.Torrents
                 long offset = piece.Offset + (blockIndex * blockSize);
                 await WriteData(offset, data, 0, data.Length);
                 block.IsDownloaded = true;
+                block.IsRequested = false;
 
                 if (piece.HasDownloadedAllBlocks())
                 {
