@@ -5,7 +5,7 @@ namespace TorrentSwifter
     /// <summary>
     /// A collection of all preferences.
     /// </summary>
-    public static class Preferences
+    public static class Prefs
     {
         #region Fields
         private static DiskPreferences disk = new DiskPreferences();

@@ -46,7 +46,7 @@ namespace TorrentSwifter.Peers
             if (listener != null)
                 return;
 
-            int listenPort = Preferences.Peer.ListenPort;
+            int listenPort = Prefs.Peer.ListenPort;
             listener = TcpListener.Create(listenPort);
             listener.Start();
             PeerListener.listenPort = listenPort;
@@ -105,7 +105,7 @@ namespace TorrentSwifter.Peers
                     }
                     RegisterConnectionEvents(peerConnection);
 
-                    int handshakeTimeout = Preferences.Peer.HandshakeTimeout;
+                    int handshakeTimeout = Prefs.Peer.HandshakeTimeout;
                     if (handshakeTimeout > 0)
                     {
                         TimeoutConnection(peerConnection, handshakeTimeout);

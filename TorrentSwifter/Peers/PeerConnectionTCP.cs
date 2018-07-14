@@ -269,7 +269,7 @@ namespace TorrentSwifter.Peers
             if (!isHandshakeReceived)
             {
                 // Make sure we get a handshake within a time-frame
-                int handshakeTimeout = Preferences.Peer.HandshakeTimeout;
+                int handshakeTimeout = Prefs.Peer.HandshakeTimeout;
                 if (handshakeTimeout > 0)
                 {
                     var timeSinceHandshakeSent = DateTime.UtcNow.Subtract(sentHandshakeTime);
@@ -282,7 +282,7 @@ namespace TorrentSwifter.Peers
             }
 
             // Make sure that the peer doesn't get inactive
-            int inactiveTimeout = Preferences.Peer.InactiveTimeout;
+            int inactiveTimeout = Prefs.Peer.InactiveTimeout;
             if (inactiveTimeout > 0)
             {
                 var timeSinceActive = DateTime.UtcNow.Subtract(lastActiveTime);

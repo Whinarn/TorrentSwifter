@@ -346,7 +346,7 @@ namespace TorrentSwifter.Torrents
                 var file = metaDataFiles[0];
                 files[0] = new TorrentFile(file.Path, downloadPath, file.Size, 0L);
 
-                if (Preferences.Torrent.AllocateFullFileSizes)
+                if (Prefs.Torrent.AllocateFullFileSizes)
                 {
                     IOHelper.CreateAllocatedFile(downloadPath, file.Size);
                 }
@@ -366,7 +366,7 @@ namespace TorrentSwifter.Torrents
                     files[i] = new TorrentFile(metaDataFile.Path, filePath, metaDataFile.Size, currentFileOffset);
                     currentFileOffset += metaDataFile.Size;
 
-                    if (Preferences.Torrent.AllocateFullFileSizes)
+                    if (Prefs.Torrent.AllocateFullFileSizes)
                     {
                         IOHelper.CreateAllocatedFile(filePath, metaDataFile.Size);
                     }
@@ -554,7 +554,7 @@ namespace TorrentSwifter.Torrents
                 }
             }
 
-            int pieceRequestTimeout = Preferences.Peer.PieceRequestTimeout;
+            int pieceRequestTimeout = Prefs.Peer.PieceRequestTimeout;
             pendingOutgoingPieceRequests.RemoveAny((pendingRequest) =>
             {
                 if (pendingRequest.IsCancelled)
