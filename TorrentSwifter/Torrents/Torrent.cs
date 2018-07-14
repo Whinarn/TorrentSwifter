@@ -247,6 +247,20 @@ namespace TorrentSwifter.Torrents
         {
             get { return bytesLeftToDownload; }
         }
+
+        /// <summary>
+        /// Gets the count of peers that we know of for this torrent.
+        /// </summary>
+        public int PeerCount
+        {
+            get
+            {
+                lock (peersSyncObj)
+                {
+                    return peers.Count;
+                }
+            }
+        }
         #endregion
 
         #region Constructor
@@ -927,6 +941,30 @@ namespace TorrentSwifter.Torrents
         internal void OnPeerChokingUs(Peer peer)
         {
             CancelOutgoingPieceRequestsWithPeer(peer);
+        }
+
+        internal int GetPeersWithPiece(int pieceIndex)
+        {
+            int peerCount = 0;
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    if (peer.IsCompleted)
+                    {
+                        ++peerCount;
+                    }
+                    else
+                    {
+                        var peerBitField = peer.BitField;
+                        if (peerBitField != null && peerBitField.Get(pieceIndex))
+                        {
+                            ++peerCount;
+                        }
+                    }
+                }
+            }
+            return peerCount;
         }
         #endregion
 

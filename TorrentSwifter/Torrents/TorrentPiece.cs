@@ -101,6 +101,25 @@ namespace TorrentSwifter.Torrents
             get { return isVerifying; }
             internal set { isVerifying = value; }
         }
+
+        /// <summary>
+        /// Gets the importance of this piece to us (in terms of downloading).
+        /// </summary>
+        public double Importance
+        {
+            get
+            {
+                if (isVerified)
+                    return 0.0;
+
+                double downloadProgress = GetDownloadProgress();
+                if (downloadProgress >= 1.0)
+                    return 0.0;
+
+                double rarity = GetRarity();
+                return downloadProgress + rarity;
+            }
+        }
         #endregion
 
         #region Constructor
@@ -160,6 +179,28 @@ namespace TorrentSwifter.Torrents
             }
 
             return result;
+        }
+        #endregion
+
+        #region Private Methods
+        private double GetDownloadProgress()
+        {
+            int downloadCount = 0;
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                if (blocks[i].IsDownloaded)
+                {
+                    ++downloadCount;
+                }
+            }
+            return ((double)downloadCount / (double)blocks.Length);
+        }
+
+        private double GetRarity()
+        {
+            int peerCountWithPiece = torrent.GetPeersWithPiece(index);
+            int totalPeerCount = torrent.PeerCount;
+            return (1.0 - ((double)peerCountWithPiece / (double)totalPeerCount));
         }
         #endregion
     }
