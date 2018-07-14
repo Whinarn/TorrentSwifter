@@ -65,7 +65,7 @@ namespace TorrentSwifter.Logging
         {
             if (useColors)
             {
-                var levelColor = LevelColors[(int)level & LevelColors.Length];
+                var levelColor = LevelColors[(int)level % LevelColors.Length];
                 Console.ForegroundColor = levelColor;
             }
             if (level >= LogLevel.Error)
@@ -91,7 +91,7 @@ namespace TorrentSwifter.Logging
         {
             if (useColors)
             {
-                var levelColor = LevelColors[(int)level & LevelColors.Length];
+                var levelColor = LevelColors[(int)level % LevelColors.Length];
                 Console.ForegroundColor = levelColor;
             }
             if (level >= LogLevel.Error)

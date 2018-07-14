@@ -5,7 +5,7 @@ namespace TorrentSwifter.Logging
     /// <summary>
     /// The available log levels.
     /// </summary>
-    public enum LogLevel
+    public enum LogLevel : int
     {
         /// <summary>
         /// All logging is off.

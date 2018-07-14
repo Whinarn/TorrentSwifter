@@ -98,7 +98,7 @@ namespace TorrentSwifter.Logging
 
             if (prependLevel)
             {
-                string prefixText = LevelPrefixes[(int)level & LevelPrefixes.Length];
+                string prefixText = LevelPrefixes[(int)level % LevelPrefixes.Length];
                 Write(level, prefixText);
             }
         }
