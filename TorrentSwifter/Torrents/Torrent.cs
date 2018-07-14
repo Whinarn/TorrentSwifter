@@ -38,7 +38,7 @@ namespace TorrentSwifter.Torrents
         private bool isStarted = false;
         private bool isStopped = true;
         private bool isVerifyingIntegrity = false;
-        private bool isSeeding = false;
+        private bool isCompleted = false;
 
         private BitField bitField = null;
         private TorrentPiece[] pieces = null;
@@ -157,11 +157,11 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
-        /// Gets if this torrent is being seeded (only uploaded).
+        /// Gets if this torrent has completed downloading.
         /// </summary>
-        public bool IsSeeding
+        public bool IsCompleted
         {
-            get { return isSeeding; }
+            get { return isCompleted; }
         }
 
         /// <summary>
@@ -183,7 +183,7 @@ namespace TorrentSwifter.Torrents
                     return TorrentState.Inactive;
                 else if (isVerifyingIntegrity)
                     return TorrentState.IntegrityChecking;
-                else if (isSeeding)
+                else if (isCompleted)
                     return TorrentState.Seeding;
                 else
                     return TorrentState.Downloading;
@@ -498,12 +498,12 @@ namespace TorrentSwifter.Torrents
 
         private void CheckIfCompletedDownload()
         {
-            if (isSeeding)
+            if (isCompleted)
                 return;
 
             if (HasDownloadedAllPieces())
             {
-                isSeeding = true;
+                isCompleted = true;
                 bytesLeftToDownload = 0L;
 
                 CancelAllOutgoingPieceRequests();
@@ -783,7 +783,7 @@ namespace TorrentSwifter.Torrents
                         await VerifyPiece(piece);
                     }
 
-                    isSeeding = HasDownloadedAllPieces();
+                    isCompleted = HasDownloadedAllPieces();
                     hasVerifiedIntegrity = true;
 
                     IntegrityCheckCompleted.SafeInvoke(this, EventArgs.Empty);
