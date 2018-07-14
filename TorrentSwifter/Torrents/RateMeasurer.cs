@@ -108,7 +108,7 @@ namespace TorrentSwifter.Torrents
         public void Update()
         {
             var timeNow = DateTime.UtcNow;
-            double timeSinceLastUpdate = timeNow.Subtract(lastUpdateTime).TotalMilliseconds;
+            double timeSinceLastUpdate = timeNow.Subtract(lastUpdateTime).TotalSeconds;
             if (timeSinceLastUpdate >= 1.0)
             {
                 long current = Interlocked.Exchange(ref this.current, 0L);
