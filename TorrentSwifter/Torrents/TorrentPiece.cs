@@ -12,7 +12,7 @@ namespace TorrentSwifter.Torrents
         private readonly long offset;
         private readonly int size;
 
-        private bool isVerified = false;
+        private volatile bool isVerified = false;
         private TorrentBlock[] blocks = null;
         #endregion
 
