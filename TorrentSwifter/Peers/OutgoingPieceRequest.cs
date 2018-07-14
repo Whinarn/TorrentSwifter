@@ -1,4 +1,5 @@
 ﻿using System;
+using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers
 {
@@ -8,16 +9,25 @@ namespace TorrentSwifter.Peers
     internal sealed class OutgoingPieceRequest : IEquatable<OutgoingPieceRequest>
     {
         #region Fields
+        private readonly Torrent torrent;
         private readonly Peer peer;
         private readonly int pieceIndex;
         private readonly int blockIndex;
 
         private DateTime requestTime;
-
+        private bool hasBeenSent = false;
         private bool isCancelled = false;
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the torrent this request was for.
+        /// </summary>
+        public Torrent Torrent
+        {
+            get { return torrent; }
+        }
+
         /// <summary>
         /// Gets the peer this request is to.
         /// </summary>
@@ -51,21 +61,38 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets or sets if this request has been cancelled.
+        /// Gets the age of the request (from when it was sent) in milliseconds.
+        /// </summary>
+        public int RequestAge
+        {
+            get
+            {
+                var dateNow = DateTime.UtcNow;
+                if (requestTime > dateNow)
+                    return 0;
+
+                return (int)DateTime.UtcNow.Subtract(requestTime).TotalMilliseconds;
+            }
+        }
+
+        /// <summary>
+        /// Gets if this request has been cancelled.
         /// </summary>
         public bool IsCancelled
         {
             get { return isCancelled; }
-            set { isCancelled = value; }
         }
         #endregion
 
         #region Constructor
-        internal OutgoingPieceRequest(Peer peer, int pieceIndex, int blockIndex)
+        internal OutgoingPieceRequest(Torrent torrent, Peer peer, int pieceIndex, int blockIndex)
         {
-            if (peer == null)
+            if (torrent == null)
+                throw new ArgumentNullException("torrent");
+            else if (peer == null)
                 throw new ArgumentNullException("peer");
 
+            this.torrent = torrent;
             this.peer = peer;
             this.pieceIndex = pieceIndex;
             this.blockIndex = blockIndex;
@@ -149,6 +176,26 @@ namespace TorrentSwifter.Peers
         internal void OnSent()
         {
             requestTime = DateTime.UtcNow;
+            hasBeenSent = true;
+        }
+
+        internal void Cancel()
+        {
+            if (isCancelled)
+                return;
+
+            isCancelled = true;
+
+            if (hasBeenSent)
+            {
+                // Send the cancel message to the peer because we have already sent this request to them
+                peer.CancelPieceDataRequest(pieceIndex, blockIndex);
+
+                // Remove the peer from the request list from the requested block
+                var piece = torrent.GetPiece(pieceIndex);
+                var block = piece.GetBlock(blockIndex);
+                block.RemoveRequestPeer(peer);
+            }
         }
         #endregion
     }

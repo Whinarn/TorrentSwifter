@@ -535,11 +535,10 @@ namespace TorrentSwifter.Torrents
                 if (block.IsDownloaded)
                     continue;
 
-                block.AddRequestPeer(peer);
-
                 try
                 {
                     request.OnSent();
+                    block.AddRequestPeer(peer);
                     pendingOutgoingPieceRequests.Add(request);
                     if (!await request.Peer.RequestPieceData(pieceIndex, blockIndex))
                     {
@@ -590,7 +589,7 @@ namespace TorrentSwifter.Torrents
             {
                 if (request.Peer == peer)
                 {
-                    request.IsCancelled = true;
+                    request.Cancel();
                 }
             }
         }
@@ -601,7 +600,7 @@ namespace TorrentSwifter.Torrents
             {
                 if (request.Equals(pieceIndex, blockIndex))
                 {
-                    request.IsCancelled = true;
+                    request.Cancel();
                 }
             }
 
@@ -609,13 +608,7 @@ namespace TorrentSwifter.Torrents
             {
                 if (request.Equals(pieceIndex, blockIndex))
                 {
-                    // Send the cancel message to the peer because we have already sent this request to them
-                    var peer = request.Peer;
-                    peer.CancelPieceDataRequest(pieceIndex, blockIndex);
-
-                    var piece = pieces[pieceIndex];
-                    var block = piece.GetBlock(blockIndex);
-                    block.RemoveRequestPeer(peer);
+                    request.Cancel();
                     return true;
                 }
                 else
