@@ -720,7 +720,6 @@ namespace TorrentSwifter.Peers
             var block = piece.GetBlock(blockIndex);
             int begin = blockIndex * torrent.BlockSize;
             int length = block.Size;
-            block.IsRequested = true;
 
             var packet = CreatePacket(MessageType.Request, 12);
             packet.WriteInt32(pieceIndex);
