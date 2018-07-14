@@ -180,7 +180,7 @@ namespace TorrentSwifter
                         }
                     }
 
-                    workQueueResetEvent.WaitOne();
+                    workQueueResetEvent.WaitOne(1000);
                 }
                 catch (Exception ex)
                 {
