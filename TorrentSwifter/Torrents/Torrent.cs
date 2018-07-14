@@ -925,6 +925,42 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Read & Write
+        internal int ReadData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
+        {
+            if (torrentOffset < 0 || torrentOffset >= totalSize)
+                throw new ArgumentOutOfRangeException("torrentOffset");
+            else if (buffer == null)
+                throw new ArgumentNullException("buffer");
+            else if (bufferOffset < 0 || bufferOffset >= buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+            else if (count < 0 || (bufferOffset + count) > buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+
+            int totalBytesRead = 0;
+            for (int i = 0; i < files.Length && count > 0; i++)
+            {
+                var file = files[i];
+                if (torrentOffset >= file.Offset && torrentOffset < file.EndOffset)
+                {
+                    long localOffset = torrentOffset - file.Offset;
+                    int localCount = (int)Math.Min(file.Size - localOffset, count);
+
+                    if (!file.Exists)
+                        break;
+
+                    int readByteCount = file.Read(localOffset, buffer, bufferOffset, localCount);
+                    if (readByteCount <= 0)
+                        break;
+
+                    torrentOffset += readByteCount;
+                    bufferOffset += readByteCount;
+                    count -= readByteCount;
+                    totalBytesRead += readByteCount;
+                }
+            }
+            return totalBytesRead;
+        }
+
         internal async Task<int> ReadDataAsync(long torrentOffset, byte[] buffer, int bufferOffset, int count)
         {
             if (torrentOffset < 0 || torrentOffset >= totalSize)
@@ -959,6 +995,35 @@ namespace TorrentSwifter.Torrents
                 }
             }
             return totalBytesRead;
+        }
+
+        internal void WriteData(long torrentOffset, byte[] buffer, int bufferOffset, int count)
+        {
+            if (torrentOffset < 0 || torrentOffset >= totalSize)
+                throw new ArgumentOutOfRangeException("torrentOffset");
+            else if (buffer == null)
+                throw new ArgumentNullException("buffer");
+            else if (bufferOffset < 0 || bufferOffset >= buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+            else if (count < 0 || (bufferOffset + count) > buffer.Length)
+                throw new ArgumentOutOfRangeException("bufferOffset");
+
+            for (int i = 0; i < files.Length && count > 0; i++)
+            {
+                var file = files[i];
+                if (torrentOffset >= file.Offset && torrentOffset < file.EndOffset)
+                {
+                    long localOffset = torrentOffset - file.Offset;
+                    int localCount = (int)Math.Min(file.Size - localOffset, count);
+
+                    IOHelper.CreateParentDirectoryIfItDoesntExist(file.FullPath);
+                    file.Write(localOffset, buffer, bufferOffset, localCount);
+
+                    torrentOffset += localCount;
+                    bufferOffset += localCount;
+                    count -= localCount;
+                }
+            }
         }
 
         internal async Task WriteDataAsync(long torrentOffset, byte[] buffer, int bufferOffset, int count)

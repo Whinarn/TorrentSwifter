@@ -82,6 +82,21 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Internal Methods
+        internal int Read(long fileOffset, byte[] buffer, int offset, int count)
+        {
+            using (var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                if (fileOffset > 0)
+                {
+                    if (fileOffset >= fileStream.Length)
+                        return 0;
+
+                    fileStream.Seek(fileOffset, SeekOrigin.Begin);
+                }
+                return fileStream.Read(buffer, offset, count);
+            }
+        }
+
         internal async Task<int> ReadAsync(long fileOffset, byte[] buffer, int offset, int count)
         {
             using (var fileStream = new FileStream(fullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
@@ -94,6 +109,23 @@ namespace TorrentSwifter.Torrents
                     fileStream.Seek(fileOffset, SeekOrigin.Begin);
                 }
                 return await fileStream.ReadAsync(buffer, offset, count);
+            }
+        }
+
+        internal void Write(long fileOffset, byte[] buffer, int offset, int count)
+        {
+            semaphore.Wait();
+            try
+            {
+                using (var fileStream = new FileStream(fullPath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.ReadWrite))
+                {
+                    fileStream.Seek(fileOffset, SeekOrigin.Begin);
+                    fileStream.Write(buffer, offset, count);
+                }
+            }
+            finally
+            {
+                semaphore.Release();
             }
         }
 
