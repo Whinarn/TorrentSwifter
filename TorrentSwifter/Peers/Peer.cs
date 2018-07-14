@@ -18,6 +18,7 @@ namespace TorrentSwifter.Peers
 
         private PeerConnection connection = null;
 
+        private bool isCompleted = false;
         private BitField bitField = null;
         #endregion
 
@@ -60,6 +61,14 @@ namespace TorrentSwifter.Peers
         public PeerConnection Connection
         {
             get { return connection; }
+        }
+
+        /// <summary>
+        /// Gets if this peer has completed downloading.
+        /// </summary>
+        public bool IsCompleted
+        {
+            get { return isCompleted; }
         }
 
         /// <summary>
@@ -295,6 +304,13 @@ namespace TorrentSwifter.Peers
         }
         #endregion
 
+        #region Peer Events
+        private void OnPeerCompleted()
+        {
+            
+        }
+        #endregion
+
         #region Connection Events
         private void OnConnectionConnected(object sender, EventArgs e)
         {
@@ -319,6 +335,13 @@ namespace TorrentSwifter.Peers
         private void OnConnectionBitFieldReceived(object sender, BitFieldEventArgs e)
         {
             bitField = e.BitField;
+
+            bool isCompleted = bitField.HasAllSet();
+            if (isCompleted != this.isCompleted)
+            {
+                this.isCompleted = true;
+                OnPeerCompleted();
+            }
         }
 
         private void OnConnectionHavePiece(object sender, PieceEventArgs e)
@@ -329,6 +352,13 @@ namespace TorrentSwifter.Peers
             }
 
             bitField.Set(e.PieceIndex, true);
+
+            bool isCompleted = bitField.HasAllSet();
+            if (isCompleted != this.isCompleted)
+            {
+                this.isCompleted = true;
+                OnPeerCompleted();
+            }
         }
 
         private void OnConnectionStateChanged(object sender, PeerConnectionStateEventArgs e)
