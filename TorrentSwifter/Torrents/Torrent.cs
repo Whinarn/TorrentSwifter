@@ -328,7 +328,7 @@ namespace TorrentSwifter.Torrents
 
             if (!hasVerifiedIntegrity)
             {
-                VerifyIntegrity();
+                VerifyIntegrity(true);
             }
 
             var updateTask = UpdateLoop();
@@ -363,7 +363,7 @@ namespace TorrentSwifter.Torrents
                 return;
 
             hasVerifiedIntegrity = false;
-            VerifyIntegrity();
+            VerifyIntegrity(false);
         }
         #endregion
 
@@ -591,6 +591,9 @@ namespace TorrentSwifter.Torrents
         private async Task<byte[]> GetPieceHash(TorrentPiece piece)
         {
             byte[] pieceData = await ReadPiece(piece);
+            if (pieceData == null)
+                return null;
+
             return HashHelper.ComputeSHA1(pieceData);
         }
 
@@ -845,9 +848,9 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Integrity
-        private void VerifyIntegrity()
+        private void VerifyIntegrity(bool allowWhenStarted)
         {
-            if (isVerifyingIntegrity || hasVerifiedIntegrity || isStarted)
+            if (isVerifyingIntegrity || hasVerifiedIntegrity || (!allowWhenStarted && isStarted))
                 return;
 
             isVerifyingIntegrity = true;

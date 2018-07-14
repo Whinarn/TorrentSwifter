@@ -74,7 +74,9 @@ namespace TorrentSwifter.Torrents
         /// <returns>If equals.</returns>
         public bool Equals(byte[] other)
         {
-            if (hash.Length != other.Length)
+            if (other == null)
+                return false;
+            else if (hash.Length != other.Length)
                 return false;
 
             bool result = true;
