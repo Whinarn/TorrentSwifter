@@ -620,6 +620,19 @@ namespace TorrentSwifter.Torrents
                     request.Cancel();
                 }
             }
+
+            pendingOutgoingPieceRequests.RemoveAny((request) =>
+            {
+                if (request.Peer == peer)
+                {
+                    request.Cancel();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
         }
 
         private void CancelOutgoingPieceRequestsForBlock(int pieceIndex, int blockIndex)
