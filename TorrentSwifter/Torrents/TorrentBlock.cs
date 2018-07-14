@@ -58,6 +58,10 @@ namespace TorrentSwifter.Torrents
                 {
                     isRequested = false;
                 }
+                else
+                {
+                    hasWrittenToDisk = false;
+                }
             }
         }
 

@@ -67,6 +67,7 @@ namespace TorrentSwifter.Torrents
                         for (int i = 0; i < blocks.Length; i++)
                         {
                             blocks[i].IsDownloaded = true;
+                            blocks[i].HasWrittenToDisk = true;
                         }
                     }
                     else if (HasDownloadedAllBlocks())
@@ -76,6 +77,7 @@ namespace TorrentSwifter.Torrents
                         for (int i = 0; i < blocks.Length; i++)
                         {
                             blocks[i].IsDownloaded = false;
+                            blocks[i].HasWrittenToDisk = false;
                         }
                     }
                 }
