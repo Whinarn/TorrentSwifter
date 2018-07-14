@@ -97,9 +97,8 @@ namespace TorrentSwifter.Peers
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
         /// <param name="blockIndex">The block index.</param>
-        /// <param name="length">The length in bytes.</param>
         /// <returns>If equals.</returns>
-        public bool Equals(int pieceIndex, int blockIndex, int length)
+        public bool Equals(int pieceIndex, int blockIndex)
         {
             return (this.pieceIndex == pieceIndex && this.blockIndex == blockIndex);
         }
@@ -110,9 +109,8 @@ namespace TorrentSwifter.Peers
         /// <param name="peer">The peer.</param>
         /// <param name="pieceIndex">The piece index.</param>
         /// <param name="blockIndex">The block index.</param>
-        /// <param name="length">The length in bytes.</param>
         /// <returns>If equals.</returns>
-        public bool Equals(Peer peer, int pieceIndex, int blockIndex, int length)
+        public bool Equals(Peer peer, int pieceIndex, int blockIndex)
         {
             return (this.peer == peer && this.pieceIndex == pieceIndex && this.blockIndex == blockIndex);
         }
