@@ -7,6 +7,9 @@ using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Managers
 {
+    /// <summary>
+    /// A manager of I/O disk (or solid-state) reading and writing.
+    /// </summary>
     internal static class DiskManager
     {
         #region Delegates
@@ -77,11 +80,17 @@ namespace TorrentSwifter.Managers
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the current count of queued reads.
+        /// </summary>
         public static int QueuedReads
         {
             get { return queuedReads.Count; }
         }
 
+        /// <summary>
+        /// Gets the current count of queued writes.
+        /// </summary>
         public static int QueuedWrites
         {
             get { return queuedWrites.Count; }
@@ -89,6 +98,15 @@ namespace TorrentSwifter.Managers
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Queues a read from a specific torrent at an offset.
+        /// </summary>
+        /// <param name="torrent">The torrent to read from.</param>
+        /// <param name="torrentOffset">The offset within the torrent.</param>
+        /// <param name="buffer">The buffer to read into.</param>
+        /// <param name="bufferOffset">The offset within the buffer to start writing into.</param>
+        /// <param name="readLength">The length of bytes to read.</param>
+        /// <param name="callback">The callback with the result.</param>
         public static void QueueRead(Torrent torrent, long torrentOffset, byte[] buffer, int bufferOffset, int readLength, DiskReadCallback callback)
         {
             if (torrent == null)
@@ -115,6 +133,13 @@ namespace TorrentSwifter.Managers
             readResetEvent.Set();
         }
 
+        /// <summary>
+        /// Queues a write to a specific torrent at an offset.
+        /// </summary>
+        /// <param name="torrent">The torrent to write to.</param>
+        /// <param name="torrentOffset">The offset within the torrent.</param>
+        /// <param name="data">The data of bytes to write.</param>
+        /// <param name="callback">The callback with the result.</param>
         public static void QueueWrite(Torrent torrent, long torrentOffset, byte[] data, DiskWriteCallback callback = null)
         {
             if (torrent == null)
