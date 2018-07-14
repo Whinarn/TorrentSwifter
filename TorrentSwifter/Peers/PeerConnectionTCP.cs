@@ -294,14 +294,10 @@ namespace TorrentSwifter.Peers
                 }
             }
 
-            // Send keep alive messages at a regular interval if either side is interested
-            if (isInterestedByUs || isInterestedByRemote)
+            var timeSinceLastKeepAlive = DateTime.UtcNow.Subtract(lastKeepAliveTime);
+            if (timeSinceLastKeepAlive.TotalMilliseconds > KeepAliveInterval)
             {
-                var timeSinceLastKeepAlive = DateTime.UtcNow.Subtract(lastKeepAliveTime);
-                if (timeSinceLastKeepAlive.TotalMilliseconds > KeepAliveInterval)
-                {
-                    SendKeepAlive();
-                }
+                SendKeepAlive();
             }
         }
 
