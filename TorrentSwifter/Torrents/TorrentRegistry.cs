@@ -21,6 +21,17 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Stops all currently active torrents.
+        /// </summary>
+        public static void StopAllActiveTorrents()
+        {
+            foreach (var torrent in torrentList)
+            {
+                torrent.Stop();
+            }
+        }
+
+        /// <summary>
         /// Attempts to find a torrent by its info hash.
         /// </summary>
         /// <param name="infoHash">The torrent info hash.</param>
