@@ -3,9 +3,9 @@
 namespace TorrentSwifter.Peers
 {
     /// <summary>
-    /// Connection failed attempt event arguments.
+    /// Peer connection failed attempt event arguments.
     /// </summary>
-    public sealed class ConnectionFailedEventArgs : EventArgs
+    public sealed class PeerConnectionFailedEventArgs : EventArgs
     {
         private readonly ConnectionFailedReason failedReason;
 
@@ -21,7 +21,7 @@ namespace TorrentSwifter.Peers
         /// Creates new connection failed attempt event arguments.
         /// </summary>
         /// <param name="failedReason">The reason of failure.</param>
-        public ConnectionFailedEventArgs(ConnectionFailedReason failedReason)
+        public PeerConnectionFailedEventArgs(ConnectionFailedReason failedReason)
         {
             this.failedReason = failedReason;
         }

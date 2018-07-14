@@ -299,7 +299,7 @@ namespace TorrentSwifter.Peers
             Log.LogInfo("[Peer] Connected to {0}", endPoint);
         }
 
-        private void OnConnectionAttemptFailed(object sender, ConnectionFailedEventArgs e)
+        private void OnConnectionAttemptFailed(object sender, PeerConnectionFailedEventArgs e)
         {
             Log.LogInfo("[Peer] Connection attempt failed to {0} with reason: {1}", endPoint, e.FailedReason);
         }

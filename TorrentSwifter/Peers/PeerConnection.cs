@@ -134,7 +134,7 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Occurs when a connection attempt has failed with this peer.
         /// </summary>
-        public event EventHandler<ConnectionFailedEventArgs> ConnectionFailed;
+        public event EventHandler<PeerConnectionFailedEventArgs> ConnectionFailed;
         /// <summary>
         /// Occurs when our connection with this peer has been disconnected.
         /// </summary>
@@ -286,7 +286,7 @@ namespace TorrentSwifter.Peers
         /// <param name="failedReason">The reason of failure.</param>
         protected virtual void OnConnectionFailed(ConnectionFailedReason failedReason)
         {
-            var eventArgs = new ConnectionFailedEventArgs(failedReason);
+            var eventArgs = new PeerConnectionFailedEventArgs(failedReason);
             ConnectionFailed.SafeInvoke(this, eventArgs);
         }
 
