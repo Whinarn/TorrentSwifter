@@ -70,6 +70,10 @@ namespace TorrentSwifter.Torrents
         /// An event that occurs once an integrity check has completed.
         /// </summary>
         public event EventHandler IntegrityCheckCompleted;
+        /// <summary>
+        /// An event that occurs once the entire torrent has completed downloading.
+        /// </summary>
+        public event EventHandler Completed;
         #endregion
 
         #region Properties
@@ -438,6 +442,8 @@ namespace TorrentSwifter.Torrents
             {
                 isSeeding = true;
                 CancelAllOutgoingPieceRequests();
+
+                Completed.SafeInvoke(this, EventArgs.Empty);
             }
         }
 
