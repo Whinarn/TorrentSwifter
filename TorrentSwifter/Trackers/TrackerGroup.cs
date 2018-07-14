@@ -266,6 +266,13 @@ namespace TorrentSwifter.Trackers
                 else
                 {
                     currentIndex = (currentIndex + 1) % trackers.Count;
+
+                    if (currentIndex == 0)
+                    {
+                        var timeNow = DateTime.UtcNow;
+                        nextAnnounceTime = timeNow.Add(TimeSpan.FromMinutes(5.0));
+                        nextAnnounceTimeMinimum = timeNow.Add(TimeSpan.FromMinutes(1.0));
+                    }
                 }
                 return announceResponse;
             }
