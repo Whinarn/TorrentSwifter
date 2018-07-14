@@ -253,7 +253,10 @@ namespace TorrentSwifter.Peers
 
             if (socket != null)
             {
-                socket.Shutdown(SocketShutdown.Both);
+                if (socket.Connected)
+                {
+                    socket.Shutdown(SocketShutdown.Both);
+                }
                 socket.Close();
                 socket = null;
             }
