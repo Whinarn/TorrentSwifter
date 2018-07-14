@@ -132,6 +132,46 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets if all bits are set in this bit field.
+        /// </summary>
+        /// <returns>If all bits are set.</returns>
+        public bool HasAllSet()
+        {
+            bool result = true;
+            for (int index = 0; index < length; index++)
+            {
+                int byteIndex = (index >> 3);
+                int bitIndex = (index & 7);
+                if (((buffer[byteIndex] & (1 << bitIndex)) == 0))
+                {
+                    result = false;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Gets if no bits are set in this bit field.
+        /// </summary>
+        /// <returns>If no bits are set.</returns>
+        public bool HasNoneSet()
+        {
+            bool result = true;
+            for (int index = 0; index < length; index++)
+            {
+                int byteIndex = (index >> 3);
+                int bitIndex = (index & 7);
+                if (((buffer[byteIndex] & (1 << bitIndex)) != 0))
+                {
+                    result = false;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        /// <summary>
         /// Returns the count of set bits in this bit field.
         /// </summary>
         /// <returns>The count of set bits.</returns>
