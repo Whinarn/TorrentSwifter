@@ -42,6 +42,13 @@ namespace TorrentSwifter.Logging
         }
         #endregion
 
+        #region Static Initializer
+        static Log()
+        {
+            logger = defaultLogger;
+        }
+        #endregion
+
         #region Public Methods
         #region Unhandled Exceptions
         /// <summary>
