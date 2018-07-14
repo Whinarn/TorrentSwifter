@@ -294,7 +294,7 @@ namespace TorrentSwifter.Collections
             {
                 int removeCount = 0;
                 int itemCount = items.Count;
-                for (int i = 0; i < itemCount; i++)
+                for (int i = (itemCount - 1); i >= 0; i--)
                 {
                     if (predicate.Invoke(items[i]))
                     {
