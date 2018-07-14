@@ -851,6 +851,11 @@ namespace TorrentSwifter.Torrents
             CancelIncomingPieceRequestsWithPeer(peer);
             CancelOutgoingPieceRequestsWithPeer(peer);
         }
+
+        internal void OnPeerChokingUs(Peer peer)
+        {
+            CancelOutgoingPieceRequestsWithPeer(peer);
+        }
         #endregion
 
         #region Pieces

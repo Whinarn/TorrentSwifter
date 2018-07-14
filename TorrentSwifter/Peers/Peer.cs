@@ -191,6 +191,7 @@ namespace TorrentSwifter.Peers
                 connection.Disconnected -= OnConnectionDisconnected;
                 connection.BitFieldReceived -= OnConnectionBitFieldReceived;
                 connection.HavePiece -= OnConnectionHavePiece;
+                connection.StateChanged -= OnConnectionStateChanged;
 
                 connection.Disconnect();
                 connection.Dispose();
@@ -275,6 +276,7 @@ namespace TorrentSwifter.Peers
             connection.Disconnected += OnConnectionDisconnected;
             connection.BitFieldReceived += OnConnectionBitFieldReceived;
             connection.HavePiece += OnConnectionHavePiece;
+            connection.StateChanged += OnConnectionStateChanged;
         }
 
         private void Uninitialize()
@@ -327,6 +329,14 @@ namespace TorrentSwifter.Peers
             }
 
             bitField.Set(e.PieceIndex, true);
+        }
+
+        private void OnConnectionStateChanged(object sender, PeerConnectionStateEventArgs e)
+        {
+            if (torrent != null && e.IsChoked)
+            {
+                torrent.OnPeerChokingUs(this);
+            }
         }
         #endregion
         #endregion
