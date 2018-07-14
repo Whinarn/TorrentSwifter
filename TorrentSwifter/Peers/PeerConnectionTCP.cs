@@ -1066,7 +1066,7 @@ namespace TorrentSwifter.Peers
         {
             int pieceCount = torrent.PieceCount;
             int bitFieldByteCount = ((pieceCount + 7) >> 3);
-            int expectedLength = (1 + bitFieldByteCount);
+            int expectedLength = (5 + bitFieldByteCount);
             if (packet.Length != expectedLength)
             {
                 Log.LogWarning("[Peer][{0}] Invalid 'bit field' received with {1} bytes (should have been {2}).", endPoint, packet.Length, expectedLength);
