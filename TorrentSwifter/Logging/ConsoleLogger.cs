@@ -29,7 +29,10 @@ namespace TorrentSwifter.Logging
         public ConsoleLogger()
             : this(true)
         {
-
+#if DEBUG
+            // We use debug logging by default for debug builds
+            base.level = LogLevel.Debug;
+#endif
         }
 
         /// <summary>
