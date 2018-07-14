@@ -12,6 +12,7 @@ namespace TorrentSwifter.Peers
 
         private int handshakeTimeout = 15 * 1000; // 15 seconds
         private int inactiveTimeout = 4 * 60 * 1000; // 4 minutes
+        private int pieceRequestTimeout = 60 * 1000; // 1 minute
         #endregion
 
         #region Properties
@@ -49,6 +50,16 @@ namespace TorrentSwifter.Peers
         {
             get { return inactiveTimeout; }
             set { inactiveTimeout = Math.Max(value, 0); }
+        }
+
+        /// <summary>
+        /// Gets or sets the timeout (in milliseconds) before we cancel a piece request that hasn't yet been fulfilled.
+        /// Zero means that there is no timeout.
+        /// </summary>
+        public int PieceRequestTimeout
+        {
+            get { return pieceRequestTimeout; }
+            set { pieceRequestTimeout = Math.Max(value, 0); }
         }
         #endregion
     }

@@ -554,6 +554,24 @@ namespace TorrentSwifter.Torrents
                 }
             }
 
+            int pieceRequestTimeout = Preferences.Peer.PieceRequestTimeout;
+            pendingOutgoingPieceRequests.RemoveAny((pendingRequest) =>
+            {
+                if (pendingRequest.IsCancelled)
+                    return true;
+
+                if (pieceRequestTimeout > 0 && pendingRequest.RequestAge >= pieceRequestTimeout)
+                {
+                    // TODO: Add penalty points to the peer so that we can disconnect it if there are too many?
+                    pendingRequest.Cancel();
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            });
+
             // Reset the flag that we are currently processing
             Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
         }
