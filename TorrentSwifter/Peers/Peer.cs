@@ -290,6 +290,8 @@ namespace TorrentSwifter.Peers
                 // because there is nothing left to do.
                 if (torrent.IsCompleted && isCompleted)
                 {
+                    Log.LogInfo("[Peer][{0}] Disconnecting from peer because we are both seeders.", endPoint);
+
                     connection.Disconnect();
                     return;
                 }
