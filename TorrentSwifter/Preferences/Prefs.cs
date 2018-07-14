@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TorrentSwifter
+namespace TorrentSwifter.Preferences
 {
     /// <summary>
     /// A collection of all preferences.

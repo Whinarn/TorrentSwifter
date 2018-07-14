@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Network;
+using TorrentSwifter.Preferences;
 using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers

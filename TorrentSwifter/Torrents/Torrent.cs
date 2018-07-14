@@ -8,6 +8,7 @@ using TorrentSwifter.Collections;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
+using TorrentSwifter.Preferences;
 using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents

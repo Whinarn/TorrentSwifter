@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using TorrentSwifter.Logging;
+using TorrentSwifter.Preferences;
 
 namespace TorrentSwifter.Peers
 {
