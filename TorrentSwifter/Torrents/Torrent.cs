@@ -1196,6 +1196,10 @@ namespace TorrentSwifter.Torrents
             // Cancel other requests for the same block on other peers
             CancelOutgoingPieceRequestsForBlock(pieceIndex, blockIndex);
 
+            // Process more outgoing piece requests
+            var processTask = ProcessOutgoingPieceRequests();
+            processTask.CatchExceptions();
+
             long offset = piece.Offset + (blockIndex * blockSize);
             DiskManager.QueueWrite(this, offset, data, (writeSuccess, writeException) =>
             {
