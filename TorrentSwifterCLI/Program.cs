@@ -1,6 +1,9 @@
 ﻿using System;
 using System.IO;
+using System.Net;
 using TorrentSwifter;
+using TorrentSwifter.Logging;
+using TorrentSwifter.Peers;
 using TorrentSwifter.Torrents;
 
 namespace TorrentSwifterCLI
@@ -125,6 +128,21 @@ namespace TorrentSwifterCLI
                     var keyInfo = Console.ReadKey(true);
                     if (keyInfo.Key == ConsoleKey.Escape)
                         break;
+
+                    if (keyInfo.Key == ConsoleKey.Enter)
+                    {
+                        string peerEndPointText = Console.ReadLine();
+                        var peerEndPoint = ParseEndPoint(peerEndPointText);
+                        if (peerEndPoint != null)
+                        {
+                            var peerInfo = new PeerInfo(peerEndPoint);
+                            torrent.AddPeer(peerInfo);
+                        }
+                        else
+                        {
+                            Log.LogError("[Console] Invalid end-point: {0}", peerEndPointText);
+                        }
+                    }
                 }
 
                 torrent.Stop();
@@ -132,6 +150,32 @@ namespace TorrentSwifterCLI
             finally
             {
                 TorrentEngine.Uninitialize();
+            }
+        }
+
+        private static IPEndPoint ParseEndPoint(string endPointText)
+        {
+            if (string.IsNullOrEmpty(endPointText))
+                return null;
+
+            endPointText = endPointText.Trim();
+            int portSplitIndex = endPointText.LastIndexOf(':');
+            if (portSplitIndex == -1)
+                return null;
+
+            string hostText = endPointText.Substring(0, portSplitIndex);
+            string portText = endPointText.Substring(portSplitIndex + 1);
+
+            IPAddress ipAddress;
+            int port;
+
+            if (IPAddress.TryParse(hostText, out ipAddress) && int.TryParse(portText, out port))
+            {
+                return new IPEndPoint(ipAddress, port);
+            }
+            else
+            {
+                return null;
             }
         }
     }
