@@ -1027,6 +1027,14 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Peers
+        internal void RegisterPeerWithID(PeerID peerID, Peer peer)
+        {
+            lock (peersSyncObj)
+            {
+                peersByID[peerID] = peer;
+            }
+        }
+
         internal Peer OnPeerHandshaked(PeerID peerID, PeerConnection connection)
         {
             lock (peersSyncObj)
@@ -1039,6 +1047,7 @@ namespace TorrentSwifter.Torrents
                 else
                 {
                     peer = new Peer(this, connection);
+                    peer.ID = peerID;
                     peers.Add(peer);
                     peersByID.Add(peerID, peer);
                 }

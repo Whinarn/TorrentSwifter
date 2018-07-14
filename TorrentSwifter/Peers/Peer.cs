@@ -15,7 +15,7 @@ namespace TorrentSwifter.Peers
     {
         #region Fields
         private readonly Torrent torrent;
-        private readonly EndPoint endPoint;
+        private EndPoint endPoint;
         private PeerID peerID = PeerID.None;
 
         private PeerConnection connection = null;
@@ -50,6 +50,7 @@ namespace TorrentSwifter.Peers
         public PeerID ID
         {
             get { return peerID; }
+            internal set { peerID = value; }
         }
 
         /// <summary>
@@ -254,6 +255,15 @@ namespace TorrentSwifter.Peers
             Disconnect();
             this.connection = connection;
             InitializeConnection(connection);
+        }
+
+        internal void UpdateEndPoint(IPEndPoint endPoint)
+        {
+            if (endPoint.Equals(endPoint))
+                return;
+
+            this.endPoint = endPoint;
+            haveTriedConnectTo = false;
         }
 
         internal void Update()

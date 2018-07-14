@@ -916,6 +916,18 @@ namespace TorrentSwifter.Peers
                 peer = torrent.OnPeerHandshaked(peerID, this);
             }
 
+            if (peer.ID.IsNone)
+            {
+                // If the peer had no ID prior, then we set it now and register the ID with the torrent
+                peer.ID = peerID;
+                torrent.RegisterPeerWithID(peerID, peer);
+            }
+            else if (!peerID.Equals(peer.ID))
+            {
+                Log.LogWarning("[Peer][{0}] Handshake with invalid peer ID: {1}   !==   {2}", endPoint, peerID, peer.ID);
+                return false;
+            }
+
             this.infoHash = infoHash;
             this.peerID = peerID;
             isHandshakeReceived = true;
