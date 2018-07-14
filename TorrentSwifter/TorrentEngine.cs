@@ -157,64 +157,6 @@ namespace TorrentSwifter
             var task = new DelegateTask<T1, T2, T3>(action, arg1, arg2, arg3);
             QueueWork(task);
         }
-
-        /// <summary>
-        /// Queues work that will be run in the engine main thread.
-        /// </summary>
-        /// <param name="action">The action to run.</param>
-        public static void QueueWork(Func<Task> action)
-        {
-            if (action == null)
-                throw new ArgumentNullException("action");
-
-            var task = new DelegateTaskAsync(action);
-            QueueWork(task);
-        }
-
-        /// <summary>
-        /// Queues work that will be run in the engine main thread.
-        /// </summary>
-        /// <param name="action">The action to run.</param>
-        /// <param name="arg">The argument.</param>
-        public static void QueueWork<T>(Func<T, Task> action, T arg)
-        {
-            if (action == null)
-                throw new ArgumentNullException("action");
-
-            var task = new DelegateTaskAsync<T>(action, arg);
-            QueueWork(task);
-        }
-
-        /// <summary>
-        /// Queues work that will be run in the engine main thread.
-        /// </summary>
-        /// <param name="action">The action to run.</param>
-        /// <param name="arg1">The first argument.</param>
-        /// <param name="arg2">The second.</param>
-        public static void QueueWork<T1, T2>(Func<T1, T2, Task> action, T1 arg1, T2 arg2)
-        {
-            if (action == null)
-                throw new ArgumentNullException("action");
-
-            var task = new DelegateTaskAsync<T1, T2>(action, arg1, arg2);
-            QueueWork(task);
-        }
-
-        /// <summary>
-        /// Queues work that will be run in the engine main thread.
-        /// </summary>
-        /// <param name="action">The action to run.</param>
-        /// <param name="arg1">The first argument.</param>
-        /// <param name="arg2">The second argument.</param>
-        /// <param name="arg3">The third argument.</param>
-        public static void QueueWork<T1, T2, T3>(Func<T1, T2, T3, Task> action, T1 arg1, T2 arg2, T3 arg3)
-        {
-            if (action == null)
-                throw new ArgumentNullException("action");
-
-            var task = new DelegateTaskAsync<T1, T2, T3>(action, arg1, arg2, arg3);
-            QueueWork(task);
-        }
         #endregion
         #endregion
 
