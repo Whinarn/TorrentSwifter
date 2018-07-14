@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using TorrentSwifter.Collections;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Torrents;
 
@@ -21,6 +22,8 @@ namespace TorrentSwifter.Peers
 
         private bool isCompleted = false;
         private BitField bitField = null;
+
+        private ConcurrentList<OutgoingPieceRequest> pieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         #endregion
 
         #region Properties
@@ -326,6 +329,16 @@ namespace TorrentSwifter.Peers
                 return;
 
             await connection.SendPieceData(pieceIndex, begin, data);
+        }
+
+        internal void RegisterPieceRequest(OutgoingPieceRequest request)
+        {
+            pieceRequests.TryAdd(request);
+        }
+
+        internal void UnregisterPieceRequest(OutgoingPieceRequest request)
+        {
+            pieceRequests.Remove(request);
         }
         #endregion
 

@@ -199,6 +199,8 @@ namespace TorrentSwifter.Peers
                 var block = piece.GetBlock(blockIndex);
                 block.RemoveRequestPeer(peer);
             }
+
+            peer.UnregisterPieceRequest(this);
         }
         #endregion
     }
