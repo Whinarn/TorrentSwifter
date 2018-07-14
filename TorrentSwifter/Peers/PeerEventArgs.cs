@@ -26,4 +26,40 @@ namespace TorrentSwifter.Peers
             this.failedReason = failedReason;
         }
     }
+
+    /// <summary>
+    /// Peer connection state event arguments.
+    /// </summary>
+    public sealed class PeerConnectionStateEventArgs : EventArgs
+    {
+        private readonly bool isInterested;
+        private readonly bool isChoked;
+
+        /// <summary>
+        /// Gets if the peer is interested.
+        /// </summary>
+        public bool IsInterested
+        {
+            get { return isInterested; }
+        }
+
+        /// <summary>
+        /// Gets if the peer is choking us.
+        /// </summary>
+        public bool IsChoked
+        {
+            get { return isChoked; }
+        }
+
+        /// <summary>
+        /// Creates new connection state event arguments.
+        /// </summary>
+        /// <param name="isInterested">If the peer is interested.</param>
+        /// <param name="isChoked">If the peer is choking us.</param>
+        public PeerConnectionStateEventArgs(bool isInterested, bool isChoked)
+        {
+            this.isInterested = isInterested;
+            this.isChoked = isChoked;
+        }
+    }
 }

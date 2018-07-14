@@ -146,7 +146,7 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Occurs when the state of this peer has changed.
         /// </summary>
-        public event EventHandler StateChanged;
+        public event EventHandler<PeerConnectionStateEventArgs> StateChanged;
         /// <summary>
         /// Occurs when the full bit field has been received.
         /// </summary>
@@ -311,7 +311,8 @@ namespace TorrentSwifter.Peers
         /// </summary>
         protected virtual void OnStateChanged()
         {
-            StateChanged.SafeInvoke(this, EventArgs.Empty);
+            var eventArgs = new PeerConnectionStateEventArgs(IsInterestedByRemote, IsChokedByRemote);
+            StateChanged.SafeInvoke(this, eventArgs);
         }
 
         /// <summary>
