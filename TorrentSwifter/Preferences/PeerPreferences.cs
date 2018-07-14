@@ -14,6 +14,9 @@ namespace TorrentSwifter.Preferences
         private int handshakeTimeout = 15 * 1000; // 15 seconds
         private int inactiveTimeout = 4 * 60 * 1000; // 4 minutes
         private int pieceRequestTimeout = 60 * 1000; // 1 minute
+
+        private int maxDownloadConnections = 15;
+        private int maxUploadConnections = 5;
         #endregion
 
         #region Properties
@@ -61,6 +64,24 @@ namespace TorrentSwifter.Preferences
         {
             get { return pieceRequestTimeout; }
             set { pieceRequestTimeout = Math.Max(value, 0); }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum count of connections that we allow to download from at the same time.
+        /// </summary>
+        public int MaxDownloadConnections
+        {
+            get { return maxDownloadConnections; }
+            set { maxDownloadConnections = Math.Max(value, 1); }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum count of connections that we allow to upload to at the same time.
+        /// </summary>
+        public int MaxUploadConnections
+        {
+            get { return maxUploadConnections; }
+            set { maxUploadConnections = Math.Max(value, 1); }
         }
         #endregion
     }
