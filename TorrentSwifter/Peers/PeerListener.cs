@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading.Tasks;
 using TorrentSwifter.Logging;
@@ -50,6 +51,8 @@ namespace TorrentSwifter.Peers
             int listenPort = Prefs.Peer.ListenPort;
             listener = TcpListener.Create(listenPort);
             listener.Start();
+            var localEndPoint = (listener.LocalEndpoint as IPEndPoint);
+            listenPort = localEndPoint.Port;
             PeerListener.listenPort = listenPort;
 
             Log.LogInfo("[PeerListener] Now listening for connections on port {0}", listenPort);
@@ -116,6 +119,10 @@ namespace TorrentSwifter.Peers
                         TimeoutConnection(peerConnection, handshakeTimeout);
                     }
                 }
+            }
+            catch (ObjectDisposedException)
+            {
+                // We can swallow this because it means that we have stopped listening
             }
             catch (Exception ex)
             {
