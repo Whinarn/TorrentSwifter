@@ -5,6 +5,7 @@ namespace TorrentSwifter
     /// <summary>
     /// Torrent preferences.
     /// </summary>
+    [Serializable]
     public sealed class TorrentPreferences
     {
         #region Fields
