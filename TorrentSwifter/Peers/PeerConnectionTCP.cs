@@ -328,6 +328,19 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Cancels a pending request for a piece of data from this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <param name="blockIndex">The block index.</param>
+        public override void CancelPieceDataRequest(int pieceIndex, int blockIndex)
+        {
+            if (!isConnected || !isHandshakeReceived)
+                return;
+
+            SendCancel(pieceIndex, blockIndex);
+        }
+
+        /// <summary>
         /// Sends a piece of data to this peer.
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
@@ -737,8 +750,21 @@ namespace TorrentSwifter.Peers
             torrent.IncreaseSessionUploadedBytes(data.Length);
         }
 
-        private void SendCancel(int pieceIndex, int begin, int length)
+        private void SendCancel(int pieceIndex, int blockIndex)
         {
+            if (pieceIndex < 0 || pieceIndex >= torrent.PieceCount)
+                throw new ArgumentOutOfRangeException("pieceIndex");
+            else if (blockIndex < 0)
+                throw new ArgumentOutOfRangeException("blockIndex");
+
+            var piece = torrent.GetPiece(pieceIndex);
+            if (blockIndex >= piece.BlockCount)
+                throw new ArgumentOutOfRangeException("blockIndex");
+
+            var block = piece.GetBlock(blockIndex);
+            int begin = blockIndex * torrent.BlockSize;
+            int length = block.Size;
+
             var packet = CreatePacket(MessageType.Cancel, 12);
             packet.WriteInt32(pieceIndex);
             packet.WriteInt32(begin);

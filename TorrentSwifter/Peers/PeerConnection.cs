@@ -217,6 +217,13 @@ namespace TorrentSwifter.Peers
         public abstract Task<bool> RequestPieceData(int pieceIndex, int blockIndex);
 
         /// <summary>
+        /// Cancels a pending request for a piece of data from this peer.
+        /// </summary>
+        /// <param name="pieceIndex">The piece index.</param>
+        /// <param name="blockIndex">The block index.</param>
+        public abstract void CancelPieceDataRequest(int pieceIndex, int blockIndex);
+
+        /// <summary>
         /// Sends a piece of data to this peer.
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
