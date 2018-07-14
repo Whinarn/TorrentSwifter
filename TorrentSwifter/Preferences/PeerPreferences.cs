@@ -17,6 +17,8 @@ namespace TorrentSwifter.Preferences
 
         private int maxDownloadConnections = 15;
         private int maxUploadConnections = 5;
+
+        private int maxConcurrentPieceRequests = 5;
         #endregion
 
         #region Properties
@@ -82,6 +84,15 @@ namespace TorrentSwifter.Preferences
         {
             get { return maxUploadConnections; }
             set { maxUploadConnections = Math.Max(value, 1); }
+        }
+
+        /// <summary>
+        /// Gets or sets the maximum count of concurrent piece requests allowed to a single peer.
+        /// </summary>
+        public int MaxConcurrentPieceRequests
+        {
+            get { return maxConcurrentPieceRequests; }
+            set { maxConcurrentPieceRequests = Math.Max(value, 1); }
         }
         #endregion
     }
