@@ -429,6 +429,18 @@ namespace TorrentSwifter.Torrents
             return result;
         }
 
+        private void CheckIfCompletedDownload()
+        {
+            if (isSeeding)
+                return;
+
+            if (HasDownloadedAllPieces())
+            {
+                isSeeding = true;
+                CancelAllOutgoingPieceRequests();
+            }
+        }
+
         private async Task VerifyPiece(TorrentPiece piece)
         {
             if (piece.IsVerifying)
@@ -609,6 +621,20 @@ namespace TorrentSwifter.Torrents
                     request.IsCancelled = true;
                 }
             }
+        }
+
+        private void CancelAllOutgoingPieceRequests()
+        {
+            foreach (var request in outgoingPieceRequests)
+            {
+                request.Cancel();
+            }
+
+            pendingOutgoingPieceRequests.RemoveAny((request) =>
+            {
+                request.Cancel();
+                return true;
+            });
         }
 
         private void CancelOutgoingPieceRequestsWithPeer(Peer peer)
