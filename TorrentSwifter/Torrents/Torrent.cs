@@ -1022,7 +1022,37 @@ namespace TorrentSwifter.Torrents
         #region Trackers
         internal void ProcessAnnounceResponse(AnnounceResponse announceResponse)
         {
-            // TODO: Implement!
+            var peerInfos = announceResponse.Peers;
+            if (peerInfos == null)
+                return;
+
+            Log.LogInfo("[Torrent] Received {0} peers from a tracker.", peerInfos.Length);
+
+            lock (peersSyncObj)
+            {
+                for (int i = 0; i < peerInfos.Length; i++)
+                {
+                    var peerInfo = peerInfos[i];
+                    var peerEndPoint = peerInfo.EndPoint;
+                    var peerID = peerInfo.ID;
+
+                    Peer peer;
+                    if (peerID.HasValue && peersByID.TryGetValue(peerID.Value, out peer))
+                    {
+                        peer.UpdateEndPoint(peerEndPoint);
+                    }
+                    else
+                    {
+                        peer = new Peer(this, peerEndPoint);
+                        peers.Add(peer);
+                        if (peerID.HasValue)
+                        {
+                            peer.ID = peerID.Value;
+                            peersByID.Add(peerID.Value, peer);
+                        }
+                    }
+                }
+            }
         }
         #endregion
 
