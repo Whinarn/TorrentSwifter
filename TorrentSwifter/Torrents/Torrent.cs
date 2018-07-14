@@ -943,7 +943,7 @@ namespace TorrentSwifter.Torrents
             CancelOutgoingPieceRequestsWithPeer(peer);
         }
 
-        internal int GetPeersWithPiece(int pieceIndex)
+        internal int GetPeerCountWithPiece(int pieceIndex)
         {
             int peerCount = 0;
             lock (peersSyncObj)

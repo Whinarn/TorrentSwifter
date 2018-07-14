@@ -198,7 +198,7 @@ namespace TorrentSwifter.Torrents
 
         private double GetRarity()
         {
-            int peerCountWithPiece = torrent.GetPeersWithPiece(index);
+            int peerCountWithPiece = torrent.GetPeerCountWithPiece(index);
             int totalPeerCount = torrent.PeerCount;
             return (1.0 - ((double)peerCountWithPiece / (double)totalPeerCount));
         }
