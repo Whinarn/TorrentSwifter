@@ -381,6 +381,56 @@ namespace TorrentSwifter.Torrents
             return pieces[pieceIndex];
         }
         #endregion
+
+        #region Peers
+        /// <summary>
+        /// Adds a peer to this torrent.
+        /// </summary>
+        /// <param name="peerInfo">The peer information.</param>
+        public void AddPeer(PeerInfo peerInfo)
+        {
+            if (peerInfo.EndPoint == null)
+                throw new ArgumentException("The peer end-point cannot be null.", "peerInfo");
+
+            lock (peersSyncObj)
+            {
+                var peerEndPoint = peerInfo.EndPoint;
+                var peerID = peerInfo.ID;
+
+                Peer peer;
+                if (peerID.HasValue && peersByID.TryGetValue(peerID.Value, out peer))
+                {
+                    peer.UpdateEndPoint(peerEndPoint);
+                }
+                else
+                {
+                    peer = new Peer(this, peerEndPoint);
+                    peers.Add(peer);
+                    if (peerID.HasValue)
+                    {
+                        peer.ID = peerID.Value;
+                        peersByID.Add(peerID.Value, peer);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Adds multiple peers to this torrent.
+        /// </summary>
+        /// <param name="peerInfos">The array of peer information.</param>
+        public void AddPeers(PeerInfo[] peerInfos)
+        {
+            if (peerInfos == null)
+                throw new ArgumentNullException("peerInfos");
+
+            for (int i = 0; i < peerInfos.Length; i++)
+            {
+                var peerInfo = peerInfos[i];
+                AddPeer(peerInfo);
+            }
+        }
+        #endregion
         #endregion
 
         #region Private Methods
@@ -1028,31 +1078,7 @@ namespace TorrentSwifter.Torrents
 
             Log.LogInfo("[Torrent] Received {0} peers from a tracker.", peerInfos.Length);
 
-            lock (peersSyncObj)
-            {
-                for (int i = 0; i < peerInfos.Length; i++)
-                {
-                    var peerInfo = peerInfos[i];
-                    var peerEndPoint = peerInfo.EndPoint;
-                    var peerID = peerInfo.ID;
-
-                    Peer peer;
-                    if (peerID.HasValue && peersByID.TryGetValue(peerID.Value, out peer))
-                    {
-                        peer.UpdateEndPoint(peerEndPoint);
-                    }
-                    else
-                    {
-                        peer = new Peer(this, peerEndPoint);
-                        peers.Add(peer);
-                        if (peerID.HasValue)
-                        {
-                            peer.ID = peerID.Value;
-                            peersByID.Add(peerID.Value, peer);
-                        }
-                    }
-                }
-            }
+            AddPeers(peerInfos);
         }
         #endregion
 
