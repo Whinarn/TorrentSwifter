@@ -441,7 +441,10 @@ namespace TorrentSwifter.Torrents
             if (HasDownloadedAllPieces())
             {
                 isSeeding = true;
+                bytesLeftToDownload = 0L;
+
                 CancelAllOutgoingPieceRequests();
+                AnnounceTrackers(TrackerEvent.Completed);
 
                 Completed.SafeInvoke(this, EventArgs.Empty);
             }
