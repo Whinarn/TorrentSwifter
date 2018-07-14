@@ -12,25 +12,17 @@ namespace TorrentSwifter.Logging
         #endregion
 
         #region Fields
-        private static LogLevel logLevel = LogLevel.Info;
         private static bool logExceptionStacktraces = true;
-        private static ILogger logger = new ConsoleLogger();
+        private static ILogger logger = defaultLogger;
 
         private static bool isLoggingUnhandledExceptions = false;
 
         private static readonly object syncObj = new object();
+
+        private static readonly ILogger defaultLogger = new ConsoleLogger();
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets or sets the logging level that is used for all log messages.
-        /// </summary>
-        public static LogLevel Level
-        {
-            get { return logLevel; }
-            set { logLevel = value; }
-        }
-
         /// <summary>
         /// Gets or sets if the stacktraces for exceptions are also logged.
         /// </summary>
@@ -43,10 +35,10 @@ namespace TorrentSwifter.Logging
         /// <summary>
         /// Gets or sets the logger implementation to use.
         /// </summary>
-        public static ILogger Implementation
+        public static ILogger Logger
         {
             get { return logger; }
-            set { logger = value; }
+            set { logger = value ?? defaultLogger; }
         }
         #endregion
 
@@ -86,7 +78,7 @@ namespace TorrentSwifter.Logging
         {
             if (exception == null)
                 throw new ArgumentNullException("exception");
-            else if (logLevel < LogLevel.Fatal)
+            else if (logger.Level < LogLevel.Fatal)
                 return;
 
             string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
@@ -101,7 +93,7 @@ namespace TorrentSwifter.Logging
         {
             if (exception == null)
                 throw new ArgumentNullException("exception");
-            else if (logLevel < LogLevel.Error)
+            else if (logger.Level < LogLevel.Error)
                 return;
 
             string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
@@ -116,7 +108,7 @@ namespace TorrentSwifter.Logging
         {
             if (exception == null)
                 throw new ArgumentNullException("exception");
-            else if (logLevel < LogLevel.Warning)
+            else if (logger.Level < LogLevel.Warning)
                 return;
 
             string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
@@ -131,7 +123,7 @@ namespace TorrentSwifter.Logging
         {
             if (exception == null)
                 throw new ArgumentNullException("exception");
-            else if (logLevel < LogLevel.Info)
+            else if (logger.Level < LogLevel.Info)
                 return;
 
             string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
@@ -146,7 +138,7 @@ namespace TorrentSwifter.Logging
         {
             if (exception == null)
                 throw new ArgumentNullException("exception");
-            else if (logLevel < LogLevel.Debug)
+            else if (logger.Level < LogLevel.Debug)
                 return;
 
             string exceptionMessage = ExceptionLogPrefix + (logExceptionStacktraces ? exception.ToString() : exception.Message);
@@ -171,7 +163,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg0">The first message format argument.</param>
         public static void LogFatal(string format, object arg0)
         {
-            if (logLevel < LogLevel.Fatal)
+            if (logger.Level < LogLevel.Fatal)
                 return;
 
             string text = string.Format(format, arg0);
@@ -186,7 +178,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg1">The second message format argument.</param>
         public static void LogFatal(string format, object arg0, object arg1)
         {
-            if (logLevel < LogLevel.Fatal)
+            if (logger.Level < LogLevel.Fatal)
                 return;
 
             string text = string.Format(format, arg0, arg1);
@@ -200,7 +192,7 @@ namespace TorrentSwifter.Logging
         /// <param name="args">The message format arguments.</param>
         public static void LogFatal(string format, params object[] args)
         {
-            if (logLevel < LogLevel.Fatal)
+            if (logger.Level < LogLevel.Fatal)
                 return;
 
             string text = string.Format(format, args);
@@ -225,7 +217,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg0">The first message format argument.</param>
         public static void LogError(string format, object arg0)
         {
-            if (logLevel < LogLevel.Error)
+            if (logger.Level < LogLevel.Error)
                 return;
 
             string text = string.Format(format, arg0);
@@ -240,7 +232,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg1">The second message format argument.</param>
         public static void LogError(string format, object arg0, object arg1)
         {
-            if (logLevel < LogLevel.Error)
+            if (logger.Level < LogLevel.Error)
                 return;
 
             string text = string.Format(format, arg0, arg1);
@@ -254,7 +246,7 @@ namespace TorrentSwifter.Logging
         /// <param name="args">The message format arguments.</param>
         public static void LogError(string format, params object[] args)
         {
-            if (logLevel < LogLevel.Error)
+            if (logger.Level < LogLevel.Error)
                 return;
 
             string text = string.Format(format, args);
@@ -279,7 +271,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg0">The first message format argument.</param>
         public static void LogWarning(string format, object arg0)
         {
-            if (logLevel < LogLevel.Warning)
+            if (logger.Level < LogLevel.Warning)
                 return;
 
             string text = string.Format(format, arg0);
@@ -294,7 +286,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg1">The second message format argument.</param>
         public static void LogWarning(string format, object arg0, object arg1)
         {
-            if (logLevel < LogLevel.Warning)
+            if (logger.Level < LogLevel.Warning)
                 return;
 
             string text = string.Format(format, arg0, arg1);
@@ -308,7 +300,7 @@ namespace TorrentSwifter.Logging
         /// <param name="args">The message format arguments.</param>
         public static void LogWarning(string format, params object[] args)
         {
-            if (logLevel < LogLevel.Warning)
+            if (logger.Level < LogLevel.Warning)
                 return;
 
             string text = string.Format(format, args);
@@ -333,7 +325,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg0">The first message format argument.</param>
         public static void LogInfo(string format, object arg0)
         {
-            if (logLevel < LogLevel.Info)
+            if (logger.Level < LogLevel.Info)
                 return;
 
             string text = string.Format(format, arg0);
@@ -348,7 +340,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg1">The second message format argument.</param>
         public static void LogInfo(string format, object arg0, object arg1)
         {
-            if (logLevel < LogLevel.Info)
+            if (logger.Level < LogLevel.Info)
                 return;
 
             string text = string.Format(format, arg0, arg1);
@@ -362,7 +354,7 @@ namespace TorrentSwifter.Logging
         /// <param name="args">The message format arguments.</param>
         public static void LogInfo(string format, params object[] args)
         {
-            if (logLevel < LogLevel.Info)
+            if (logger.Level < LogLevel.Info)
                 return;
 
             string text = string.Format(format, args);
@@ -387,7 +379,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg0">The first message format argument.</param>
         public static void LogDebug(string format, object arg0)
         {
-            if (logLevel < LogLevel.Debug)
+            if (logger.Level < LogLevel.Debug)
                 return;
 
             string text = string.Format(format, arg0);
@@ -402,7 +394,7 @@ namespace TorrentSwifter.Logging
         /// <param name="arg1">The second message format argument.</param>
         public static void LogDebug(string format, object arg0, object arg1)
         {
-            if (logLevel < LogLevel.Debug)
+            if (logger.Level < LogLevel.Debug)
                 return;
 
             string text = string.Format(format, arg0, arg1);
@@ -416,7 +408,7 @@ namespace TorrentSwifter.Logging
         /// <param name="args">The message format arguments.</param>
         public static void LogDebug(string format, params object[] args)
         {
-            if (logLevel < LogLevel.Debug)
+            if (logger.Level < LogLevel.Debug)
                 return;
 
             string text = string.Format(format, args);
@@ -457,7 +449,7 @@ namespace TorrentSwifter.Logging
 
         private static void LogText(LogLevel messageLevel, string text)
         {
-            if (logger != null && logLevel >= messageLevel)
+            if (logger != null && logger.Level >= messageLevel)
             {
                 lock (syncObj)
                 {

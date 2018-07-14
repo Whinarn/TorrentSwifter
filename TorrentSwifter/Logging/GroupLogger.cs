@@ -10,6 +10,27 @@ namespace TorrentSwifter.Logging
         private ILogger[] loggers = null;
 
         /// <summary>
+        /// Gets or sets the logging level for this logger.
+        /// </summary>
+        public LogLevel Level
+        {
+            get
+            {
+                var maximumLevel = LogLevel.Fatal;
+                for (int i = 0; i < loggers.Length; i++)
+                {
+                    var loggerLevel = loggers[i].Level;
+                    if (loggerLevel > maximumLevel)
+                    {
+                        maximumLevel = loggerLevel;
+                    }
+                }
+                return maximumLevel;
+            }
+            set { } // Setting the logging level for a group logger isn't supported and doesn't make sense
+        }
+
+        /// <summary>
         /// Gets the loggers of this group.
         /// </summary>
         public ILogger[] Loggers
@@ -72,7 +93,11 @@ namespace TorrentSwifter.Logging
         {
             for (int i = 0; i < loggers.Length; i++)
             {
-                loggers[i].WritePrefixes(level);
+                var loggerLevel = loggers[i].Level;
+                if (loggerLevel >= level)
+                {
+                    loggers[i].WritePrefixes(level);
+                }
             }
         }
 
@@ -85,7 +110,11 @@ namespace TorrentSwifter.Logging
         {
             for (int i = 0; i < loggers.Length; i++)
             {
-                loggers[i].Write(level, message);
+                var loggerLevel = loggers[i].Level;
+                if (loggerLevel >= level)
+                {
+                    loggers[i].Write(level, message);
+                }
             }
         }
 
@@ -98,7 +127,11 @@ namespace TorrentSwifter.Logging
         {
             for (int i = 0; i < loggers.Length; i++)
             {
-                loggers[i].WriteLine(level, message);
+                var loggerLevel = loggers[i].Level;
+                if (loggerLevel >= level)
+                {
+                    loggers[i].WriteLine(level, message);
+                }
             }
         }
     }

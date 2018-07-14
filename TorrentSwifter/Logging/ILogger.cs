@@ -8,6 +8,11 @@ namespace TorrentSwifter.Logging
     public interface ILogger : IDisposable
     {
         /// <summary>
+        /// Gets or sets the logging level for this logger.
+        /// </summary>
+        LogLevel Level { get; set; }
+
+        /// <summary>
         /// Writes the log prefixes ahead of a message.
         /// </summary>
         /// <param name="level">The log message level.</param>

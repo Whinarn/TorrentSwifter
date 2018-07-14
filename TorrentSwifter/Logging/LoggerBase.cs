@@ -10,6 +10,10 @@ namespace TorrentSwifter.Logging
         private static readonly string[] LevelPrefixes = { "", "[FATAL] ", "[ERROR] ", "[WARNING] ", "[INFO] ", "[DEBUG] " };
 
         /// <summary>
+        /// The desired log level for this logger.
+        /// </summary>
+        protected LogLevel level = LogLevel.Info;
+        /// <summary>
         /// If timestamps should be prepended to all log messages.
         /// </summary>
         protected bool prependTimestamp = false;
@@ -17,6 +21,15 @@ namespace TorrentSwifter.Logging
         /// If log levels should be prepended to all log messages.
         /// </summary>
         protected bool prependLevel = true;
+
+        /// <summary>
+        /// Gets or sets the logging level for this logger.
+        /// </summary>
+        public LogLevel Level
+        {
+            get { return level; }
+            set { level = value; }
+        }
 
         /// <summary>
         /// Gets if timestamps should be prepended to all log messages.
