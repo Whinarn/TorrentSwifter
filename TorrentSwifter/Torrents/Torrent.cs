@@ -466,11 +466,10 @@ namespace TorrentSwifter.Torrents
             }
         }
 
-        private async Task<byte[]> ReadPiece(int pieceIndex)
+        private async Task<byte[]> ReadPiece(TorrentPiece piece)
         {
-            var piece = pieces[pieceIndex];
             byte[] pieceData = new byte[piece.Size];
-            long pieceOffset = ((long)pieceIndex * (long)PieceSize);
+            long pieceOffset = piece.Offset;
             int readByteCount = await ReadData(pieceOffset, pieceData, 0, pieceData.Length);
             if (readByteCount != pieceData.Length)
                 return null;
@@ -478,9 +477,9 @@ namespace TorrentSwifter.Torrents
             return pieceData;
         }
 
-        private async Task<byte[]> GetPieceHash(int pieceIndex)
+        private async Task<byte[]> GetPieceHash(TorrentPiece piece)
         {
-            byte[] pieceData = await ReadPiece(pieceIndex);
+            byte[] pieceData = await ReadPiece(piece);
             return HashHelper.ComputeSHA1(pieceData);
         }
         #endregion
@@ -661,7 +660,8 @@ namespace TorrentSwifter.Torrents
                 {
                     for (int i = 0; i < pieces.Length; i++)
                     {
-                        await VerifyPiece(i);
+                        var piece = pieces[i];
+                        await VerifyPiece(piece);
                     }
 
                     isSeeding = HasDownloadedAllPieces();
