@@ -17,10 +17,11 @@ namespace TorrentSwifter
     {
         #region Fields
         private static bool isInitialized = false;
-        private static Task engineTask = null;
-        private static CancellationTokenSource engineCancellationTokenSource = null;
+        private static bool isStopping = false;
+        private static Thread engineThread = null;
 
         private static ConcurrentQueue<IWorkTask> workQueue = new ConcurrentQueue<IWorkTask>();
+        private static AutoResetEvent workQueueResetEvent = new AutoResetEvent(false);
         #endregion
 
         #region Properties
@@ -45,21 +46,21 @@ namespace TorrentSwifter
 
             isInitialized = true;
 
-            if (engineCancellationTokenSource != null)
+            if (engineThread != null)
             {
-                engineCancellationTokenSource.Cancel();
+                engineThread.Join();
+                engineThread = null;
             }
-            if (engineTask != null)
-            {
-                engineTask.Wait();
-                engineTask = null;
-            }
+
+            isStopping = false;
+            workQueueResetEvent.Set();
 
             PeerListener.StartListening();
 
-            engineCancellationTokenSource = new CancellationTokenSource();
-            engineTask = EngineLoop(engineCancellationTokenSource.Token);
-            engineTask.CatchExceptions();
+            engineThread = new Thread(EngineLoop);
+            engineThread.Priority = ThreadPriority.Normal;
+            engineThread.Name = "TorrentEngineThread";
+            engineThread.Start();
         }
 
         /// <summary>
@@ -71,18 +72,16 @@ namespace TorrentSwifter
                 return;
 
             isInitialized = false;
+            isStopping = true;
+            workQueueResetEvent.Set();
 
             TorrentRegistry.StopAllActiveTorrents();
             PeerListener.StopListening();
 
-            if (engineCancellationTokenSource != null)
+            if (engineThread != null)
             {
-                engineCancellationTokenSource.Cancel();
-            }
-            if (engineTask != null)
-            {
-                engineTask.Wait();
-                engineTask = null;
+                engineThread.Join();
+                engineThread = null;
             }
         }
         #endregion
@@ -98,6 +97,7 @@ namespace TorrentSwifter
                 throw new ArgumentNullException("task");
 
             workQueue.Enqueue(task);
+            workQueueResetEvent.Set();
         }
 
         /// <summary>
@@ -161,27 +161,18 @@ namespace TorrentSwifter
         #endregion
 
         #region Private Methods
-        private static async Task EngineLoop(CancellationToken cancellationToken)
+        private static void EngineLoop()
         {
-            while (!cancellationToken.IsCancellationRequested)
+            while (!isStopping)
             {
                 try
                 {
                     IWorkTask workTask;
-                    while (!cancellationToken.IsCancellationRequested && workQueue.TryDequeue(out workTask))
+                    while (!isStopping && workQueue.TryDequeue(out workTask))
                     {
                         try
                         {
-                            // Check if the work task supports asynchronous execution
-                            var workTaskAsync = workTask as IWorkTaskAsync;
-                            if (workTaskAsync != null)
-                            {
-                                await workTaskAsync.ExecuteAsync();
-                            }
-                            else
-                            {
-                                workTask.Execute();
-                            }
+                            workTask.Execute();
                         }
                         catch (Exception ex)
                         {
@@ -189,8 +180,7 @@ namespace TorrentSwifter
                         }
                     }
 
-                    // TODO: Some async reset event that notifies us when there are more tasks would be better here
-                    await Task.Delay(10);
+                    workQueueResetEvent.WaitOne();
                 }
                 catch (Exception ex)
                 {
