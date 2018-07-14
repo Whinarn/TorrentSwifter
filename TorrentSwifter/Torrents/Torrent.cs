@@ -902,7 +902,7 @@ namespace TorrentSwifter.Torrents
             CancelOutgoingPieceRequestsForBlock(pieceIndex, blockIndex);
 
             long offset = piece.Offset + (blockIndex * blockSize);
-            DiskManager.QueueWrite(this, offset, data, (writeSuccess) =>
+            DiskManager.QueueWrite(this, offset, data, (writeSuccess, writeException) =>
             {
                 if (writeSuccess)
                 {
@@ -922,6 +922,8 @@ namespace TorrentSwifter.Torrents
                 {
                     block.HasWrittenToDisk = false;
                     block.IsDownloaded = false;
+
+                    Log.LogErrorException(writeException);
                 }
             });
         }

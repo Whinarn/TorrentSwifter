@@ -14,14 +14,16 @@ namespace TorrentSwifter.Managers
         /// A callback for disk reads.
         /// </summary>
         /// <param name="success">If the disk read was successful.</param>
+        /// <param name="exception">Any exception that occured if not successful.</param>
         /// <param name="readCount">The count of bytes read.</param>
-        public delegate void DiskReadCallback(bool success, int readCount);
+        public delegate void DiskReadCallback(bool success, Exception exception, int readCount);
 
         /// <summary>
         /// A callback for disk writes.
         /// </summary>
         /// <param name="success">If the disk write was successful.</param>
-        public delegate void DiskWriteCallback(bool success);
+        /// <param name="exception">Any exception that occured if not successful.</param>
+        public delegate void DiskWriteCallback(bool success, Exception exception);
         #endregion
 
         #region Structs
@@ -104,7 +106,7 @@ namespace TorrentSwifter.Managers
 
             if (readLength == 0)
             {
-                callback.Invoke(true, 0);
+                callback.Invoke(true, null, 0);
                 return;
             }
 
@@ -126,7 +128,7 @@ namespace TorrentSwifter.Managers
             {
                 if (callback != null)
                 {
-                    callback.Invoke(true);
+                    callback.Invoke(true, null);
                 }
                 return;
             }
@@ -222,27 +224,29 @@ namespace TorrentSwifter.Managers
                         int readLength = readEntry.readLength;
                         var callback = readEntry.callback;
 
-                        bool success = false;
-                        int readByteCount = 0;
                         try
                         {
-                            readByteCount = torrent.ReadData(torrentOffset, buffer, bufferOffset, readLength);
-                            success = true;
-                        }
-                        catch (Exception ex)
-                        {
-                            success = false;
-                            readByteCount = 0;
-                            Log.LogErrorException(ex);
-                        }
+                            int readByteCount = torrent.ReadData(torrentOffset, buffer, bufferOffset, readLength);
 
-                        try
-                        {
-                            callback.Invoke(success, readByteCount);
+                            try
+                            {
+                                callback.Invoke(true, null, readByteCount);
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.LogErrorException(ex);
+                            }
                         }
                         catch (Exception ex)
                         {
-                            Log.LogErrorException(ex);
+                            try
+                            {
+                                callback.Invoke(false, ex, 0);
+                            }
+                            catch (Exception ex2)
+                            {
+                                Log.LogErrorException(ex2);
+                            }
                         }
                     }
 
@@ -269,25 +273,36 @@ namespace TorrentSwifter.Managers
                         var data = writeEntry.data;
                         var callback = writeEntry.callback;
 
-                        bool success = false;
                         try
                         {
                             torrent.WriteData(torrentOffset, data, 0, data.Length);
-                            success = true;
+
+                            if (callback != null)
+                            {
+                                try
+                                {
+                                    callback.Invoke(true, null);
+                                }
+                                catch (Exception ex)
+                                {
+                                    Log.LogErrorException(ex);
+                                }
+                            }
                         }
                         catch (Exception ex)
                         {
-                            success = false;
-                            Log.LogErrorException(ex);
-                        }
-
-                        if (callback != null)
-                        {
-                            try
+                            if (callback != null)
                             {
-                                callback.Invoke(success);
+                                try
+                                {
+                                    callback.Invoke(false, ex);
+                                }
+                                catch (Exception ex2)
+                                {
+                                    Log.LogErrorException(ex2);
+                                }
                             }
-                            catch (Exception ex)
+                            else
                             {
                                 Log.LogErrorException(ex);
                             }
