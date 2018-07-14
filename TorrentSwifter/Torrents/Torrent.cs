@@ -769,7 +769,7 @@ namespace TorrentSwifter.Torrents
             }
         }
 
-        internal void OnReceivedPieceBlock(int pieceIndex, int blockIndex, byte[] data)
+        internal void OnReceivedPieceBlock(Peer peer, int pieceIndex, int blockIndex, byte[] data)
         {
             var piece = pieces[pieceIndex];
             var block = piece.GetBlock(blockIndex);
