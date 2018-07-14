@@ -266,13 +266,23 @@ namespace TorrentSwifter.Peers
                     connection.SendChoked(true);
                 }
 
-                // TODO: Add a more clever interest algorithm
-                if (!torrent.IsCompleted && !connection.IsInterestedByUs)
+                if (torrent.IsCompleted)
                 {
-                    int neededPieceCount = GetCountOfNeededPieces();
-                    if (neededPieceCount > 0)
+                    if (connection.IsInterestedByUs)
                     {
-                        connection.SendInterested(true);
+                        connection.SendInterested(false);
+                    }
+                }
+                else
+                {
+                    // TODO: Add a more clever interest algorithm
+                    if (!connection.IsInterestedByUs)
+                    {
+                        int neededPieceCount = GetCountOfNeededPieces();
+                        if (neededPieceCount > 0)
+                        {
+                            connection.SendInterested(true);
+                        }
                     }
                 }
             }
