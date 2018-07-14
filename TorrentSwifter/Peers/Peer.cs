@@ -329,7 +329,10 @@ namespace TorrentSwifter.Peers
                 if (!haveTriedConnectTo)
                 {
                     haveTriedConnectTo = true;
-                    Connect();
+
+                    // TODO: Only connect to a limited amount of peers at the same time
+                    var connectTask = ConnectAsync();
+                    connectTask.CatchExceptions();
                 }
 
                 // TODO: When do we try to connect to this peer again?
