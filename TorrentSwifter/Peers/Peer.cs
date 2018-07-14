@@ -73,6 +73,14 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Gets if we can request pieces from this peer.
+        /// </summary>
+        public bool CanRequestPiecesFrom
+        {
+            get { return (connection != null && connection.IsInterestedByUs && !connection.IsChokedByRemote); }
+        }
+
+        /// <summary>
         /// Gets the bit field for this peer.
         /// Note that this can be null before it has been received.
         /// </summary>
