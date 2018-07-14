@@ -208,8 +208,8 @@ namespace TorrentSwifter.Torrents
             {
                 int byteIndex = (index >> 3);
                 int bitIndex = (index & 7);
-                bool weHaveBit = ((buffer[byteIndex] & (1 << bitIndex)) != 0);
-                if (!weHaveBit)
+                bool weDontHaveBit = ((buffer[byteIndex] & (1 << bitIndex)) == 0);
+                if (weDontHaveBit)
                 {
                     bool theyHaveBit = ((otherBuffer[byteIndex] & (1 << bitIndex)) != 0);
                     if (theyHaveBit)
