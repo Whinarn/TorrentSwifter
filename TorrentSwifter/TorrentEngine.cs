@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
-using System.Threading.Tasks;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
