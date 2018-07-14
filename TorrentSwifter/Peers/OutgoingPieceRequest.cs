@@ -189,7 +189,10 @@ namespace TorrentSwifter.Peers
             if (hasBeenSent)
             {
                 // Send the cancel message to the peer because we have already sent this request to them
-                peer.CancelPieceDataRequest(pieceIndex, blockIndex);
+                if (peer.IsConnected)
+                {
+                    peer.CancelPieceDataRequest(pieceIndex, blockIndex);
+                }
 
                 // Remove the peer from the request list from the requested block
                 var piece = torrent.GetPiece(pieceIndex);
