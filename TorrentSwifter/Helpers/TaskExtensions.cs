@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using TorrentSwifter.Logging;
 
-namespace TorrentSwifter.Helpers
+namespace TorrentSwifter
 {
     internal static class TaskExtensions
     {
