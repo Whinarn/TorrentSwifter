@@ -152,6 +152,32 @@ namespace TorrentSwifter.Collections
         }
 
         /// <summary>
+        /// Attempts to add an item to this list, but only if it doesn't already exist.
+        /// </summary>
+        /// <param name="item">The item to add.</param>
+        /// <returns>If successful.</returns>
+        public bool TryAdd(T item)
+        {
+            readWriteLock.EnterWriteLock();
+            try
+            {
+                if (!items.Contains(item))
+                {
+                    items.Add(item);
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            finally
+            {
+                readWriteLock.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
         /// Clears this collection.
         /// </summary>
         public void Clear()
