@@ -179,6 +179,11 @@ namespace TorrentSwifter.Peers
             hasBeenSent = true;
         }
 
+        internal void OnCancelSent()
+        {
+            hasBeenSent = false;
+        }
+
         internal void Cancel()
         {
             if (isCancelled)

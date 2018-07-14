@@ -743,6 +743,7 @@ namespace TorrentSwifter.Torrents
                     }
                     else
                     {
+                        request.OnCancelSent();
                         block.RemoveRequestPeer(peer);
                         pendingOutgoingPieceRequests.Remove(request);
                         peer.UnregisterPieceRequest(request);
@@ -1183,13 +1184,14 @@ namespace TorrentSwifter.Torrents
                 return;
 
             // Remove the pending outgoing request, and make sure that there was one
-            int removedCount = pendingOutgoingPieceRequests.RemoveAny((request) => request.Equals(peer, pieceIndex, blockIndex), 1);
-            if (removedCount == 0)
+            OutgoingPieceRequest request;
+            if (!pendingOutgoingPieceRequests.TryTake((req) => req.Equals(peer, pieceIndex, blockIndex), out request))
                 return;
 
             block.IsDownloaded = true;
             block.HasWrittenToDisk = false;
             block.RemoveRequestPeer(peer);
+            peer.UnregisterPieceRequest(request);
 
             // Cancel other requests for the same block on other peers
             CancelOutgoingPieceRequestsForBlock(pieceIndex, blockIndex);
