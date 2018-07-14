@@ -1178,7 +1178,7 @@ namespace TorrentSwifter.Peers
 
             byte[] data = packet.ReadBytes(length);
             torrent.IncreaseSessionDownloadedBytes(length);
-            torrent.OnReceivedPieceBlock(peer, pieceIndex, begin, data);
+            torrent.OnReceivedPieceBlock(peer, pieceIndex, blockIndex, data);
             return true;
         }
 
