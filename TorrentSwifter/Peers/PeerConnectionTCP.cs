@@ -903,6 +903,12 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] Handshake with invalid info hash: {1}", endPoint, infoHash);
                 return false;
             }
+            else if (torrent != null && peerID.Equals(torrent.PeerID))
+            {
+                peer.IsSelf = true;
+                Log.LogDebug("[Peer][{0}] Handshake with ourself. Closing connection.", endPoint);
+                return false;
+            }
             else if (torrent == null)
             {
                 var foundTorrent = TorrentRegistry.FindTorrentByInfoHash(infoHash);
@@ -913,6 +919,12 @@ namespace TorrentSwifter.Peers
                 }
 
                 torrent = foundTorrent;
+                if (peerID.Equals(torrent.PeerID))
+                {
+                    Log.LogDebug("[Peer][{0}] Handshake with ourself. Closing connection.", endPoint);
+                    return false;
+                }
+
                 peer = torrent.OnPeerHandshaked(peerID, this);
             }
 

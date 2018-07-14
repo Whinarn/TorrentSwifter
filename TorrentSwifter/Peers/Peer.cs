@@ -17,6 +17,7 @@ namespace TorrentSwifter.Peers
         private readonly Torrent torrent;
         private EndPoint endPoint;
         private PeerID peerID = PeerID.None;
+        private bool isSelf = false;
 
         private PeerConnection connection = null;
         private bool haveTriedConnectTo = false;
@@ -51,6 +52,15 @@ namespace TorrentSwifter.Peers
         {
             get { return peerID; }
             internal set { peerID = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets if this is ourselves.
+        /// </summary>
+        public bool IsSelf
+        {
+            get { return isSelf; }
+            internal set { isSelf = value; }
         }
 
         /// <summary>
