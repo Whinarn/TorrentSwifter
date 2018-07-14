@@ -235,6 +235,18 @@ namespace TorrentSwifter.Peers
         public abstract void Update();
 
         /// <summary>
+        /// Sends the interest state to this peer.
+        /// </summary>
+        /// <param name="state">If interested (true), or not (false).</param>
+        public abstract void SendInterested(bool state);
+
+        /// <summary>
+        /// Sends the choked state to this peer.
+        /// </summary>
+        /// <param name="state">If choked (true), or not (false).</param>
+        public abstract void SendChoked(bool state);
+
+        /// <summary>
         /// Reports that we have a new piece to this peer.
         /// </summary>
         /// <param name="pieceIndex">The piece index.</param>
