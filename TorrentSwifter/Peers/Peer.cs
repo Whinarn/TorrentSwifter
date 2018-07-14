@@ -256,10 +256,14 @@ namespace TorrentSwifter.Peers
                     return;
                 }
 
-                // TODO: Add a more clever unchoke algorithm
+                // TODO: Add a more clever choke/unchoke algorithm
                 if (connection.IsInterestedByRemote && connection.IsChokedByUs)
                 {
                     connection.SendChoked(false);
+                }
+                else if (!connection.IsInterestedByRemote && !connection.IsChokedByUs)
+                {
+                    connection.SendChoked(true);
                 }
 
                 // TODO: Add a more clever interest algorithm
