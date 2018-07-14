@@ -17,6 +17,7 @@ namespace TorrentSwifter.Peers
         private PeerID peerID = PeerID.None;
 
         private PeerConnection connection = null;
+        private bool haveTriedConnectTo = false;
 
         private bool isCompleted = false;
         private BitField bitField = null;
@@ -107,6 +108,7 @@ namespace TorrentSwifter.Peers
             this.endPoint = connection.EndPoint;
 
             this.connection = connection;
+            haveTriedConnectTo = true;
             bitField = this.connection.RemoteBitField;
 
             Initialize();
@@ -264,6 +266,14 @@ namespace TorrentSwifter.Peers
                 if (!torrent.IsCompleted && !connection.IsInterestedByUs)
                 {
                     connection.SendInterested(true);
+                }
+            }
+            else if (connection == null || !connection.IsConnecting)
+            {
+                if (!haveTriedConnectTo)
+                {
+                    haveTriedConnectTo = true;
+                    Connect();
                 }
             }
         }
