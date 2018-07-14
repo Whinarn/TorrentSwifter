@@ -1,6 +1,4 @@
 ﻿using System;
-using TorrentSwifter.Peers;
-using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter
 {

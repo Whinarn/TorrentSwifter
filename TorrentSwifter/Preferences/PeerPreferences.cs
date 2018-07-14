@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace TorrentSwifter.Peers
+namespace TorrentSwifter
 {
     /// <summary>
     /// Peer preferences.
     /// </summary>
-    public class PeerPreferences
+    public sealed class PeerPreferences
     {
         #region Fields
         private int listenPort = 0;

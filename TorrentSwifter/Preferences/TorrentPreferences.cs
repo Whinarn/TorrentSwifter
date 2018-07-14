@@ -1,11 +1,11 @@
 ﻿using System;
 
-namespace TorrentSwifter.Torrents
+namespace TorrentSwifter
 {
     /// <summary>
     /// Torrent preferences.
     /// </summary>
-    public class TorrentPreferences
+    public sealed class TorrentPreferences
     {
         #region Fields
         private bool allocateFullFileSizes = false;
