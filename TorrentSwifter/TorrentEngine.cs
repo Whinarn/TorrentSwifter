@@ -168,6 +168,8 @@ namespace TorrentSwifter
             {
                 try
                 {
+                    Stats.Update();
+
                     IWorkTask workTask;
                     while (!isStopping && workQueue.TryDequeue(out workTask))
                     {
