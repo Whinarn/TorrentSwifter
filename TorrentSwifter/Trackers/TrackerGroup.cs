@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Torrents;
@@ -178,8 +179,7 @@ namespace TorrentSwifter.Trackers
                 return;
 
             // By specification, it should be random
-            var random = new Random();
-            trackers.Sort((x, y) => random.Next().CompareTo(random.Next()));
+            RandomHelper.Randomize(trackers);
         }
 
         /// <summary>

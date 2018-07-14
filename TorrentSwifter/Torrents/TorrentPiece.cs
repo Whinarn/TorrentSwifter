@@ -8,6 +8,7 @@ namespace TorrentSwifter.Torrents
     public sealed class TorrentPiece
     {
         #region Fields
+        private readonly Torrent torrent;
         private readonly int index;
         private readonly long offset;
         private readonly int size;
@@ -19,6 +20,14 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Properties
+        /// <summary>
+        /// Gets the parent torrent of this piece.
+        /// </summary>
+        public Torrent Torrent
+        {
+            get { return torrent; }
+        }
+
         /// <summary>
         /// Gets the index of this piece.
         /// </summary>
@@ -95,8 +104,9 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Constructor
-        internal TorrentPiece(int index, long offset, int size, int blockSize)
+        internal TorrentPiece(Torrent torrent, int index, long offset, int size, int blockSize)
         {
+            this.torrent = torrent;
             this.index = index;
             this.offset = offset;
             this.size = size;

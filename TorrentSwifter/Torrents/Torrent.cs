@@ -377,7 +377,7 @@ namespace TorrentSwifter.Torrents
                 bool isLastPiece = (i == (pieceCount - 1));
                 int currentPieceSize = (isLastPiece ? lastPieceSize : pieceSize);
                 long pieceOffset = ((long)i * (long)PieceSize);
-                pieces[i] = new TorrentPiece(i, pieceOffset, currentPieceSize, blockSize);
+                pieces[i] = new TorrentPiece(this, i, pieceOffset, currentPieceSize, blockSize);
             }
 
             bitField = new BitField(pieceCount);
