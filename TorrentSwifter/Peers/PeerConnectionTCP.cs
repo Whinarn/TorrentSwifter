@@ -561,10 +561,13 @@ namespace TorrentSwifter.Peers
                 int packetLength = packet.Length;
 
 #if DEBUG
-                packet.Offset = 0;
-                int encodedLength = packet.ReadInt32();
-                if ((encodedLength + 4) != packetLength)
-                    throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
+                if (isHandshakeSent)
+                {
+                    packet.Offset = 0;
+                    int encodedLength = packet.ReadInt32();
+                    if ((encodedLength + 4) != packetLength)
+                        throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
+                }
 #endif
 
                 sendSemaphore.Wait();
@@ -595,10 +598,13 @@ namespace TorrentSwifter.Peers
                 int packetLength = packet.Length;
 
 #if DEBUG
-                packet.Offset = 0;
-                int encodedLength = packet.ReadInt32();
-                if ((encodedLength + 4) != packetLength)
-                    throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
+                if (isHandshakeSent)
+                {
+                    packet.Offset = 0;
+                    int encodedLength = packet.ReadInt32();
+                    if ((encodedLength + 4) != packetLength)
+                        throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
+                }
 #endif
 
                 await sendSemaphore.WaitAsync();
