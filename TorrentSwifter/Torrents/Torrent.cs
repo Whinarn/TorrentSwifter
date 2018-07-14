@@ -28,7 +28,7 @@ namespace TorrentSwifter.Torrents
         private const int MaxBlockSize = 16 * (int)SizeHelper.KiloByte;
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
 
-        private const double PieceImportanceNoise = 0.15;
+        private const double PieceImportanceNoise = 0.05;
         #endregion
 
         #region Fields
