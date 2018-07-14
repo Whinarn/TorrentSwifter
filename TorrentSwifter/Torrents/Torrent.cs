@@ -414,16 +414,25 @@ namespace TorrentSwifter.Torrents
 
             if (metaDataFiles.Length == 1)
             {
-                var file = metaDataFiles[0];
-                files[0] = new TorrentFile(file.Path, downloadPath, file.Size, 0L);
-
-                if (Prefs.Torrent.AllocateFullFileSizes)
+                var metaDataFile = metaDataFiles[0];
+                string filePath = downloadPath;
+                if (Directory.Exists(filePath))
                 {
-                    IOHelper.CreateAllocatedFile(downloadPath, file.Size);
+                    filePath = IOHelper.GetTorrentFilePath(filePath, metaDataFile);
                 }
-                else
+                
+                files[0] = new TorrentFile(metaDataFile.Path, filePath, metaDataFile.Size, 0L);
+
+                if (!File.Exists(filePath))
                 {
-                    IOHelper.CreateEmptyFile(downloadPath);
+                    if (Prefs.Torrent.AllocateFullFileSizes)
+                    {
+                        IOHelper.CreateAllocatedFile(filePath, metaDataFile.Size);
+                    }
+                    else
+                    {
+                        IOHelper.CreateEmptyFile(filePath);
+                    }
                 }
             }
             else if (metaDataFiles.Length > 1)
@@ -437,13 +446,16 @@ namespace TorrentSwifter.Torrents
                     files[i] = new TorrentFile(metaDataFile.Path, filePath, metaDataFile.Size, currentFileOffset);
                     currentFileOffset += metaDataFile.Size;
 
-                    if (Prefs.Torrent.AllocateFullFileSizes)
+                    if (!File.Exists(filePath))
                     {
-                        IOHelper.CreateAllocatedFile(filePath, metaDataFile.Size);
-                    }
-                    else
-                    {
-                        IOHelper.CreateEmptyFile(filePath);
+                        if (Prefs.Torrent.AllocateFullFileSizes)
+                        {
+                            IOHelper.CreateAllocatedFile(filePath, metaDataFile.Size);
+                        }
+                        else
+                        {
+                            IOHelper.CreateEmptyFile(filePath);
+                        }
                     }
                 }
             }
