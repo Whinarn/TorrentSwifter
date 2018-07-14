@@ -103,9 +103,9 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
-        /// Gets if this peer connection is currently choked by us.
+        /// Gets if we are currently choking the peer.
         /// </summary>
-        public bool IsChokedByUs
+        public override bool IsChokedByUs
         {
             get { return isChokedByUs; }
         }
@@ -113,15 +113,15 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Gets if we are interested in this peer.
         /// </summary>
-        public bool IsInterestedByUs
+        public override bool IsInterestedByUs
         {
             get { return isInterestedByUs; }
         }
 
         /// <summary>
-        /// Gets if this peer connection is currently choked by the remote.
+        /// Gets if we are currently choked by the remote.
         /// </summary>
-        public bool IsChokedByRemote
+        public override bool IsChokedByRemote
         {
             get { return isChokedByRemote; }
         }
@@ -129,7 +129,7 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Gets if this peer is interested in some of our pieces.
         /// </summary>
-        public bool IsInterestedByRemote
+        public override bool IsInterestedByRemote
         {
             get { return isInterestedByRemote; }
         }

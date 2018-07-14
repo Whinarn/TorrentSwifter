@@ -77,6 +77,38 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Gets if we are currently choking the peer.
+        /// </summary>
+        public abstract bool IsChokedByUs
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets if we are interested in this peer.
+        /// </summary>
+        public abstract bool IsInterestedByUs
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets if we are currently choked by the remote.
+        /// </summary>
+        public abstract bool IsChokedByRemote
+        {
+            get;
+        }
+
+        /// <summary>
+        /// Gets if this peer is interested in some of our pieces.
+        /// </summary>
+        public abstract bool IsInterestedByRemote
+        {
+            get;
+        }
+
+        /// <summary>
         /// Gets the ID of the peer we are connected to.
         /// </summary>
         public abstract PeerID PeerID
