@@ -251,6 +251,8 @@ namespace TorrentSwifter.Torrents
         {
             if (isStarted || !isStopped)
                 return;
+            else if (!TorrentEngine.IsInitialized)
+                throw new InvalidOperationException("The torrent engine must be initialized before starting torrents.");
 
             isStarted = true;
             isStopped = false;
