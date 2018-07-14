@@ -13,6 +13,8 @@ namespace TorrentSwifter.Torrents
         private readonly int size;
 
         private volatile bool isVerified = false;
+        private volatile bool isVerifying = false;
+
         private TorrentBlock[] blocks = null;
         #endregion
 
@@ -78,6 +80,15 @@ namespace TorrentSwifter.Torrents
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets if this piece is currently being verified.
+        /// </summary>
+        public bool IsVerifying
+        {
+            get { return isVerifying; }
+            internal set { isVerifying = value; }
         }
         #endregion
 

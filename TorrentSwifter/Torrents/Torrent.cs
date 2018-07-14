@@ -429,31 +429,41 @@ namespace TorrentSwifter.Torrents
             return result;
         }
 
-        private async Task<bool> VerifyPiece(int pieceIndex)
+        private async Task VerifyPiece(TorrentPiece piece)
         {
-            var piece = pieces[pieceIndex];
-            var pieceHash = metaData.PieceHashes[pieceIndex];
-            byte[] computedPieceHash = await GetPieceHash(pieceIndex);
+            if (piece.IsVerifying)
+                return;
 
-            bool isVerified = (computedPieceHash != null && pieceHash.Equals(computedPieceHash));
-            if (piece.IsVerified != isVerified)
+            piece.IsVerifying = true;
+            try
             {
-                piece.IsVerified = isVerified;
-                bitField.Set(pieceIndex, isVerified);
+                int pieceIndex = piece.Index;
+                var pieceHash = metaData.PieceHashes[pieceIndex];
+                byte[] computedPieceHash = await GetPieceHash(piece);
 
-                if (isVerified)
+                bool isVerified = (computedPieceHash != null && pieceHash.Equals(computedPieceHash));
+                if (piece.IsVerified != isVerified)
                 {
-                    Interlocked.Add(ref bytesLeftToDownload, -piece.Size); // subtract
+                    piece.IsVerified = isVerified;
+                    bitField.Set(pieceIndex, isVerified);
 
-                    var eventArgs = new PieceEventArgs(pieceIndex);
-                    PieceVerified.SafeInvoke(this, eventArgs);
-                }
-                else
-                {
-                    Interlocked.Add(ref bytesLeftToDownload, piece.Size);
+                    if (isVerified)
+                    {
+                        Interlocked.Add(ref bytesLeftToDownload, -piece.Size); // subtract
+
+                        var eventArgs = new PieceEventArgs(pieceIndex);
+                        PieceVerified.SafeInvoke(this, eventArgs);
+                    }
+                    else
+                    {
+                        Interlocked.Add(ref bytesLeftToDownload, piece.Size);
+                    }
                 }
             }
-            return isVerified;
+            finally
+            {
+                piece.IsVerifying = false;
+            }
         }
 
         private async Task<byte[]> ReadPiece(int pieceIndex)
