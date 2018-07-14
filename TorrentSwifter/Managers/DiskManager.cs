@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Threading;
+using System.Threading.Tasks;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Preferences;
 using TorrentSwifter.Torrents;
@@ -98,6 +99,7 @@ namespace TorrentSwifter.Managers
         #endregion
 
         #region Public Methods
+        #region Queueing
         /// <summary>
         /// Queues a read from a specific torrent at an offset.
         /// </summary>
@@ -162,6 +164,59 @@ namespace TorrentSwifter.Managers
             queuedWrites.Enqueue(newEntry);
             writeResetEvent.Set();
         }
+        #endregion
+
+        #region Async
+        /// <summary>
+        /// Reads from a specific torrent at an offset asynchronously.
+        /// </summary>
+        /// <param name="torrent">The torrent to read from.</param>
+        /// <param name="torrentOffset">The offset within the torrent.</param>
+        /// <param name="buffer">The buffer to read into.</param>
+        /// <param name="bufferOffset">The offset within the buffer to start writing into.</param>
+        /// <param name="readLength">The length of bytes to read.</param>
+        /// <returns>The asynchronous task, with the count of bytes read as a result.</returns>
+        public static Task<int> ReadAsync(Torrent torrent, long torrentOffset, byte[] buffer, int bufferOffset, int readLength)
+        {
+            var taskCompletionSource = new TaskCompletionSource<int>();
+            DiskManager.QueueRead(torrent, torrentOffset, buffer, bufferOffset, readLength, (success, exception, readCount) =>
+            {
+                if (success)
+                {
+                    taskCompletionSource.SetResult(readCount);
+                }
+                else
+                {
+                    taskCompletionSource.SetException(exception);
+                }
+            });
+            return taskCompletionSource.Task;
+        }
+
+        /// <summary>
+        /// Reads from a specific torrent at an offset asynchronously.
+        /// </summary>
+        /// <param name="torrent">The torrent to read from.</param>
+        /// <param name="torrentOffset">The offset within the torrent.</param>
+        /// <param name="data">The data of bytes to write.</param>
+        /// <returns>The asynchronous task.</returns>
+        public static Task WriteAsync(Torrent torrent, long torrentOffset, byte[] data)
+        {
+            var taskCompletionSource = new TaskCompletionSource<bool>();
+            DiskManager.QueueWrite(torrent, torrentOffset, data, (success, exception) =>
+            {
+                if (success)
+                {
+                    taskCompletionSource.SetResult(true);
+                }
+                else
+                {
+                    taskCompletionSource.SetException(exception);
+                }
+            });
+            return taskCompletionSource.Task;
+        }
+        #endregion
         #endregion
 
         #region Internal
