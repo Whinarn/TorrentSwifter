@@ -46,6 +46,8 @@ namespace TorrentSwifter.Torrents
 
         private long sessionDownloadedBytes = 0L;
         private long sessionUploadedBytes = 0L;
+        private RateMeasurer sessionDownloadRate = new RateMeasurer();
+        private RateMeasurer sessionUploadRate = new RateMeasurer();
 
         private List<TrackerGroup> trackerGroups = new List<TrackerGroup>();
 
@@ -199,6 +201,22 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets the average download rate this session.
+        /// </summary>
+        public long SessionDownloadRate
+        {
+            get { return sessionDownloadRate.AverageRate; }
+        }
+
+        /// <summary>
+        /// Gets the average upload rate this session.
+        /// </summary>
+        public long SessionUploadRate
+        {
+            get { return sessionUploadRate.AverageRate; }
+        }
+
+        /// <summary>
         /// Gets the amount of bytes left to download.
         /// </summary>
         public long BytesLeftToDownload
@@ -260,6 +278,8 @@ namespace TorrentSwifter.Torrents
             // Reset the session download & upload statistics
             sessionDownloadedBytes = 0L;
             sessionUploadedBytes = 0L;
+            sessionDownloadRate.Reset();
+            sessionUploadRate.Reset();
 
             if (!hasVerifiedIntegrity)
             {
@@ -793,6 +813,9 @@ namespace TorrentSwifter.Torrents
                 {
                     try
                     {
+                        sessionDownloadRate.Update();
+                        sessionUploadRate.Update();
+
                         if (!isVerifyingIntegrity && hasVerifiedIntegrity)
                         {
                             UpdateTrackers();
@@ -937,11 +960,13 @@ namespace TorrentSwifter.Torrents
         internal void IncreaseSessionDownloadedBytes(long amount)
         {
             Interlocked.Add(ref sessionDownloadedBytes, amount);
+            sessionDownloadRate.Add(amount);
         }
 
         internal void IncreaseSessionUploadedBytes(long amount)
         {
             Interlocked.Add(ref sessionUploadedBytes, amount);
+            sessionUploadRate.Add(amount);
         }
         #endregion
 
