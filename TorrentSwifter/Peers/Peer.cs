@@ -190,7 +190,7 @@ namespace TorrentSwifter.Peers
                 connection.ConnectionFailed -= OnConnectionAttemptFailed;
                 connection.Disconnected -= OnConnectionDisconnected;
                 connection.BitFieldReceived -= OnConnectionBitFieldReceived;
-                connection.HavePiece -= OnTCPConnectionHavePiece;
+                connection.HavePiece -= OnConnectionHavePiece;
 
                 connection.Disconnect();
                 connection.Dispose();
@@ -274,7 +274,7 @@ namespace TorrentSwifter.Peers
             connection.ConnectionFailed += OnConnectionAttemptFailed;
             connection.Disconnected += OnConnectionDisconnected;
             connection.BitFieldReceived += OnConnectionBitFieldReceived;
-            connection.HavePiece += OnTCPConnectionHavePiece;
+            connection.HavePiece += OnConnectionHavePiece;
         }
 
         private void Uninitialize()
@@ -319,7 +319,7 @@ namespace TorrentSwifter.Peers
             bitField = e.BitField;
         }
 
-        private void OnTCPConnectionHavePiece(object sender, PieceEventArgs e)
+        private void OnConnectionHavePiece(object sender, PieceEventArgs e)
         {
             if (bitField == null)
             {
