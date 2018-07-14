@@ -1,5 +1,4 @@
 ﻿using System;
-using TorrentSwifter.Preferences;
 
 namespace TorrentSwifter.Torrents.RateLimiter
 {
@@ -13,11 +12,12 @@ namespace TorrentSwifter.Torrents.RateLimiter
 
         /// <summary>
         /// Gets or sets the rate limit for this limiter.
+        /// Zero means unlimited.
         /// </summary>
         public long RateLimit
         {
             get { return rateLimit; }
-            set { rateLimit = value; }
+            set { rateLimit = Math.Max(value, 0L); }
         }
 
         /// <summary>
@@ -41,6 +41,10 @@ namespace TorrentSwifter.Torrents.RateLimiter
         /// <returns>If the rate limiter allows us to process.</returns>
         public bool TryProcess(long amount)
         {
+            // Check if a limitation is not imposed
+            if (rateLimit <= 0L)
+                return true;
+
             long newRate = (rateMeasurer.AverageRate + amount);
             return (newRate <= rateLimit);
         }
