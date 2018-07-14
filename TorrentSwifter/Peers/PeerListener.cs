@@ -52,6 +52,8 @@ namespace TorrentSwifter.Peers
             listener.Start();
             PeerListener.listenPort = listenPort;
 
+            Log.LogInfo("[PeerListener] Now listening for connections on port {0}", listenPort);
+
             ListenForNextConnection();
         }
 
@@ -99,6 +101,8 @@ namespace TorrentSwifter.Peers
                 var socket = listener.EndAcceptSocket(ar);
                 if (socket != null)
                 {
+                    Log.LogDebug("[PeerListener] Accepted connection: {0}", socket.RemoteEndPoint);
+
                     var peerConnection = new PeerConnectionTCP(socket);
                     lock (pendingConnections)
                     {

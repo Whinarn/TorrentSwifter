@@ -45,6 +45,8 @@ namespace TorrentSwifter
 
             isInitialized = true;
 
+            Log.LogInfo("[Engine] Starting up TorrentEngine.");
+
             if (engineThread != null)
             {
                 engineThread.Join();
@@ -70,6 +72,8 @@ namespace TorrentSwifter
         {
             if (!isInitialized)
                 return;
+
+            Log.LogInfo("[Engine] Shutting down TorrentEngine.");
 
             isInitialized = false;
             isStopping = true;

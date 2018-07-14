@@ -318,6 +318,8 @@ namespace TorrentSwifter.Torrents
             isStopped = false;
             TorrentRegistry.RegisterTorrent(this);
 
+            Log.LogInfo("[Torrent] Starting up Torrent.");
+
             // Reset the session download & upload statistics
             sessionDownloadedBytes = 0L;
             sessionUploadedBytes = 0L;
@@ -345,6 +347,8 @@ namespace TorrentSwifter.Torrents
             TorrentRegistry.UnregisterTorrent(this);
 
             AnnounceTrackers(TrackerEvent.Stopped);
+
+            Log.LogInfo("[Torrent] Stopped Torrent.");
         }
         #endregion
 
@@ -528,6 +532,8 @@ namespace TorrentSwifter.Torrents
 
                 CancelAllOutgoingPieceRequests();
                 AnnounceTrackers(TrackerEvent.Completed);
+
+                Log.LogInfo("[Torrent] The torrent has completed downloading.");
 
                 Completed.SafeInvoke(this, EventArgs.Empty);
             }
@@ -857,6 +863,15 @@ namespace TorrentSwifter.Torrents
 
                     isCompleted = HasDownloadedAllPieces();
                     hasVerifiedIntegrity = true;
+
+                    if (isCompleted)
+                    {
+                        Log.LogInfo("[Torrent] The torrent was completed at launch and has now entered seeding mode.");
+                    }
+                    else
+                    {
+                        Log.LogDebug("[Torrent] The torrent was not completed at launch and has now entered leecher mode.");
+                    }
 
                     IntegrityCheckCompleted.SafeInvoke(this, EventArgs.Empty);
                 }
