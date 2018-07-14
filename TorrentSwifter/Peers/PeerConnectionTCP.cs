@@ -1024,6 +1024,12 @@ namespace TorrentSwifter.Peers
                 Log.LogWarning("[Peer][{0}] Invalid 'request' received with {1} bytes (should have been 17).", endPoint, packet.Length);
                 return false;
             }
+            else if (isChokedByUs)
+            {
+                // TODO: Add penalty points for bad behaviour
+                Log.LogWarning("[Peer][{0}] A peer sent a request while being choked.", endPoint);
+                return true;
+            }
 
             int pieceIndex = packet.ReadInt32();
             int begin = packet.ReadInt32();
