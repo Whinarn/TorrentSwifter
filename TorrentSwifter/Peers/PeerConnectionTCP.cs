@@ -536,6 +536,10 @@ namespace TorrentSwifter.Peers
                     Disconnect();
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                // Safe to consume because this means that we have disconnected
+            }
             catch (SocketException ex)
             {
                 Log.LogDebugException(ex);
@@ -584,6 +588,10 @@ namespace TorrentSwifter.Peers
                     sendSemaphore.Release();
                 }
             }
+            catch (ObjectDisposedException)
+            {
+                // Safe to consume because this means that we have disconnected
+            }
             catch (Exception ex)
             {
                 Log.LogDebugException(ex);
@@ -614,7 +622,7 @@ namespace TorrentSwifter.Peers
                 await sendSemaphore.WaitAsync();
                 try
                 {
-                    var result = socket.BeginSend(packetData, 0, packetLength, SocketFlags.None, OnDataSent, socket);
+                    var result = socket.BeginSend(packetData, 0, packetLength, SocketFlags.None, null, socket);
                     int sentByteCount = await Task.Factory.FromAsync(result, socket.EndSend);
                     Stats.IncreaseUploadedBytes(sentByteCount);
                 }
