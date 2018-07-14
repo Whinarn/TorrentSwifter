@@ -662,7 +662,7 @@ namespace TorrentSwifter.Torrents
         private IEnumerable<TorrentPiece> GetRankedPieces()
         {
             return pieces.Where((piece) => !piece.IsVerified)
-                .OrderBy((piece) => piece.Importance + RandomHelper.NextDouble(PieceImportanceNoise));
+                .OrderByDescending((piece) => piece.Importance + RandomHelper.NextDouble(PieceImportanceNoise));
         }
         #endregion
 
