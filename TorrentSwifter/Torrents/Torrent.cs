@@ -494,7 +494,8 @@ namespace TorrentSwifter.Torrents
         {
             byte[] pieceData = new byte[piece.Size];
             long pieceOffset = piece.Offset;
-            int readByteCount = await ReadDataAsync(pieceOffset, pieceData, 0, pieceData.Length);
+
+            int readByteCount = await DiskManager.ReadAsync(this, pieceOffset, pieceData, 0, pieceData.Length);
             if (readByteCount != pieceData.Length)
                 return null;
 
@@ -531,7 +532,7 @@ namespace TorrentSwifter.Torrents
 
                 long offset = piece.Offset + begin;
                 byte[] data = new byte[length];
-                int readByteCount = await ReadDataAsync(offset, data, 0, length);
+                int readByteCount = await DiskManager.ReadAsync(this, offset, data, 0, length);
                 if (readByteCount != length)
                 {
                     Log.LogError("[Torrent] Read {0} bytes from piece {1} at offset {2} when {3} bytes were expected.", readByteCount, pieceIndex, begin, length);
