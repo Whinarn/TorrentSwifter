@@ -73,5 +73,33 @@ namespace TorrentSwifter.Helpers
                 return string.Format("{0:0.00} PB", (size / (double)PetaByte));
             }
         }
+
+        public static string GetHumanReadableSpeed(long rate)
+        {
+            if (rate < KiloByte)
+            {
+                return string.Format("{0} B/s", rate);
+            }
+            else if (rate < MegaByte)
+            {
+                return string.Format("{0:0.00} kB/s", (rate / (double)KiloByte));
+            }
+            else if (rate < GigaByte)
+            {
+                return string.Format("{0:0.00} MB/s", (rate / (double)MegaByte));
+            }
+            else if (rate < TerraByte)
+            {
+                return string.Format("{0:0.00} GB/s", (rate / (double)GigaByte));
+            }
+            else if (rate < PetaByte)
+            {
+                return string.Format("{0:0.00} TB/s", (rate / (double)TerraByte));
+            }
+            else
+            {
+                return string.Format("{0:0.00} PB/s", (rate / (double)PetaByte));
+            }
+        }
     }
 }
