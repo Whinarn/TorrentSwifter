@@ -10,6 +10,7 @@ using TorrentSwifter.Logging;
 using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Preferences;
+using TorrentSwifter.Torrents.RateLimiter;
 using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents
@@ -48,6 +49,11 @@ namespace TorrentSwifter.Torrents
         private long sessionUploadedBytes = 0L;
         private RateMeasurer sessionDownloadRate = new RateMeasurer();
         private RateMeasurer sessionUploadRate = new RateMeasurer();
+
+        private IRateLimiter downloadRateLimiter = null;
+        private IRateLimiter uploadRateLimiter = null;
+        private BandwidthLimiter downloadBandwidthLimiter = null;
+        private BandwidthLimiter uploadBandwidthLimiter = null;
 
         private List<TrackerGroup> trackerGroups = new List<TrackerGroup>();
 
@@ -217,6 +223,24 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets or sets the download bandwidth limit in bytes per second for this torrent.
+        /// </summary>
+        public long DownloadBandwidthLimit
+        {
+            get { return downloadBandwidthLimiter.RateLimit; }
+            set { downloadBandwidthLimiter.RateLimit = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the upload bandwidth limit in bytes per second for this torrent.
+        /// </summary>
+        public long UploadBandwidthLimit
+        {
+            get { return uploadBandwidthLimiter.RateLimit; }
+            set { uploadBandwidthLimiter.RateLimit = value; }
+        }
+
+        /// <summary>
         /// Gets the amount of bytes left to download.
         /// </summary>
         public long BytesLeftToDownload
@@ -254,8 +278,7 @@ namespace TorrentSwifter.Torrents
             InitializePieces();
             InitializeFiles();
             InitializeTrackers();
-
-            // TODO: Initialize cached data, like integrity etc?
+            InitializeRateLimiters();
         }
         #endregion
 
@@ -302,8 +325,6 @@ namespace TorrentSwifter.Torrents
             TorrentRegistry.UnregisterTorrent(this);
 
             AnnounceTrackers(TrackerEvent.Stopped);
-
-            // TODO: Perform any unitialization here
         }
         #endregion
 
@@ -437,6 +458,27 @@ namespace TorrentSwifter.Torrents
                 trackerGroups.Add(trackerGroup);
             }
         }
+
+        private void InitializeRateLimiters()
+        {
+            // TODO: Get saved download and upload limits if this torrent is resumes
+
+            downloadBandwidthLimiter = new BandwidthLimiter(sessionDownloadRate, 0L);
+            uploadBandwidthLimiter = new BandwidthLimiter(sessionUploadRate, 0L);
+
+            var downloadRateLimiter = new RateLimiterGroup();
+            downloadRateLimiter.Add(Stats.downloadRateLimiter);
+            downloadRateLimiter.Add(downloadBandwidthLimiter);
+            downloadRateLimiter.Add(new DiskWriteLimiter());
+
+            var uploadRateLimiter = new RateLimiterGroup();
+            uploadRateLimiter.Add(Stats.uploadRateLimiter);
+            uploadRateLimiter.Add(uploadBandwidthLimiter);
+            uploadRateLimiter.Add(new DiskReadLimiter());
+
+            this.downloadRateLimiter = downloadRateLimiter;
+            this.uploadRateLimiter = uploadRateLimiter;
+        }
         #endregion
 
         #region Pieces
@@ -535,7 +577,7 @@ namespace TorrentSwifter.Torrents
                 return;
 
             IncomingPieceRequest request;
-            while (incomingPieceRequests.TryDequeue(out request))
+            while (downloadRateLimiter.TryProcess(blockSize) && incomingPieceRequests.TryDequeue(out request))
             {
                 if (request.IsCancelled || !request.Peer.IsConnected)
                     continue;
@@ -571,7 +613,7 @@ namespace TorrentSwifter.Torrents
                 return;
 
             OutgoingPieceRequest request;
-            while (outgoingPieceRequests.TryDequeue(out request))
+            while (uploadRateLimiter.TryProcess(blockSize) && outgoingPieceRequests.TryDequeue(out request))
             {
                 if (request.IsCancelled || !request.Peer.IsConnected)
                     continue;
