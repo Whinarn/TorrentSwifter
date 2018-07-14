@@ -577,7 +577,8 @@ namespace TorrentSwifter.Torrents
                 return;
 
             IncomingPieceRequest request;
-            while (downloadRateLimiter.TryProcess(blockSize) && incomingPieceRequests.TryDequeue(out request))
+            long currentExtraRate = blockSize;
+            while (downloadRateLimiter.TryProcess(currentExtraRate) && incomingPieceRequests.TryDequeue(out request))
             {
                 if (request.IsCancelled || !request.Peer.IsConnected)
                     continue;
@@ -600,6 +601,7 @@ namespace TorrentSwifter.Torrents
                 }
 
                 await request.Peer.SendPieceData(pieceIndex, begin, data);
+                currentExtraRate += length;
             }
 
             // Reset the flag that we are currently processing
@@ -613,7 +615,8 @@ namespace TorrentSwifter.Torrents
                 return;
 
             OutgoingPieceRequest request;
-            while (uploadRateLimiter.TryProcess(blockSize) && outgoingPieceRequests.TryDequeue(out request))
+            long currentExtraRate = blockSize;
+            while (uploadRateLimiter.TryProcess(currentExtraRate) && outgoingPieceRequests.TryDequeue(out request))
             {
                 if (request.IsCancelled || !request.Peer.IsConnected)
                     continue;
@@ -635,7 +638,11 @@ namespace TorrentSwifter.Torrents
                     request.OnSent();
                     block.AddRequestPeer(peer);
                     pendingOutgoingPieceRequests.Add(request);
-                    if (!await request.Peer.RequestPieceData(pieceIndex, blockIndex))
+                    if (await request.Peer.RequestPieceData(pieceIndex, blockIndex))
+                    {
+                        currentExtraRate += block.Size;
+                    }
+                    else
                     {
                         block.RemoveRequestPeer(peer);
                         pendingOutgoingPieceRequests.Remove(request);
