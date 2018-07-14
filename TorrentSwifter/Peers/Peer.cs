@@ -240,9 +240,31 @@ namespace TorrentSwifter.Peers
 
         internal void Update()
         {
-            if (connection != null)
+            if (connection != null && connection.IsConnected)
             {
                 connection.Update();
+                if (!connection.IsConnected) // If we just disconnected
+                    return;
+
+                // If both we and the peer has completed, we simply disconnect from the peer
+                // because there is nothing left to do.
+                if (torrent.IsCompleted && isCompleted)
+                {
+                    connection.Disconnect();
+                    return;
+                }
+
+                // TODO: Add a more clever unchoke algorithm
+                if (connection.IsInterestedByRemote && connection.IsChokedByUs)
+                {
+                    connection.SendChoked(false);
+                }
+
+                // TODO: Add a more clever interest algorithm
+                if (!torrent.IsCompleted && !connection.IsInterestedByUs)
+                {
+                    connection.SendInterested(true);
+                }
             }
         }
 
