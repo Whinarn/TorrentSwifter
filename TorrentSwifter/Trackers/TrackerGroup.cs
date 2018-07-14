@@ -237,6 +237,10 @@ namespace TorrentSwifter.Trackers
 
                 if (status == TrackerStatus.OK)
                 {
+                    var timeNow = DateTime.UtcNow;
+                    nextAnnounceTime = timeNow.Add(tracker.Interval);
+                    nextAnnounceTimeMinimum = timeNow.Add(tracker.MinInterval);
+
                     if (!hasSentStartedEvent && trackerEvent == TrackerEvent.Started)
                     {
                         hasSentStartedEvent = true;
