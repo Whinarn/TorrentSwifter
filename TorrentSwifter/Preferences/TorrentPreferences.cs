@@ -10,6 +10,9 @@ namespace TorrentSwifter.Preferences
     {
         #region Fields
         private bool allocateFullFileSizes = false;
+
+        private long downloadBandwidthLimit = 0L;
+        private long uploadBandwidthLimit = 0L;
         #endregion
 
         #region Properties
@@ -20,6 +23,24 @@ namespace TorrentSwifter.Preferences
         {
             get { return allocateFullFileSizes; }
             set { allocateFullFileSizes = value; }
+        }
+
+        /// <summary>
+        /// Gets or sets the download bandwidth limit in bytes per second for the combined downloading from all active torrents.
+        /// </summary>
+        public long DownloadBandwidthLimit
+        {
+            get { return downloadBandwidthLimit; }
+            set { downloadBandwidthLimit = Math.Max(value, 0L); }
+        }
+
+        /// <summary>
+        /// Gets or sets the upload bandwidth limit in bytes per second for the combined uploading from all active torrents.
+        /// </summary>
+        public long UploadBandwidthLimit
+        {
+            get { return uploadBandwidthLimit; }
+            set { uploadBandwidthLimit = Math.Max(value, 0L); }
         }
         #endregion
     }
