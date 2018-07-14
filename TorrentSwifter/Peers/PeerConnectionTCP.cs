@@ -524,9 +524,17 @@ namespace TorrentSwifter.Peers
                         break;
                     }
 
-                    // Copy remaining bytes in the buffer to the start of the buffer
-                    Buffer.BlockCopy(receiveBuffer, packetLength, receiveBuffer, 0, receiveOffset - packetLength);
-                    receiveOffset = 0;
+                    int remainingLength = (receiveOffset - packetLength);
+                    if (remainingLength > 0)
+                    {
+                        // Copy remaining bytes in the buffer to the start of the buffer
+                        Buffer.BlockCopy(receiveBuffer, packetLength, receiveBuffer, 0, remainingLength);
+                        receiveOffset = remainingLength;
+                    }
+                    else
+                    {
+                        receiveOffset = 0;
+                    }
                     packetLength = GetPacketLength();
                 }
 
