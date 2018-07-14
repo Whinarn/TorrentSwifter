@@ -10,7 +10,7 @@ namespace TorrentSwifter.Peers
     /// <summary>
     /// The peer connection listener.
     /// </summary>
-    public static class PeerListener
+    internal static class PeerListener
     {
         #region Fields
         private static TcpListener listener = null;
