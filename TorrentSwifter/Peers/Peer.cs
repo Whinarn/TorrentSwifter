@@ -269,7 +269,11 @@ namespace TorrentSwifter.Peers
                 // TODO: Add a more clever interest algorithm
                 if (!torrent.IsCompleted && !connection.IsInterestedByUs)
                 {
-                    connection.SendInterested(true);
+                    int neededPieceCount = GetCountOfNeededPieces();
+                    if (neededPieceCount > 0)
+                    {
+                        connection.SendInterested(true);
+                    }
                 }
             }
             else if (connection == null || !connection.IsConnecting)
@@ -327,6 +331,17 @@ namespace TorrentSwifter.Peers
         private void Uninitialize()
         {
             torrent.PieceVerified -= OnTorrentPieceVerified;
+        }
+        #endregion
+
+        #region Pieces
+        private int GetCountOfNeededPieces()
+        {
+            if (bitField == null)
+                return 0;
+
+            var ourBitField = torrent.BitField;
+            return ourBitField.CountNeeded(bitField);
         }
         #endregion
 
