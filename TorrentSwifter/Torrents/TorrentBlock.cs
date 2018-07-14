@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Torrents
 {
@@ -13,6 +15,8 @@ namespace TorrentSwifter.Torrents
 
         private bool isRequested = false;
         private bool isDownloaded = false;
+
+        private List<Peer> requestedToPeers = new List<Peer>();
         #endregion
 
         #region Properties
@@ -33,12 +37,11 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
-        /// Gets if this block has been requested.
+        /// Gets if this block is currently being requested.
         /// </summary>
         public bool IsRequested
         {
             get { return isRequested; }
-            internal set { isRequested = value && !isDownloaded; }
         }
 
         /// <summary>
@@ -63,6 +66,30 @@ namespace TorrentSwifter.Torrents
         {
             this.index = index;
             this.size = size;
+        }
+        #endregion
+
+        #region Internal Methods
+        internal void AddRequestPeer(Peer peer)
+        {
+            lock (requestedToPeers)
+            {
+                if (!requestedToPeers.Contains(peer))
+                {
+                    requestedToPeers.Add(peer);
+                }
+
+                isRequested = (requestedToPeers.Count > 0);
+            }
+        }
+
+        internal void RemoveRequestPeer(Peer peer)
+        {
+            lock (requestedToPeers)
+            {
+                requestedToPeers.Remove(peer);
+                isRequested = (requestedToPeers.Count > 0);
+            }
         }
         #endregion
     }

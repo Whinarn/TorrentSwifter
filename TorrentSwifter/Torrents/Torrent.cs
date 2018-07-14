@@ -523,6 +523,7 @@ namespace TorrentSwifter.Torrents
                 if (request.IsCancelled || !request.Peer.IsConnected)
                     continue;
 
+                var peer = request.Peer;
                 int pieceIndex = request.PieceIndex;
                 int blockIndex = request.BlockIndex;
 
@@ -534,21 +535,22 @@ namespace TorrentSwifter.Torrents
                 if (block.IsDownloaded)
                     continue;
 
-                block.IsRequested = true;
+                block.AddRequestPeer(peer);
+
                 try
                 {
                     request.OnSent();
                     pendingOutgoingPieceRequests.Add(request);
                     if (!await request.Peer.RequestPieceData(pieceIndex, blockIndex))
                     {
-                        block.IsRequested = false;
+                        block.RemoveRequestPeer(peer);
                         pendingOutgoingPieceRequests.Remove(request);
                     }
                 }
                 catch (Exception ex)
                 {
                     Log.LogErrorException(ex);
-                    block.IsRequested = false;
+                    block.RemoveRequestPeer(peer);
                     pendingOutgoingPieceRequests.Remove(request);
                 }
             }
@@ -608,7 +610,12 @@ namespace TorrentSwifter.Torrents
                 if (request.Equals(pieceIndex, blockIndex))
                 {
                     // Send the cancel message to the peer because we have already sent this request to them
-                    request.Peer.CancelPieceDataRequest(pieceIndex, blockIndex);
+                    var peer = request.Peer;
+                    peer.CancelPieceDataRequest(pieceIndex, blockIndex);
+
+                    var piece = pieces[pieceIndex];
+                    var block = piece.GetBlock(blockIndex);
+                    block.RemoveRequestPeer(peer);
                     return true;
                 }
                 else
@@ -823,7 +830,7 @@ namespace TorrentSwifter.Torrents
                 long offset = piece.Offset + (blockIndex * blockSize);
                 await WriteData(offset, data, 0, data.Length);
                 block.IsDownloaded = true;
-                block.IsRequested = false;
+                block.RemoveRequestPeer(peer);
 
                 if (piece.HasDownloadedAllBlocks())
                 {
