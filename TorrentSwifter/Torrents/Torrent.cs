@@ -711,6 +711,7 @@ namespace TorrentSwifter.Torrents
             if (Interlocked.CompareExchange(ref isProcessingOutgoingPieceRequests, 1, 0) != 0)
                 return;
 
+            TimeoutOutgoingPieceRequests();
             RequestMorePieces();
 
             OutgoingPieceRequest request;
@@ -757,6 +758,12 @@ namespace TorrentSwifter.Torrents
                 }
             }
 
+            // Reset the flag that we are currently processing
+            Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
+        }
+
+        private void TimeoutOutgoingPieceRequests()
+        {
             int pieceRequestTimeout = Prefs.Peer.PieceRequestTimeout;
             pendingOutgoingPieceRequests.RemoveAny((pendingRequest) =>
             {
@@ -774,9 +781,6 @@ namespace TorrentSwifter.Torrents
                     return false;
                 }
             });
-
-            // Reset the flag that we are currently processing
-            Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
         }
 
         private void RequestMorePieces()
