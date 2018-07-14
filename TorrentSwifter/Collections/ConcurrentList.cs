@@ -343,6 +343,42 @@ namespace TorrentSwifter.Collections
         }
 
         /// <summary>
+        /// Attempts to get an item from this collection that matches the specified predicate, and removes it from the list.
+        /// </summary>
+        /// <param name="predicate">The predicate that decides which items to remove.</param>
+        /// <param name="result">The output result, if any.</param>
+        /// <returns>If the item was found and removed.</returns>
+        public bool TryTake(Predicate<T> predicate, out T result)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException("predicate");
+
+            readWriteLock.EnterWriteLock();
+            try
+            {
+                bool foundItem = false;
+                result = default(T);
+                int itemCount = items.Count;
+                for (int i = (itemCount - 1); i >= 0; i--)
+                {
+                    if (predicate.Invoke(items[i]))
+                    {
+                        foundItem = true;
+                        result = items[i];
+                        items.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                return foundItem;
+            }
+            finally
+            {
+                readWriteLock.ExitWriteLock();
+            }
+        }
+
+        /// <summary>
         /// Returns an enumerator for this collection.
         /// This will take a snapshot of the collection.
         /// </summary>
