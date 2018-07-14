@@ -75,6 +75,11 @@ namespace TorrentSwifter.Managers
         #endregion
 
         #region Properties
+        public static int QueuedReads
+        {
+            get { return queuedReads.Count; }
+        }
+
         public static int QueuedWrites
         {
             get { return queuedWrites.Count; }
