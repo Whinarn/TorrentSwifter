@@ -31,6 +31,14 @@ namespace TorrentSwifter.Helpers
             }
         }
 
+        public static double NextDouble(double maxValue)
+        {
+            lock (random)
+            {
+                return random.NextDouble() * maxValue;
+            }
+        }
+
         public static void Randomize<T>(List<T> list)
         {
             int listCount = list.Count;

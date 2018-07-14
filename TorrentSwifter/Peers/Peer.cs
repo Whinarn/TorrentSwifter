@@ -3,6 +3,7 @@ using System.Net;
 using System.Threading.Tasks;
 using TorrentSwifter.Collections;
 using TorrentSwifter.Logging;
+using TorrentSwifter.Preferences;
 using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers
@@ -80,7 +81,11 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public bool CanRequestPiecesFrom
         {
-            get { return (connection != null && connection.IsInterestedByUs && !connection.IsChokedByRemote); }
+            get
+            {
+                return (connection != null && connection.IsInterestedByUs && !connection.IsChokedByRemote &&
+                    pieceRequests.Count <= Prefs.Peer.MaxConcurrentPieceRequests);
+            }
         }
 
         /// <summary>

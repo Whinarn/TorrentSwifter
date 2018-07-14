@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TorrentSwifter.Collections;
@@ -24,6 +25,8 @@ namespace TorrentSwifter.Torrents
         private const int MinBlockSize = 1 * (int)SizeHelper.KiloByte;
         private const int MaxBlockSize = 16 * (int)SizeHelper.KiloByte;
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
+
+        private const double PieceImportanceNoise = 0.15;
         #endregion
 
         #region Fields
@@ -66,6 +69,7 @@ namespace TorrentSwifter.Torrents
         private ConcurrentQueue<IncomingPieceRequest> incomingPieceRequests = new ConcurrentQueue<IncomingPieceRequest>();
         private ConcurrentQueue<OutgoingPieceRequest> outgoingPieceRequests = new ConcurrentQueue<OutgoingPieceRequest>();
         private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
+        private List<Peer> tempRequestPiecePeers = new List<Peer>();
         #endregion
 
         #region Events
@@ -581,6 +585,12 @@ namespace TorrentSwifter.Torrents
             byte[] pieceData = await ReadPiece(piece);
             return HashHelper.ComputeSHA1(pieceData);
         }
+
+        private IEnumerable<TorrentPiece> GetRankedPieces()
+        {
+            return pieces.Where((piece) => !piece.IsVerified)
+                .OrderBy((piece) => piece.Importance + RandomHelper.NextDouble(PieceImportanceNoise));
+        }
         #endregion
 
         #region Piece Requests
@@ -628,6 +638,8 @@ namespace TorrentSwifter.Torrents
             if (Interlocked.CompareExchange(ref isProcessingOutgoingPieceRequests, 1, 0) != 0)
                 return;
 
+            RequestMorePieces();
+
             OutgoingPieceRequest request;
             long currentExtraRate = blockSize;
             while (uploadRateLimiter.TryProcess(currentExtraRate) && outgoingPieceRequests.TryDequeue(out request))
@@ -652,7 +664,7 @@ namespace TorrentSwifter.Torrents
                     request.OnSent();
                     block.AddRequestPeer(peer);
                     pendingOutgoingPieceRequests.Add(request);
-                    if (await request.Peer.RequestPieceData(pieceIndex, blockIndex))
+                    if (await peer.RequestPieceData(pieceIndex, blockIndex))
                     {
                         currentExtraRate += block.Size;
                     }
@@ -660,6 +672,7 @@ namespace TorrentSwifter.Torrents
                     {
                         block.RemoveRequestPeer(peer);
                         pendingOutgoingPieceRequests.Remove(request);
+                        peer.UnregisterPieceRequest(request);
                     }
                 }
                 catch (Exception ex)
@@ -690,6 +703,49 @@ namespace TorrentSwifter.Torrents
 
             // Reset the flag that we are currently processing
             Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
+        }
+
+        private void RequestMorePieces()
+        {
+            var peerList = tempRequestPiecePeers;
+            var rankedPieces = GetRankedPieces();
+            foreach (var piece in rankedPieces)
+            {
+                GetPeersWithPiece(piece.Index, true, peerList);
+                if (peerList.Count == 0)
+                    continue;
+
+                // TODO: Improve the peer selection
+                RandomHelper.Randomize(peerList);
+                var peer = peerList[0];
+
+                int blockCount = piece.BlockCount;
+                for (int blockIndex = 0; blockIndex < blockCount; blockIndex++)
+                {
+                    var block = piece.GetBlock(blockIndex);
+                    if (block.IsDownloaded)
+                        continue;
+
+                    var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                    outgoingPieceRequests.Enqueue(request);
+                    peer.RegisterPieceRequest(request);
+
+                    // TODO: Improve the peer selection
+                    if (!peer.CanRequestPiecesFrom)
+                    {
+                        peerList.RemoveAt(0);
+                        if (peerList.Count > 0)
+                        {
+                            peer = peerList[0];
+                        }
+                        else
+                        {
+                            // We have no more peers for this piece
+                            break;
+                        }
+                    }
+                }
+            }
         }
 
         private IncomingPieceRequest FindIncomingPieceRequest(Peer peer, int pieceIndex, int begin, int length)
@@ -855,6 +911,32 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Peers
+        private void GetPeersWithPiece(int pieceIndex, bool requestPiecesFrom, List<Peer> peerList)
+        {
+            peerList.Clear();
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    if (requestPiecesFrom && !peer.CanRequestPiecesFrom)
+                        continue;
+
+                    if (peer.IsCompleted)
+                    {
+                        peerList.Add(peer);
+                    }
+                    else
+                    {
+                        var peerBitField = peer.BitField;
+                        if (peerBitField != null && peerBitField.Get(pieceIndex))
+                        {
+                            peerList.Add(peer);
+                        }
+                    }
+                }
+            }
+        }
+
         private void UpdatePeers()
         {
             lock (peersSyncObj)
