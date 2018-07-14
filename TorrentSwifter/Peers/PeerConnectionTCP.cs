@@ -146,6 +146,8 @@ namespace TorrentSwifter.Peers
             : base(torrent, peer, endPoint)
         {
             socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            socket.DualMode = true;
+
             Initialize();
         }
 
@@ -439,7 +441,6 @@ namespace TorrentSwifter.Peers
         #region Initialize
         private void Initialize()
         {
-            socket.DualMode = true;
             socket.LingerState = new LingerOption(true, 10);
 
             receivedPacket = new Packet(receiveBuffer, 0);
