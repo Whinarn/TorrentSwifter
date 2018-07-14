@@ -9,6 +9,21 @@ namespace TorrentSwifter.Managers
 {
     internal static class DiskManager
     {
+        #region Delegates
+        /// <summary>
+        /// A callback for disk reads.
+        /// </summary>
+        /// <param name="success">If the disk read was successful.</param>
+        /// <param name="readCount">The count of bytes read.</param>
+        public delegate void DiskReadCallback(bool success, int readCount);
+
+        /// <summary>
+        /// A callback for disk writes.
+        /// </summary>
+        /// <param name="success">If the disk write was successful.</param>
+        public delegate void DiskWriteCallback(bool success);
+        #endregion
+
         #region Structs
         private struct DiskReadEntry
         {
@@ -17,9 +32,9 @@ namespace TorrentSwifter.Managers
             public readonly byte[] buffer;
             public readonly int bufferOffset;
             public readonly int readLength;
-            public readonly Action<bool, int> callback;
+            public readonly DiskReadCallback callback;
 
-            public DiskReadEntry(Torrent torrent, long torrentOffset, byte[] buffer, int bufferOffset, int readLength, Action<bool, int> callback)
+            public DiskReadEntry(Torrent torrent, long torrentOffset, byte[] buffer, int bufferOffset, int readLength, DiskReadCallback callback)
             {
                 this.torrent = torrent;
                 this.torrentOffset = torrentOffset;
@@ -35,9 +50,9 @@ namespace TorrentSwifter.Managers
             public readonly Torrent torrent;
             public readonly long torrentOffset;
             public readonly byte[] data;
-            public readonly Action<bool> callback;
+            public readonly DiskWriteCallback callback;
 
-            public DiskWriteEntry(Torrent torrent, long torrentOffset, byte[] data, Action<bool> callback)
+            public DiskWriteEntry(Torrent torrent, long torrentOffset, byte[] data, DiskWriteCallback callback)
             {
                 this.torrent = torrent;
                 this.torrentOffset = torrentOffset;
@@ -67,7 +82,7 @@ namespace TorrentSwifter.Managers
         #endregion
 
         #region Public Methods
-        public static void QueueRead(Torrent torrent, long torrentOffset, byte[] buffer, int bufferOffset, int readLength, Action<bool, int> callback)
+        public static void QueueRead(Torrent torrent, long torrentOffset, byte[] buffer, int bufferOffset, int readLength, DiskReadCallback callback)
         {
             if (torrent == null)
                 throw new ArgumentNullException("torrent");
@@ -93,7 +108,7 @@ namespace TorrentSwifter.Managers
             readResetEvent.Set();
         }
 
-        public static void QueueWrite(Torrent torrent, long torrentOffset, byte[] data, Action<bool> callback = null)
+        public static void QueueWrite(Torrent torrent, long torrentOffset, byte[] data, DiskWriteCallback callback = null)
         {
             if (torrent == null)
                 throw new ArgumentNullException("torrent");
