@@ -55,6 +55,7 @@ namespace TorrentSwifter
             isStopping = false;
             workQueueResetEvent.Set();
 
+            DiskManager.Initialize();
             PeerListener.StartListening();
 
             engineThread = new Thread(EngineLoop);
@@ -77,6 +78,7 @@ namespace TorrentSwifter
 
             TorrentRegistry.StopAllActiveTorrents();
             PeerListener.StopListening();
+            DiskManager.Uninitialize();
 
             if (engineThread != null)
             {
