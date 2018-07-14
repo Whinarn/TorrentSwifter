@@ -115,7 +115,7 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
-        /// Returns if we have downloaded all blocks in this piece.
+        /// Returns if we have downloaded all blocks in this piece (as well as written them all to disk).
         /// Does not guarantee that the integrity is intact.
         /// </summary>
         /// <returns>If all blocks are downloaded.</returns>
@@ -128,7 +128,8 @@ namespace TorrentSwifter.Torrents
 
             for (int i = 0; i < blocks.Length; i++)
             {
-                if (!blocks[i].IsDownloaded)
+                var block = blocks[i];
+                if (!block.IsDownloaded || !block.HasWrittenToDisk)
                 {
                     result = false;
                     break;

@@ -13,8 +13,9 @@ namespace TorrentSwifter.Torrents
         private readonly int index;
         private readonly int size;
 
-        private bool isRequested = false;
-        private bool isDownloaded = false;
+        private volatile bool isRequested = false;
+        private volatile bool isDownloaded = false;
+        private volatile bool hasWrittenToDisk = false;
 
         private List<Peer> requestedToPeers = new List<Peer>();
         #endregion
@@ -58,6 +59,15 @@ namespace TorrentSwifter.Torrents
                     isRequested = false;
                 }
             }
+        }
+
+        /// <summary>
+        /// Gets if this block has been written to disk yet.
+        /// </summary>
+        public bool HasWrittenToDisk
+        {
+            get { return hasWrittenToDisk; }
+            internal set { hasWrittenToDisk = value; }
         }
         #endregion
 
