@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using TorrentSwifter.Collections;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
+using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Preferences;
 using TorrentSwifter.Trackers;
@@ -893,22 +894,36 @@ namespace TorrentSwifter.Torrents
             if (removedCount == 0)
                 return;
 
+            block.IsDownloaded = true;
+            block.HasWrittenToDisk = false;
+            block.RemoveRequestPeer(peer);
+
             // Cancel other requests for the same block on other peers
             CancelOutgoingPieceRequestsForBlock(pieceIndex, blockIndex);
 
-            // Write the data and verify the piece on another thread
-            Task.Run(async () =>
+            long offset = piece.Offset + (blockIndex * blockSize);
+            DiskManager.QueueWrite(this, offset, data, (writeSuccess) =>
             {
-                long offset = piece.Offset + (blockIndex * blockSize);
-                await WriteData(offset, data, 0, data.Length);
-                block.IsDownloaded = true;
-                block.RemoveRequestPeer(peer);
-
-                if (piece.HasDownloadedAllBlocks())
+                if (writeSuccess)
                 {
-                    await VerifyPiece(piece.Index);
+                    block.HasWrittenToDisk = true;
+
+                    if (piece.HasDownloadedAllBlocks())
+                    {
+                        var verifyTask = VerifyPiece(piece);
+                        verifyTask.CatchExceptions();
+                        verifyTask.ContinueWith((task) =>
+                        {
+                            CheckIfCompletedDownload();
+                        }, TaskContinuationOptions.OnlyOnRanToCompletion);
+                    }
                 }
-            }).CatchExceptions();
+                else
+                {
+                    block.HasWrittenToDisk = false;
+                    block.IsDownloaded = false;
+                }
+            });
         }
         #endregion
 
