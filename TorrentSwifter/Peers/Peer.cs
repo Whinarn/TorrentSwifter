@@ -309,6 +309,8 @@ namespace TorrentSwifter.Peers
                     haveTriedConnectTo = true;
                     Connect();
                 }
+
+                // TODO: When do we try to connect to this peer again?
             }
         }
 

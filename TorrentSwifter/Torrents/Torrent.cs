@@ -16,6 +16,8 @@ using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents
 {
+    // TODO: Add support to pause torrents
+
     /// <summary>
     /// A torrent.
     /// </summary>
