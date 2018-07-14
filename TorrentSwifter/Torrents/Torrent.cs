@@ -14,8 +14,6 @@ using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents
 {
-    // TODO: Announce complete to trackers when we have finished downloading
-
     /// <summary>
     /// A torrent.
     /// </summary>
