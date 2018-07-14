@@ -12,6 +12,8 @@ namespace TorrentSwifter.Peers
         private readonly int pieceIndex;
         private readonly int blockIndex;
 
+        private DateTime requestTime;
+
         private bool isCancelled = false;
         #endregion
 
@@ -41,6 +43,14 @@ namespace TorrentSwifter.Peers
         }
 
         /// <summary>
+        /// Gets the time when this request was sent.
+        /// </summary>
+        public DateTime RequestTime
+        {
+            get { return requestTime; }
+        }
+
+        /// <summary>
         /// Gets or sets if this request has been cancelled.
         /// </summary>
         public bool IsCancelled
@@ -59,6 +69,7 @@ namespace TorrentSwifter.Peers
             this.peer = peer;
             this.pieceIndex = pieceIndex;
             this.blockIndex = blockIndex;
+            this.requestTime = DateTime.UtcNow;
         }
         #endregion
 
@@ -131,6 +142,13 @@ namespace TorrentSwifter.Peers
         public override string ToString()
         {
             return string.Format("[Peer:{0}, Piece:{1}, Block:{2}]", peer.ID, pieceIndex, blockIndex);
+        }
+        #endregion
+
+        #region Internal Methods
+        internal void OnSent()
+        {
+            requestTime = DateTime.UtcNow;
         }
         #endregion
     }
