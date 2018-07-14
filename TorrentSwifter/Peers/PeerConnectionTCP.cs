@@ -717,6 +717,10 @@ namespace TorrentSwifter.Peers
             if (blockIndex >= piece.BlockCount)
                 throw new ArgumentOutOfRangeException("blockIndex");
 
+            // Prevent sending requests if we have been choked by the remote
+            if (isChokedByRemote)
+                return false;
+
             var block = piece.GetBlock(blockIndex);
             int begin = blockIndex * torrent.BlockSize;
             int length = block.Size;
