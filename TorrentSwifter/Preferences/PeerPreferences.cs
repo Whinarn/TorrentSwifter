@@ -18,7 +18,7 @@ namespace TorrentSwifter.Preferences
         private int maxDownloadConnections = 15;
         private int maxUploadConnections = 5;
 
-        private int maxConcurrentPieceRequests = 5;
+        private int maxConcurrentPieceRequests = 70;
         #endregion
 
         #region Properties
