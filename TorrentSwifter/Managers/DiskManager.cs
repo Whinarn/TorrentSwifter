@@ -219,7 +219,7 @@ namespace TorrentSwifter.Managers
         #endregion
         #endregion
 
-        #region Internal
+        #region Internal Methods
         internal static void Initialize()
         {
             if (isRunning)
