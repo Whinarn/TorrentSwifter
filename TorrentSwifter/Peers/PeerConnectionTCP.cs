@@ -584,6 +584,11 @@ namespace TorrentSwifter.Peers
                     if ((encodedLength + 4) != packetLength)
                         throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
                 }
+                else
+                {
+                    if (packetLength != 68)
+                        throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be 64.", packetLength));
+                }
 #endif
 
                 sendSemaphore.Wait();
@@ -624,6 +629,11 @@ namespace TorrentSwifter.Peers
                     int encodedLength = packet.ReadInt32();
                     if ((encodedLength + 4) != packetLength)
                         throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be {1}.", packetLength, (encodedLength + 4)));
+                }
+                else
+                {
+                    if (packetLength != 68)
+                        throw new InvalidOperationException(string.Format("Attempted to send a packet with size {0} that was expected to be 64.", packetLength));
                 }
 #endif
 
