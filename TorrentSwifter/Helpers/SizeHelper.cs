@@ -2,7 +2,7 @@
 
 namespace TorrentSwifter.Helpers
 {
-    public static class SizeHelper
+    internal static class SizeHelper
     {
         public const long KiloByte = 1024;
         public const long MegaByte = 1024 * KiloByte;

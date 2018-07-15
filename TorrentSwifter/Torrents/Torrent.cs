@@ -431,6 +431,28 @@ namespace TorrentSwifter.Torrents
             }
         }
         #endregion
+
+        #region Helper Methods
+        /// <summary>
+        /// Returns the human readable size string of a specific size.
+        /// </summary>
+        /// <param name="size">The size in bytes.</param>
+        /// <returns>The human readable size string.</returns>
+        public static string GetHumanReadableSize(long size)
+        {
+            return SizeHelper.GetHumanReadableSize(size);
+        }
+
+        /// <summary>
+        /// Returns the human readable speed string of a specific speed.
+        /// </summary>
+        /// <param name="speed">The speed in bytes.</param>
+        /// <returns>The human readable speed string.</returns>
+        public static string GetHumanReadableSpeed(long speed)
+        {
+            return SizeHelper.GetHumanReadableSpeed(speed);
+        }
+        #endregion
         #endregion
 
         #region Private Methods

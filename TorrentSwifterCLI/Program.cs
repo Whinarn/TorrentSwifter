@@ -146,9 +146,9 @@ namespace TorrentSwifterCLI
                     }
                     else if (keyInfo.Key == ConsoleKey.Spacebar)
                     {
-                        string downloadRate = TorrentSwifter.Helpers.SizeHelper.GetHumanReadableSpeed(torrent.SessionDownloadRate);
-                        string uploadRate = TorrentSwifter.Helpers.SizeHelper.GetHumanReadableSpeed(torrent.SessionUploadRate);
-                        string downloadLeft = TorrentSwifter.Helpers.SizeHelper.GetHumanReadableSize(torrent.BytesLeftToDownload);
+                        string downloadRate = Torrent.GetHumanReadableSpeed(torrent.SessionDownloadRate);
+                        string uploadRate = Torrent.GetHumanReadableSpeed(torrent.SessionUploadRate);
+                        string downloadLeft = Torrent.GetHumanReadableSize(torrent.BytesLeftToDownload);
 
                         Log.LogInfo("[Console] Download Speed: {0}  Upload Speed: {1}  Left : {2}", downloadRate, uploadRate, downloadLeft);
                     }
