@@ -351,10 +351,12 @@ namespace TorrentSwifter.Peers
         /// <param name="pieceIndex">The piece index.</param>
         protected virtual void OnHavePiece(int pieceIndex)
         {
-            if (remoteBitField != null)
+            if (remoteBitField == null)
             {
-                remoteBitField.Set(pieceIndex, true);
+                remoteBitField = new BitField(torrent.PieceCount);
             }
+
+            remoteBitField.Set(pieceIndex, true);
 
             HavePiece.SafeInvoke(this, new PieceEventArgs(pieceIndex));
         }
