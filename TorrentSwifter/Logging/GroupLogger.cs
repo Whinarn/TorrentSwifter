@@ -31,18 +31,19 @@ namespace TorrentSwifter.Logging
         }
 
         /// <summary>
-        /// Gets the loggers of this group.
+        /// Gets or sets the loggers of this group.
         /// </summary>
         public ILogger[] Loggers
         {
             get { return loggers; }
+            set { loggers = value; }
         }
 
         /// <summary>
         /// Creates a new file logger.
         /// </summary>
         /// <param name="loggers">The loggers to group together.</param>
-        public GroupLogger(ILogger[] loggers)
+        public GroupLogger(params ILogger[] loggers)
         {
             if (loggers == null)
                 throw new ArgumentNullException("loggers");
