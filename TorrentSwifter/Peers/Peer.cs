@@ -455,8 +455,11 @@ namespace TorrentSwifter.Peers
             bool isCompleted = bitField.HasAllSet();
             if (isCompleted != this.isCompleted)
             {
-                this.isCompleted = true;
-                OnPeerCompleted();
+                this.isCompleted = isCompleted;
+                if (isCompleted)
+                {
+                    OnPeerCompleted();
+                }
             }
         }
 
@@ -472,8 +475,11 @@ namespace TorrentSwifter.Peers
             bool isCompleted = bitField.HasAllSet();
             if (isCompleted != this.isCompleted)
             {
-                this.isCompleted = true;
-                OnPeerCompleted();
+                this.isCompleted = isCompleted;
+                if (isCompleted)
+                {
+                    OnPeerCompleted();
+                }
             }
         }
 
