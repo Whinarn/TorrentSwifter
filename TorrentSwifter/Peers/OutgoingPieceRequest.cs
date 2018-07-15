@@ -193,6 +193,8 @@ namespace TorrentSwifter.Peers
 
             if (hasBeenSent)
             {
+                Logging.Log.LogDebug("[Peer][{0}] We are cancelling a piece request. Index: {1}, Block: {2}", peer.EndPoint, pieceIndex, blockIndex);
+
                 // Send the cancel message to the peer because we have already sent this request to them
                 if (peer.IsConnected)
                 {

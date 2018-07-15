@@ -760,6 +760,8 @@ namespace TorrentSwifter.Torrents
                     request.OnSent();
                     block.AddRequestPeer(peer);
                     pendingOutgoingPieceRequests.Add(request);
+                    Log.LogDebug("[Peer][{0}] We are sending a piece request. Index: {1}, Block: {2}, Offset: {3}, Length: {4}", peer.EndPoint, pieceIndex, blockIndex, (blockIndex * blockSize), block.Size);
+
                     if (await peer.RequestPieceData(pieceIndex, blockIndex))
                     {
                         currentExtraRate += block.Size;

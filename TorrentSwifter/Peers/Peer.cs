@@ -423,7 +423,7 @@ namespace TorrentSwifter.Peers
         #region Peer Events
         private void OnPeerCompleted()
         {
-            
+            Log.LogInfo("[Peer][{0}] A peer just completed downloading.", endPoint);
         }
         #endregion
 
