@@ -220,6 +220,29 @@ namespace TorrentSwifter.Torrents
             }
             return count;
         }
+
+        /// <summary>
+        /// Returns the text-representation of this bit field.
+        /// </summary>
+        /// <returns>The bit field in text.</returns>
+        public override string ToString()
+        {
+            var sb = new System.Text.StringBuilder(length);
+            for (int index = 0; index < length; index++)
+            {
+                int byteIndex = (index >> 3);
+                int bitIndex = (7 - (index & 7));
+                if (((buffer[byteIndex] & (1 << bitIndex)) != 0))
+                {
+                    sb.Append('1');
+                }
+                else
+                {
+                    sb.Append('0');
+                }
+            }
+            return sb.ToString();
+        }
         #endregion
     }
 }
