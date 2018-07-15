@@ -117,7 +117,13 @@ namespace TorrentSwifterCLI
             var torrentMetaData = new TorrentMetaData();
             torrentMetaData.LoadFromFile(torrentPath);
 
-            Log.Logger.Level = LogLevel.Info;
+            var consoleLogger = new ConsoleLogger();
+            consoleLogger.Level = LogLevel.Info;
+            var fileLogger = new FileLogger("swifter.log");
+            fileLogger.Level = LogLevel.Debug;
+            var groupLogger = new GroupLogger(consoleLogger, fileLogger);
+            Log.Logger = groupLogger;
+
             TorrentEngine.Initialize();
             try
             {
