@@ -758,8 +758,9 @@ namespace TorrentSwifter.Peers
 
             var bitField = torrent.BitField;
             var bitFieldBytes = bitField.Buffer;
-            var packet = CreatePacket(MessageType.BitField, bitField.ByteLength);
-            packet.Write(bitFieldBytes, 0, bitField.ByteLength);
+            int bitFieldByteCount = bitField.ByteLength;
+            var packet = CreatePacket(MessageType.BitField, bitFieldByteCount);
+            packet.Write(bitFieldBytes, 0, bitFieldByteCount);
             SendPacket(packet);
 
             isBitFieldSent = true;
