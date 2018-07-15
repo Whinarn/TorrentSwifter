@@ -827,7 +827,7 @@ namespace TorrentSwifter.Torrents
                     var block = piece.GetBlock(blockIndex);
                     if (block.IsDownloaded)
                         continue;
-                    else if (block.IsRequested)
+                    else if (block.IsRequested) // TODO: Allow for more requests for the same block after a certain time, but not to the same peer more than once
                         continue;
 
                     var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);

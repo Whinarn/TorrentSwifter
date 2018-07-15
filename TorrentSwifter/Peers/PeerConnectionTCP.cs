@@ -10,6 +10,8 @@ using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers
 {
+    // TODO: Add support for extensions
+
     /// <summary>
     /// A torrent peer standard TCP connection.
     /// </summary>
