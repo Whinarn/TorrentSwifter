@@ -825,6 +825,8 @@ namespace TorrentSwifter.Torrents
                     var block = piece.GetBlock(blockIndex);
                     if (block.IsDownloaded)
                         continue;
+                    else if (block.IsRequested)
+                        continue;
 
                     var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
                     outgoingPieceRequests.Enqueue(request);
