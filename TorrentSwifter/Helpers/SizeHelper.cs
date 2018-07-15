@@ -74,31 +74,31 @@ namespace TorrentSwifter.Helpers
             }
         }
 
-        public static string GetHumanReadableSpeed(long rate)
+        public static string GetHumanReadableSpeed(long speed)
         {
-            if (rate < KiloByte)
+            if (speed < KiloByte)
             {
-                return string.Format("{0} B/s", rate);
+                return string.Format("{0} B/s", speed);
             }
-            else if (rate < MegaByte)
+            else if (speed < MegaByte)
             {
-                return string.Format("{0:0.00} kB/s", (rate / (double)KiloByte));
+                return string.Format("{0:0.00} kB/s", (speed / (double)KiloByte));
             }
-            else if (rate < GigaByte)
+            else if (speed < GigaByte)
             {
-                return string.Format("{0:0.00} MB/s", (rate / (double)MegaByte));
+                return string.Format("{0:0.00} MB/s", (speed / (double)MegaByte));
             }
-            else if (rate < TerraByte)
+            else if (speed < TerraByte)
             {
-                return string.Format("{0:0.00} GB/s", (rate / (double)GigaByte));
+                return string.Format("{0:0.00} GB/s", (speed / (double)GigaByte));
             }
-            else if (rate < PetaByte)
+            else if (speed < PetaByte)
             {
-                return string.Format("{0:0.00} TB/s", (rate / (double)TerraByte));
+                return string.Format("{0:0.00} TB/s", (speed / (double)TerraByte));
             }
             else
             {
-                return string.Format("{0:0.00} PB/s", (rate / (double)PetaByte));
+                return string.Format("{0:0.00} PB/s", (speed / (double)PetaByte));
             }
         }
     }
