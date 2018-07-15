@@ -17,6 +17,8 @@ namespace TorrentSwifter.Torrents
         private volatile bool isDownloaded = false;
         private volatile bool hasWrittenToDisk = false;
 
+        private DateTime lastRequestTime = DateTime.MinValue;
+
         private List<Peer> requestedToPeers = new List<Peer>();
         #endregion
 
@@ -43,6 +45,29 @@ namespace TorrentSwifter.Torrents
         public bool IsRequested
         {
             get { return isRequested; }
+        }
+
+        /// <summary>
+        /// Gets the time for the last request of this block.
+        /// </summary>
+        public DateTime LastRequestTime
+        {
+            get { return lastRequestTime; }
+        }
+
+        /// <summary>
+        /// Gets the age of the last request for this block in milliseconds.
+        /// </summary>
+        public int LastRequestAge
+        {
+            get
+            {
+                if (!isRequested)
+                    return 0;
+
+                int age = (int)DateTime.UtcNow.Subtract(lastRequestTime).TotalMilliseconds;
+                return (age > 0 ? age : 0);
+            }
         }
 
         /// <summary>
@@ -94,6 +119,7 @@ namespace TorrentSwifter.Torrents
                 }
 
                 isRequested = (requestedToPeers.Count > 0);
+                lastRequestTime = DateTime.UtcNow;
             }
         }
 
