@@ -789,9 +789,6 @@ namespace TorrentSwifter.Peers
             packet.WriteInt32(begin);
             packet.WriteInt32(length);
             await SendPacketAsync(packet);
-
-            // TODO: Timeout a block request after a certain time, in case a peer doesn't respond with it
-            //       or at least send the same block request to another peer as well.
             return true;
         }
 
