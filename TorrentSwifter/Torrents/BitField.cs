@@ -92,7 +92,7 @@ namespace TorrentSwifter.Torrents
                 throw new ArgumentOutOfRangeException("index");
 
             int byteIndex = (index >> 3);
-            int bitIndex = (index & 7);
+            int bitIndex = (7 - (index & 7));
             return ((buffer[byteIndex] & (1 << bitIndex)) != 0);
         }
 
@@ -104,7 +104,7 @@ namespace TorrentSwifter.Torrents
         public void Set(int index, bool state)
         {
             int byteIndex = (index >> 3);
-            int bitIndex = (index & 7);
+            int bitIndex = (7 - (index & 7));
 
             if (state)
             {
@@ -141,7 +141,7 @@ namespace TorrentSwifter.Torrents
             for (int index = 0; index < length; index++)
             {
                 int byteIndex = (index >> 3);
-                int bitIndex = (index & 7);
+                int bitIndex = (7 - (index & 7));
                 if (((buffer[byteIndex] & (1 << bitIndex)) == 0))
                 {
                     result = false;
@@ -161,7 +161,7 @@ namespace TorrentSwifter.Torrents
             for (int index = 0; index < length; index++)
             {
                 int byteIndex = (index >> 3);
-                int bitIndex = (index & 7);
+                int bitIndex = (7 - (index & 7));
                 if (((buffer[byteIndex] & (1 << bitIndex)) != 0))
                 {
                     result = false;
@@ -181,7 +181,7 @@ namespace TorrentSwifter.Torrents
             for (int index = 0; index < length; index++)
             {
                 int byteIndex = (index >> 3);
-                int bitIndex = (index & 7);
+                int bitIndex = (7 - (index & 7));
                 if (((buffer[byteIndex] & (1 << bitIndex)) != 0))
                 {
                     ++count;
@@ -207,7 +207,7 @@ namespace TorrentSwifter.Torrents
             for (int index = 0; index < length; index++)
             {
                 int byteIndex = (index >> 3);
-                int bitIndex = (index & 7);
+                int bitIndex = (7 - (index & 7));
                 bool weDontHaveBit = ((buffer[byteIndex] & (1 << bitIndex)) == 0);
                 if (weDontHaveBit)
                 {
