@@ -4,6 +4,7 @@ using System.Net;
 using TorrentSwifter;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Peers;
+using TorrentSwifter.Preferences;
 using TorrentSwifter.Torrents;
 
 namespace TorrentSwifterCLI
@@ -96,23 +97,34 @@ namespace TorrentSwifterCLI
 
         private static void DownloadTorrent(string[] args)
         {
-            if (args.Length < 3)
+            if (args.Length < 4)
             {
-                Console.Error.WriteLine("You must pass at least 2 arguments to create a torrent: torrent path and download path");
+                Console.Error.WriteLine("You must pass at least 3 arguments to create a torrent: torrent path, download path and listen port");
                 return;
             }
 
             string torrentPath = args[1].Trim();
             string downloadPath = args[2].Trim();
+            string listenPortText = args[3].Trim();
 
             torrentPath = Path.GetFullPath(torrentPath);
             downloadPath = Path.GetFullPath(downloadPath);
+
+            int listenPort;
+            if (!int.TryParse(listenPortText, out listenPort) || listenPort < 0)
+            {
+                Console.Error.WriteLine("The listen port is invalid: {0}", listenPortText);
+                return;
+            }
 
             if (!File.Exists(torrentPath))
             {
                 Console.Error.WriteLine("The torrent doesn't exist: {0}", torrentPath);
                 return;
             }
+
+            Prefs.Peer.ListenPort = listenPort;
+            Prefs.Torrent.AllocateFullFileSizes = true;
 
             var torrentMetaData = new TorrentMetaData();
             torrentMetaData.LoadFromFile(torrentPath);
