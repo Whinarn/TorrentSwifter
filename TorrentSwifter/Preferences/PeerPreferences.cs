@@ -31,7 +31,7 @@ namespace TorrentSwifter.Preferences
             get { return listenPort; }
             set
             {
-                if (value < 1 || value > ushort.MaxValue)
+                if (value < 0 || value > ushort.MaxValue)
                     throw new ArgumentOutOfRangeException("value");
 
                 listenPort = value;
