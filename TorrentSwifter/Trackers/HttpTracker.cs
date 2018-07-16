@@ -314,12 +314,13 @@ namespace TorrentSwifter.Trackers
 
             int peerCount = (peerBytes.Length / 6);
             var peerInfos = new PeerInfo[peerCount];
+            var ipAddressBytes = new byte[4];
 
             for (int i = 0; i < peerCount; i++)
             {
                 int offset = (i * 6);
-                string ipAddressStr = string.Format("{0}.{1}.{2}.{3}", peerBytes[offset], peerBytes[offset + 1], peerBytes[offset + 2], peerBytes[offset + 3]);
-                var ipAddress = IPAddress.Parse(ipAddressStr);
+                Buffer.BlockCopy(peerBytes, offset, ipAddressBytes, 0, 4);
+                var ipAddress = new IPAddress(ipAddressBytes);
                 int port = ((peerBytes[offset + 4] << 8) | peerBytes[offset + 5]);
                 var endPoint = new IPEndPoint(ipAddress, port);
                 peerInfos[i] = new PeerInfo(endPoint);
