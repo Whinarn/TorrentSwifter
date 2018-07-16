@@ -159,6 +159,14 @@ namespace TorrentSwifter.Trackers
             if (ip != null)
             {
                 parameters.Add("ip", UriHelper.UrlEncodeText(ip.ToString()));
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    parameters.Add("ipv4", UriHelper.UrlEncodeText(ip.ToString()));
+                }
+                else if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+                {
+                    parameters.Add("ipv6", UriHelper.UrlEncodeText(ip.ToString()));
+                }
             }
             if (desiredPeerCount > 0)
             {
