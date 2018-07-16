@@ -953,6 +953,11 @@ namespace TorrentSwifter.Peers
                     Log.LogWarning("[Peer][{0}] Handshake with unknown info hash: {1}", endPoint, infoHash);
                     return false;
                 }
+                else if (foundTorrent.IsStoppedOrStopping)
+                {
+                    Log.LogWarning("[Peer][{0}] Handshake received for a torrent that is stopped or currently stopping: {1}", endPoint, infoHash);
+                    return false;
+                }
 
                 torrent = foundTorrent;
                 if (peerID.Equals(torrent.PeerID))

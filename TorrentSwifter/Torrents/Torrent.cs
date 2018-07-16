@@ -163,6 +163,22 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets if this torrent has been stopped entirely.
+        /// </summary>
+        public bool IsStopped
+        {
+            get { return isStopped; }
+        }
+
+        /// <summary>
+        /// Gets if this torrent has been stopped entirely.
+        /// </summary>
+        public bool IsStoppedOrStopping
+        {
+            get { return (isStopped || !isStarted); }
+        }
+
+        /// <summary>
         /// Gets if this torrent has completed downloading.
         /// </summary>
         public bool IsCompleted
