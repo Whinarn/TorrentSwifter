@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -262,6 +263,19 @@ namespace TorrentSwifter.Trackers
                 peerInfos = DecodePeers(peerList);
             }
 
+            // Decode IPv6 peers
+            if (info.TryGetByteArray("peers6", out compactPeerBytes))
+            {
+                var peerInfosV6 = DecodePeers(compactPeerBytes);
+                if (peerInfosV6 != null)
+                {
+                    if (peerInfos != null && peerInfos.Length > 0)
+                        peerInfos = peerInfos.Concat(peerInfosV6).ToArray();
+                    else
+                        peerInfos = peerInfosV6;
+                }
+            }
+
             return new AnnounceResponse(this, failureReason, warningMessage, peerInfos);
         }
 
@@ -322,6 +336,28 @@ namespace TorrentSwifter.Trackers
                 Buffer.BlockCopy(peerBytes, offset, ipAddressBytes, 0, 4);
                 var ipAddress = new IPAddress(ipAddressBytes);
                 int port = ((peerBytes[offset + 4] << 8) | peerBytes[offset + 5]);
+                var endPoint = new IPEndPoint(ipAddress, port);
+                peerInfos[i] = new PeerInfo(endPoint);
+            }
+
+            return peerInfos;
+        }
+
+        private static PeerInfo[] DecodePeersV6(byte[] peerBytes)
+        {
+            if ((peerBytes.Length % 18) != 0)
+                return null;
+
+            int peerCount = (peerBytes.Length / 18);
+            var peerInfos = new PeerInfo[peerCount];
+            var ipAddressBytes = new byte[16];
+
+            for (int i = 0; i < peerCount; i++)
+            {
+                int offset = (i * 18);
+                Buffer.BlockCopy(peerBytes, offset, ipAddressBytes, 0, 16);
+                var ipAddress = new IPAddress(ipAddressBytes);
+                int port = ((peerBytes[offset + 16] << 8) | peerBytes[offset + 17]);
                 var endPoint = new IPEndPoint(ipAddress, port);
                 peerInfos[i] = new PeerInfo(endPoint);
             }
