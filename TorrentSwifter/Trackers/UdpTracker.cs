@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Specification: http://www.bittorrent.org/beps/bep_0015.html
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
@@ -19,7 +21,8 @@ namespace TorrentSwifter.Trackers
     public sealed class UdpTracker : Tracker
     {
         #region Consts
-        private const long ProtocolMagic = 0x41727101980L;
+        private const int MaxUDPPacketSize = 65507; // 65535 - 8 (UDP header) - 20 (IP header)
+        private const long ProtocolMagic = 0x41727101980L; // This value is based on the specification
 
         private const int RetryAttempts = 5;
         #endregion
@@ -113,9 +116,11 @@ namespace TorrentSwifter.Trackers
                     return true;
                 else if (endPoint == null)
                     return false;
+                else if (!expectedResponseEP.Address.Equals(endPoint.Address))
+                    return false;
 
-                // TODO: Should we have to validate the port also?
-                return (expectedResponseEP.Address.Equals(endPoint.Address));
+                // TODO: Do we have to care about the port? Should we care? Is this bad?
+                return (expectedResponseEP.Port == endPoint.Port);
             }
         }
 
@@ -137,7 +142,7 @@ namespace TorrentSwifter.Trackers
         #endregion
 
         #region Fields
-        private UdpClient client = null;
+        private Socket socket = null;
         private bool isListening = false;
         private readonly int key;
         private readonly string authUser;
@@ -153,10 +158,12 @@ namespace TorrentSwifter.Trackers
         private IPEndPoint trackerEndpointV4 = null;
         private IPEndPoint trackerEndpointV6 = null;
 
+        private byte[] receiveBuffer = new byte[MaxUDPPacketSize];
+
         private Dictionary<int, TrackerRequest> pendingRequests = new Dictionary<int, TrackerRequest>();
         private List<CancellationTokenSource> cancellationTokens = new List<CancellationTokenSource>();
 
-        private static Random random = new Random();
+        private static readonly IPEndPoint anyEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
         #endregion
 
         #region Properties
@@ -192,15 +199,14 @@ namespace TorrentSwifter.Trackers
             authPassHash = GetAuthPasswordHash(uri);
             requestString = GetRequestString(uri);
 
-            client = new UdpClient(0);
+            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+            socket.DualMode = true;
+            socket.Bind(anyEndPoint);
 
             isListening = true;
             StartReceivingPackets();
 
-            lock (random)
-            {
-                key = DateTime.Now.GetHashCode() ^ random.Next();
-            }
+            key = DateTime.Now.GetHashCode() ^ RandomHelper.Next();
         }
         #endregion
 
@@ -212,10 +218,11 @@ namespace TorrentSwifter.Trackers
         protected override void Dispose(bool disposing)
         {
             isListening = false;
-            if (client != null)
+            if (socket != null)
             {
-                client.Dispose();
-                client = null;
+                socket.Shutdown(SocketShutdown.Both);
+                socket.Close();
+                socket = null;
             }
             lock (cancellationTokens)
             {
@@ -259,7 +266,7 @@ namespace TorrentSwifter.Trackers
                 var responseV4 = DoAnnounceRequest(request, false);
                 var responseV6 = DoAnnounceRequest(request, true);
 
-                var responses = await Task.WhenAll(responseV4, responseV6);
+                var responses = await Task.WhenAll(responseV4, responseV6).ConfigureAwait(false);
                 var announceResponse = JoinResponses(responses);
                 if (announceResponse == null)
                 {
@@ -322,7 +329,7 @@ namespace TorrentSwifter.Trackers
                 var responseV4 = DoScrapeRequest(infoHashes, false);
                 var responseV6 = DoScrapeRequest(infoHashes, true);
 
-                var firstResponseTask = await Task.WhenAny(responseV4, responseV6);
+                var firstResponseTask = await Task.WhenAny(responseV4, responseV6).ConfigureAwait(false);
                 var scrapeResponse = firstResponseTask.Result;
                 if (scrapeResponse == null)
                 {
@@ -576,7 +583,8 @@ namespace TorrentSwifter.Trackers
 
             // TODO: Send twice?
 
-            int sentByteCount = await client.SendAsync(request.Data, request.Length, endpoint);
+            var result = socket.BeginSendTo(request.Data, 0, request.Length, SocketFlags.None, endpoint, null, socket);
+            int sentByteCount = await Task<int>.Factory.FromAsync(result, socket.EndSend);
             Stats.IncreaseUploadedBytes(sentByteCount);
         }
 
@@ -694,25 +702,43 @@ namespace TorrentSwifter.Trackers
 
         private void StartReceivingPackets()
         {
-            client.BeginReceive(OnReceivedPacket, client);
-        }
-
-        private void OnReceivedPacket(IAsyncResult ar)
-        {
-            UdpClient client = ar.AsyncState as UdpClient;
-            if (client == null)
+            if (!isListening)
                 return;
 
             try
             {
-                IPEndPoint endpoint = null;
-                byte[] receivedData = client.EndReceive(ar, ref endpoint);
-                if (receivedData != null)
+                EndPoint remoteEndPoint = anyEndPoint;
+                socket.BeginReceiveFrom(receiveBuffer, 0, MaxUDPPacketSize, SocketFlags.None, ref remoteEndPoint, OnReceivedPacket, socket);
+            }
+            catch (ObjectDisposedException)
+            {
+                // NOTE: We can silence the disposed exceptions because that means that we have stopped the tracker anyways
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
+            }
+        }
+
+        private void OnReceivedPacket(IAsyncResult ar)
+        {
+            var socket = ar.AsyncState as Socket;
+            if (socket == null)
+                return;
+
+            try
+            {
+                EndPoint endpoint = anyEndPoint;
+                int receivedByteCount = socket.EndReceiveFrom(ar, ref endpoint);
+                if (receivedByteCount > 0)
                 {
-                    Stats.IncreaseDownloadedBytes(receivedData.Length);
+                    Stats.IncreaseDownloadedBytes(receivedByteCount);
                 }
-                if (receivedData != null && receivedData.Length >= 8)
+                if (receivedByteCount >= 8)
                 {
+                    byte[] receivedData = new byte[receivedByteCount];
+                    Buffer.BlockCopy(receiveBuffer, 0, receivedData, 0, receivedByteCount);
+
                     Packet receivedPacket = new Packet(receivedData, receivedData.Length);
                     receivedPacket.Offset = 4;
 
@@ -725,15 +751,16 @@ namespace TorrentSwifter.Trackers
                         if (pendingRequests.TryGetValue(transactionID, out trackerRequest))
                         {
                             // Make sure that we received this from the correct endpoint
-                            if (trackerRequest.IsValidEndpoint(endpoint))
+                            var ipEndPoint = (endpoint as IPEndPoint);
+                            if (trackerRequest.IsValidEndpoint(ipEndPoint))
                             {
                                 pendingRequests.Remove(transactionID);
                             }
                             else
                             {
-                                trackerRequest = null;
                                 Log.LogWarning("[UDP Tracker] Received a response to transaction [{0}] from invalid endpoint: {1} != {2}",
                                     transactionID, endpoint, trackerRequest.ExpectedResponseEndPoint);
+                                trackerRequest = null;
                             }
                         }
                         else
@@ -758,21 +785,7 @@ namespace TorrentSwifter.Trackers
             }
             finally
             {
-                if (isListening)
-                {
-                    try
-                    {
-                        client.BeginReceive(OnReceivedPacket, client);
-                    }
-                    catch (ObjectDisposedException)
-                    {
-                        // NOTE: We can silence the disposed exceptions because that means that we have stopped the tracker anyways
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.LogErrorException(ex);
-                    }
-                }
+                StartReceivingPackets();
             }
         }
 
@@ -783,13 +796,7 @@ namespace TorrentSwifter.Trackers
             // TODO: Can this be improved to reduce the risk of conflicts?
             while (true)
             {
-                int randomNumber;
-                lock (random)
-                {
-                    randomNumber = random.Next();
-                }
-
-                transactionID = DateTime.Now.GetHashCode() ^ randomNumber;
+                transactionID = DateTime.Now.GetHashCode() ^ RandomHelper.Next();
 
                 // Make sure that we are not using this transaction ID already
                 lock (pendingRequests)
@@ -871,7 +878,7 @@ namespace TorrentSwifter.Trackers
             else if ((remainingPacketSize % 18) != 0)
             {
                 // The announce response is invalid
-                return null;
+                return new AnnounceResponse(this, null, null, null);
             }
 
             int peerCount = (remainingPacketSize / 18);
@@ -1134,7 +1141,13 @@ namespace TorrentSwifter.Trackers
             {
                 if (ipAddresses[i].AddressFamily == addressFamily)
                 {
-                    endpoint = new IPEndPoint(ipAddresses[i], port);
+                    var ipAddress = ipAddresses[i];
+                    if (addressFamily == AddressFamily.InterNetwork)
+                    {
+                        // We require all IPs to be of IPv6 format
+                        ipAddress = ipAddress.MapToIPv6();
+                    }
+                    endpoint = new IPEndPoint(ipAddress, port);
                     break;
                 }
             }
