@@ -364,6 +364,9 @@ namespace TorrentSwifter.Torrents
 
             AnnounceTrackers(TrackerEvent.Stopped);
 
+            // Disconnect all peers connected to this torrent
+            DisconnectAllPeers();
+
             Log.LogInfo("[Torrent] Stopped Torrent.");
         }
         #endregion
@@ -1073,6 +1076,17 @@ namespace TorrentSwifter.Torrents
                 foreach (var peer in peers)
                 {
                     peer.Update();
+                }
+            }
+        }
+
+        private void DisconnectAllPeers()
+        {
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    peer.Disconnect();
                 }
             }
         }
