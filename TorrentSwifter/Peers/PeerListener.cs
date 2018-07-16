@@ -104,6 +104,8 @@ namespace TorrentSwifter.Peers
                 var socket = listener.EndAcceptSocket(ar);
                 if (socket != null)
                 {
+                    // TODO: Reject connections from banned IPs or if we simply don't allow for more connections at this point
+
                     Log.LogDebug("[PeerListener] Accepted connection: {0}", socket.RemoteEndPoint);
 
                     var peerConnection = new PeerConnectionTCP(socket);
