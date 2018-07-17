@@ -87,8 +87,13 @@ namespace TorrentSwifter.Peers
             {
                 listener?.BeginAcceptSocket(OnAcceptSocket, listener);
             }
-            catch
+            catch (ObjectDisposedException)
             {
+                // We can ignore this exception, because this means that we are closing down.
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
                 StopListening();
             }
         }
