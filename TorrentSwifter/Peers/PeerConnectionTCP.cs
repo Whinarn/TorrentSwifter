@@ -148,7 +148,6 @@ namespace TorrentSwifter.Peers
             : base(torrent, peer, endPoint)
         {
             socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            socket.DualMode = true;
 
             Initialize();
         }

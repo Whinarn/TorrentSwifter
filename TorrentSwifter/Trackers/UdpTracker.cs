@@ -200,7 +200,6 @@ namespace TorrentSwifter.Trackers
             requestString = GetRequestString(uri);
 
             socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
-            socket.DualMode = true;
             socket.Bind(anyEndPoint);
 
             isListening = true;
@@ -220,7 +219,6 @@ namespace TorrentSwifter.Trackers
             isListening = false;
             if (socket != null)
             {
-                socket.Shutdown(SocketShutdown.Both);
                 socket.Close();
                 socket = null;
             }
