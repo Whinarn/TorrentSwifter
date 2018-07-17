@@ -38,6 +38,7 @@ namespace TorrentSwifter.Torrents
         private readonly string downloadPath;
         private readonly int blockSize;
         private readonly long totalSize;
+        private readonly bool isPrivate;
 
         private bool hasVerifiedIntegrity = false;
         private bool isStarted = false;
@@ -112,6 +113,14 @@ namespace TorrentSwifter.Torrents
         public PeerID PeerID
         {
             get { return peerID; }
+        }
+
+        /// <summary>
+        /// Gets if this torrent is private.
+        /// </summary>
+        public bool IsPrivate
+        {
+            get { return isPrivate; }
         }
 
         /// <summary>
@@ -305,6 +314,7 @@ namespace TorrentSwifter.Torrents
 
             this.metaData = metaData;
             this.infoHash = metaData.InfoHash;
+            this.isPrivate = MetaData.IsPrivate;
             this.peerID = PeerHelper.GetNewPeerID();
             this.downloadPath = Path.GetFullPath(downloadPath);
             this.blockSize = blockSize;
