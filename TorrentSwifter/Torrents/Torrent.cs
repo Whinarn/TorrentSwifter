@@ -557,6 +557,9 @@ namespace TorrentSwifter.Torrents
             // TODO: Add support to load customized trackers if this is not the first time we launch this torrent
 
             var announces = metaData.Announces;
+            if (announces == null)
+                return;
+
             foreach (var announceItem in announces)
             {
                 var trackerGroup = new TrackerGroup(this);
