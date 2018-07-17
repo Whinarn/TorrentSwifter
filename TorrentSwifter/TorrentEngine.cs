@@ -58,6 +58,8 @@ namespace TorrentSwifter
 
             DiskManager.Initialize();
             PeerListener.StartListening();
+            LocalPeerListener.StartListening();
+            LocalPeerDiscovery.Initialize();
 
             engineThread = new Thread(EngineLoop);
             engineThread.Priority = ThreadPriority.Normal;
@@ -81,6 +83,8 @@ namespace TorrentSwifter
 
             TorrentRegistry.StopAllActiveTorrents();
             PeerListener.StopListening();
+            LocalPeerListener.StopListening();
+            LocalPeerDiscovery.Uninitialize();
             DiskManager.Uninitialize();
 
             if (engineThread != null)
