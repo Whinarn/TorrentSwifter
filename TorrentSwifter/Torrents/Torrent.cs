@@ -357,8 +357,12 @@ namespace TorrentSwifter.Torrents
                 VerifyIntegrity(true);
             }
 
+            // Start the update loop
             var updateTask = UpdateLoop();
             updateTask.CatchExceptions();
+
+            // Broadcast us to local neighbours
+            LocalPeerDiscovery.Broadcast(this);
         }
 
         /// <summary>
