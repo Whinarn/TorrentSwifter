@@ -11,7 +11,7 @@
 - [ ] Peer ID Conventions ([BEP 20](http://www.bittorrent.org/beps/bep_0020.html))
 - [ ] WebSeed (GetRight style) ([BEP 19](http://www.bittorrent.org/beps/bep_0019.html))
 - [ ] WebSeed (Hoffman-style) ([BEP 17](http://www.bittorrent.org/beps/bep_0017.html))
-- [ ] Local Service Discovery ([BEP 14](http://www.bittorrent.org/beps/bep_0014.html))
+- [x] Local Service Discovery ([BEP 14](http://www.bittorrent.org/beps/bep_0014.html))
 - [ ] Fast Extension ([BEP 6](http://www.bittorrent.org/beps/bep_0006.html))
 - [ ] Extension for Peers to Send Metadata Files ([BEP 9](http://www.bittorrent.org/beps/bep_0009.html))
 - [ ] Extension Protocol ([BEP 10](http://www.bittorrent.org/beps/bep_0010.html))

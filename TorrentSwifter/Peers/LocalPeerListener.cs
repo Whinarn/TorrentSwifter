@@ -1,7 +1,5 @@
 ﻿// Specification: http://www.bittorrent.org/beps/bep_0014.html
 
-// TODO: Add support for IPv6 part of the specification
-
 using System;
 using System.Net;
 using System.Net.Sockets;
