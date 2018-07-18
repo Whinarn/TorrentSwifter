@@ -56,7 +56,7 @@ namespace TorrentSwifter.Peers
         {
             var guid = Guid.NewGuid();
             var guidBytes = guid.ToByteArray();
-            cookie = HexHelper.BytesToHex(guidBytes, 0, 8);
+            cookie = HexHelper.BytesToHex(guidBytes, 0, 4);
         }
         #endregion
 
