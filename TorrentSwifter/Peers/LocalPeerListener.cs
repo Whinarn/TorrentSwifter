@@ -24,13 +24,19 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Fields
-        private static Socket socket;
-        private static byte[] receiveBuffer = new byte[MaxUDPPacketSize];
+        private static Socket socketV4;
+        private static Socket socketV6;
+
+        private static byte[] receiveBufferV4 = new byte[MaxUDPPacketSize];
+        private static byte[] receiveBufferV6 = new byte[MaxUDPPacketSize];
 
         private static readonly string cookie;
 
-        private static readonly IPAddress multicastIPAddress = IPAddress.Parse("239.192.152.143");
-        private static readonly IPEndPoint anyEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        private static readonly IPAddress multicastIPAddressV4 = IPAddress.Parse("239.192.152.143");
+        private static readonly IPAddress multicastIPAddressV6 = IPAddress.Parse("[ff15::efc0:988f]");
+
+        private static readonly IPEndPoint anyEndPointV4 = new IPEndPoint(IPAddress.Any, 0);
+        private static readonly IPEndPoint anyEndPointV6 = new IPEndPoint(IPAddress.IPv6Any, 0);
 
         private static readonly Regex messageRegex = new Regex("BT-SEARCH \\* HTTP/1.1\\r\\nHost: 239.192.152.143:6771\\r\\nPort: (?<port>[0-9]{1,5})\\r\\nInfohash: (?<hash>[0-9a-fA-F]{40})\\r\\n([Cc]ookie: (?<cookie>[^\\r\\n]+)\\r\\n)?\\r\\n\\r\\n");
         #endregion
@@ -60,18 +66,33 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public static void StartListening()
         {
-            if (socket != null)
-                return;
+            if (Socket.OSSupportsIPv4 && socketV4 == null)
+            {
+                socketV4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socketV4.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                var localEndPoint = new IPEndPoint(IPAddress.Any, MulticastPort);
+                socketV4.Bind(localEndPoint);
 
-            var localEndPoint = new IPEndPoint(IPAddress.Any, MulticastPort);
-            socket.Bind(localEndPoint);
+                var multicastOption = new MulticastOption(multicastIPAddressV4);
+                socketV4.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, multicastOption);
 
-            var multicastOption = new MulticastOption(multicastIPAddress);
-            socket.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, multicastOption);
+                StartReceivingDataV4();
+            }
 
-            StartReceivingData();
+            if (Socket.OSSupportsIPv6 && socketV6 == null)
+            {
+                socketV6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                socketV6.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
+                var localEndPoint = new IPEndPoint(IPAddress.IPv6Any, MulticastPort);
+                socketV6.Bind(localEndPoint);
+
+                var multicastOption = new IPv6MulticastOption(multicastIPAddressV6);
+                socketV6.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, multicastOption);
+
+                StartReceivingDataV6();
+            }
         }
 
         /// <summary>
@@ -79,24 +100,30 @@ namespace TorrentSwifter.Peers
         /// </summary>
         public static void StopListening()
         {
-            if (socket != null)
+            if (socketV4 != null)
             {
-                socket.Close();
-                socket = null;
+                socketV4.Close();
+                socketV4 = null;
+            }
+
+            if (socketV6 != null)
+            {
+                socketV6.Close();
+                socketV6 = null;
             }
         }
         #endregion
 
         #region Private Methods
-        private static void StartReceivingData()
+        private static void StartReceivingDataV4()
         {
-            if (socket == null)
+            if (socketV4 == null)
                 return;
 
             try
             {
-                EndPoint endPoint = anyEndPoint;
-                socket?.BeginReceiveFrom(receiveBuffer, 0, MaxUDPPacketSize, SocketFlags.None, ref endPoint, OnReceivedData, socket);
+                EndPoint endPoint = anyEndPointV4;
+                socketV4?.BeginReceiveFrom(receiveBufferV4, 0, MaxUDPPacketSize, SocketFlags.None, ref endPoint, OnReceivedDataV4, socketV4);
             }
             catch (ObjectDisposedException)
             {
@@ -105,11 +132,42 @@ namespace TorrentSwifter.Peers
             catch (Exception ex)
             {
                 Log.LogErrorException(ex);
-                StopListening();
+
+                if (socketV4 != null)
+                {
+                    socketV4.Close();
+                    socketV4 = null;
+                }
             }
         }
 
-        private static void OnReceivedData(IAsyncResult ar)
+        private static void StartReceivingDataV6()
+        {
+            if (socketV6 == null)
+                return;
+
+            try
+            {
+                EndPoint endPoint = anyEndPointV6;
+                socketV6?.BeginReceiveFrom(receiveBufferV6, 0, MaxUDPPacketSize, SocketFlags.None, ref endPoint, OnReceivedDataV6, socketV6);
+            }
+            catch (ObjectDisposedException)
+            {
+                // We can ignore this exception, because this means that we are closing down.
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
+
+                if (socketV6 != null)
+                {
+                    socketV6.Close();
+                    socketV6 = null;
+                }
+            }
+        }
+
+        private static void OnReceivedDataV4(IAsyncResult ar)
         {
             var socket = ar.AsyncState as Socket;
             if (socket == null)
@@ -117,7 +175,7 @@ namespace TorrentSwifter.Peers
 
             try
             {
-                EndPoint endPoint = anyEndPoint;
+                EndPoint endPoint = anyEndPointV4;
                 int receivedByteCount = socket.EndReceiveFrom(ar, ref endPoint);
                 if (receivedByteCount <= 0)
                     return;
@@ -126,36 +184,9 @@ namespace TorrentSwifter.Peers
                 if (ipEndPoint == null)
                     return;
 
-                string receivedText = Encoding.ASCII.GetString(receiveBuffer, 0, receivedByteCount);
-                var match = messageRegex.Match(receivedText);
-                if (!match.Success)
+                string receivedText = Encoding.ASCII.GetString(receiveBufferV4, 0, receivedByteCount);
+                if (!HandleBroadcast(receivedText, ipEndPoint))
                     return;
-
-                int port;
-                string portText = match.Groups["port"].Value;
-                if (!int.TryParse(portText, out port) || port <= 0 || port > ushort.MaxValue)
-                    return;
-
-                string infoHashHex = match.Groups["hash"].Value;
-                if (infoHashHex.Length != 40)
-                    return;
-
-                var cookieGroup = match.Groups["cookie"];
-                if (cookieGroup.Success)
-                {
-                    string cookieText = cookieGroup.Value;
-                    if (string.Equals(cookieText, cookie)) // This was sent by ourselves
-                        return;
-                }
-
-                var infoHash = new InfoHash(infoHashHex);
-                var torrent = TorrentRegistry.FindTorrentByInfoHash(infoHash);
-                if (torrent == null || torrent.IsPrivate)
-                    return;
-
-                var peerEndPoint = new IPEndPoint(ipEndPoint.Address, port);
-                var peerInfo = new PeerInfo(peerEndPoint);
-                torrent.AddPeer(peerInfo);
 
                 // TODO: Broadcast if we didn't just recently broadcast for this torrent
             }
@@ -169,8 +200,79 @@ namespace TorrentSwifter.Peers
             }
             finally
             {
-                StartReceivingData();
+                StartReceivingDataV4();
             }
+        }
+
+        private static void OnReceivedDataV6(IAsyncResult ar)
+        {
+            var socket = ar.AsyncState as Socket;
+            if (socket == null)
+                return;
+
+            try
+            {
+                EndPoint endPoint = anyEndPointV6;
+                int receivedByteCount = socket.EndReceiveFrom(ar, ref endPoint);
+                if (receivedByteCount <= 0)
+                    return;
+
+                var ipEndPoint = endPoint as IPEndPoint;
+                if (ipEndPoint == null)
+                    return;
+
+                string receivedText = Encoding.ASCII.GetString(receiveBufferV6, 0, receivedByteCount);
+                if (!HandleBroadcast(receivedText, ipEndPoint))
+                    return;
+
+                // TODO: Broadcast if we didn't just recently broadcast for this torrent
+            }
+            catch (ObjectDisposedException)
+            {
+                // We can ignore this exception, because this means that we are closing down.
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
+            }
+            finally
+            {
+                StartReceivingDataV6();
+            }
+        }
+
+        private static bool HandleBroadcast(string broadcastMessage, IPEndPoint endPoint)
+        {
+            var match = messageRegex.Match(broadcastMessage);
+            if (!match.Success)
+                return false;
+
+            int port;
+            string portText = match.Groups["port"].Value;
+            if (!int.TryParse(portText, out port) || port <= 0 || port > ushort.MaxValue)
+                return false;
+
+            string infoHashHex = match.Groups["hash"].Value;
+            if (infoHashHex.Length != 40)
+                return false;
+
+            var cookieGroup = match.Groups["cookie"];
+            if (cookieGroup.Success)
+            {
+                string cookieText = cookieGroup.Value;
+                if (string.Equals(cookieText, cookie)) // This was sent by ourselves
+                    return false;
+            }
+
+            var infoHash = new InfoHash(infoHashHex);
+            var torrent = TorrentRegistry.FindTorrentByInfoHash(infoHash);
+            if (torrent == null || torrent.IsPrivate)
+                return false;
+
+            var peerEndPoint = new IPEndPoint(endPoint.Address, port);
+            var peerInfo = new PeerInfo(peerEndPoint);
+            torrent.AddPeer(peerInfo);
+            return true;
         }
         #endregion
     }
