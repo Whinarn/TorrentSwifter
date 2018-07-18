@@ -25,7 +25,8 @@ namespace TorrentSwifter.Torrents
         /// </summary>
         public static void StopAllActiveTorrents()
         {
-            foreach (var torrent in torrentList)
+            var torrents = torrentList.ToArray();
+            foreach (var torrent in torrents)
             {
                 torrent.Stop();
             }
