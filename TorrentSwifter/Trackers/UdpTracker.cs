@@ -1133,6 +1133,22 @@ namespace TorrentSwifter.Trackers
             if (ipAddresses == null || ipAddresses.Length == 0)
                 return null;
 
+            if (addressFamily == AddressFamily.InterNetwork)
+            {
+                if (!Socket.OSSupportsIPv4)
+                    return null;
+            }
+            else if (addressFamily == AddressFamily.InterNetworkV6)
+            {
+                if (!Socket.OSSupportsIPv6)
+                    return null;
+            }
+            else
+            {
+                // The address family is not supported
+                return null;
+            }
+
             IPEndPoint endpoint = null;
 
             for (int i = 0; i < ipAddresses.Length; i++)
