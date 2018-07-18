@@ -6,7 +6,7 @@ using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
+using TorrentSwifter.Collections;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Torrents;
@@ -21,6 +21,8 @@ namespace TorrentSwifter.Peers
         #region Consts
         private const int MaxUDPPacketSize = 65507; // 65535 - 8 (UDP header) - 20 (IP header)
         private const int MulticastPort = 6771;
+
+        private const string MessageRequestLine = "BT-SEARCH * HTTP/1.1";
         #endregion
 
         #region Fields
@@ -37,8 +39,6 @@ namespace TorrentSwifter.Peers
 
         private static readonly IPEndPoint anyEndPointV4 = new IPEndPoint(IPAddress.Any, 0);
         private static readonly IPEndPoint anyEndPointV6 = new IPEndPoint(IPAddress.IPv6Any, 0);
-
-        private static readonly Regex messageRegex = new Regex("BT-SEARCH \\* HTTP/1.1\\r\\nHost: 239.192.152.143:6771\\r\\nPort: (?<port>[0-9]{1,5})\\r\\nInfohash: (?<hash>[0-9a-fA-F]{40})\\r\\n([Cc]ookie: (?<cookie>[^\\r\\n]+)\\r\\n)?\\r\\n\\r\\n");
         #endregion
 
         #region Properties
@@ -243,35 +243,85 @@ namespace TorrentSwifter.Peers
 
         private static bool HandleBroadcast(string broadcastMessage, IPEndPoint endPoint)
         {
-            var match = messageRegex.Match(broadcastMessage);
-            if (!match.Success)
+            HeaderCollection headers;
+            if (!TryParseMessage(broadcastMessage, out headers))
                 return false;
 
             int port;
-            string portText = match.Groups["port"].Value;
-            if (!int.TryParse(portText, out port) || port <= 0 || port > ushort.MaxValue)
+            string portText;
+            if (!headers.TryGetString("Port", out portText) || !int.TryParse(portText, out port) || port <= 0 || port > ushort.MaxValue)
                 return false;
 
-            string infoHashHex = match.Groups["hash"].Value;
-            if (infoHashHex.Length != 40)
+            string[] infoHashesHex;
+            if (!headers.TryGetStrings("Infohash", out infoHashesHex) || infoHashesHex.Length == 0)
                 return false;
 
-            var cookieGroup = match.Groups["cookie"];
-            if (cookieGroup.Success)
+            // Parse all info hashes
+            InfoHash[] infoHashes;
+            try
             {
-                string cookieText = cookieGroup.Value;
-                if (string.Equals(cookieText, cookie)) // This was sent by ourselves
-                    return false;
+                infoHashes = new InfoHash[infoHashesHex.Length];
+                for (int i = 0; i < infoHashesHex.Length; i++)
+                {
+                    if (infoHashesHex[i].Length != 40)
+                        return false;
+
+                    infoHashes[i] = new InfoHash(infoHashesHex[i]);
+                }
+            }
+            catch
+            {
+                return false;
             }
 
-            var infoHash = new InfoHash(infoHashHex);
-            var torrent = TorrentRegistry.FindTorrentByInfoHash(infoHash);
-            if (torrent == null || torrent.IsPrivate)
+            // Check if we are the one who sent this
+            string cookieText;
+            if (!headers.TryGetString("Cookie", out cookieText) && string.Equals(cookieText, cookie))
                 return false;
 
             var peerEndPoint = new IPEndPoint(endPoint.Address, port);
-            var peerInfo = new PeerInfo(peerEndPoint);
-            torrent.AddPeer(peerInfo);
+            for (int i = 0; i < infoHashes.Length; i++)
+            {
+                var infoHash = infoHashes[i];
+                var torrent = TorrentRegistry.FindTorrentByInfoHash(infoHash);
+                if (torrent == null || torrent.IsPrivate)
+                    continue;
+
+                var peerInfo = new PeerInfo(peerEndPoint);
+                torrent.AddPeer(peerInfo);
+            }
+            return true;
+        }
+
+        private static bool TryParseMessage(string broadcastMessage, out HeaderCollection headers)
+        {
+            headers = null;
+            if (string.IsNullOrEmpty(broadcastMessage))
+                return false;
+
+            string[] lines = broadcastMessage.Split(new string[] { "\r\n" }, StringSplitOptions.None);
+            if (lines.Length < 7)
+            {
+                return false;
+            }
+            else if (!string.Equals(lines[0], MessageRequestLine) || lines[lines.Length - 3].Length != 0 ||
+                     lines[lines.Length - 2].Length != 0 || lines[lines.Length - 1].Length != 0)
+            {
+                return false;
+            }
+
+            headers = new HeaderCollection();
+            for (int i = 1; i < lines.Length - 3; i++)
+            {
+                string line = lines[i];
+                int colonIndex = line.IndexOf(':');
+                if (colonIndex == -1 || colonIndex == (line.Length - 1) || line[colonIndex + 1] != ' ')
+                    return false;
+
+                string headerName = line.Substring(0, colonIndex);
+                string headerValue = line.Substring(colonIndex + 2);
+                headers.Add(headerName, headerValue);
+            }
             return true;
         }
         #endregion
