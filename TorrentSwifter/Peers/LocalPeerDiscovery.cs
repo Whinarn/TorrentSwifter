@@ -16,7 +16,7 @@ namespace TorrentSwifter.Peers
         #region Consts
         private const int MulticastPort = 6771;
 
-        private const string BroadcastMessageFormat = "BT-SEARCH * HTTP/1.1\r\nHost: {[0}:6771\r\nPort: {1}\r\nInfohash: {2}\r\ncookie: {3}\r\n\r\n\r\n";
+        private const string BroadcastMessageFormat = "BT-SEARCH * HTTP/1.1\r\nHost: {0}:6771\r\nPort: {1}\r\nInfohash: {2}\r\ncookie: {3}\r\n\r\n\r\n";
         #endregion
 
         #region Fields
@@ -35,6 +35,7 @@ namespace TorrentSwifter.Peers
             if (Socket.OSSupportsIPv4 && socketV4 == null)
             {
                 socketV4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socketV4.EnableBroadcast = true;
                 socketV4.MulticastLoopback = false;
 
                 var multicastOptionV4 = new MulticastOption(multicastIPAddressV4);
@@ -100,7 +101,8 @@ namespace TorrentSwifter.Peers
         #region Private Methods
         private static void Broadcast(Socket socket, IPEndPoint endPoint, IPAddress ipAddress, int listenPort, string infoHashHex, string cookie)
         {
-            string message = string.Format(BroadcastMessageFormat, ipAddress, listenPort, infoHashHex, cookie);
+            string ipAddressText = (ipAddress.AddressFamily == AddressFamily.InterNetwork ? ipAddress.ToString() : string.Format("[{0}]", ipAddress));
+            string message = string.Format(BroadcastMessageFormat, ipAddressText, listenPort, infoHashHex, cookie);
             byte[] messageData = Encoding.ASCII.GetBytes(message);
 
             try

@@ -36,6 +36,8 @@ namespace TorrentSwifter.Peers
 
         private static readonly IPAddress multicastIPAddressV4 = IPAddress.Parse("239.192.152.143");
         private static readonly IPAddress multicastIPAddressV6 = IPAddress.Parse("[ff15::efc0:988f]");
+        private static readonly string multicastEndpointV4 = string.Format("{0}:{1}", multicastIPAddressV4, MulticastPort);
+        private static readonly string multicastEndpointV6 = string.Format("[{0}]:{1}", multicastIPAddressV6, MulticastPort);
 
         private static readonly IPEndPoint anyEndPointV4 = new IPEndPoint(IPAddress.Any, 0);
         private static readonly IPEndPoint anyEndPointV6 = new IPEndPoint(IPAddress.IPv6Any, 0);
@@ -69,6 +71,7 @@ namespace TorrentSwifter.Peers
             if (Socket.OSSupportsIPv4 && socketV4 == null)
             {
                 socketV4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socketV4.EnableBroadcast = true;
                 socketV4.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
                 var localEndPoint = new IPEndPoint(IPAddress.Any, MulticastPort);
@@ -247,6 +250,14 @@ namespace TorrentSwifter.Peers
             if (!TryParseMessage(broadcastMessage, out headers))
                 return false;
 
+            string hostText;
+            if (!headers.TryGetString("Host", out hostText))
+                return false;
+
+            string expectedHostText = (endPoint.AddressFamily == AddressFamily.InterNetwork ? multicastEndpointV4 : multicastEndpointV6);
+            if (!string.Equals(hostText, expectedHostText))
+                return false;
+
             int port;
             string portText;
             if (!headers.TryGetString("Port", out portText) || !int.TryParse(portText, out port) || port <= 0 || port > ushort.MaxValue)
@@ -276,7 +287,7 @@ namespace TorrentSwifter.Peers
 
             // Check if we are the one who sent this
             string cookieText;
-            if (!headers.TryGetString("Cookie", out cookieText) && string.Equals(cookieText, cookie))
+            if (headers.TryGetString("Cookie", out cookieText) && string.Equals(cookieText, cookie))
                 return false;
 
             var peerEndPoint = new IPEndPoint(endPoint.Address, port);
