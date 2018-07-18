@@ -8,16 +8,13 @@ using TorrentSwifter.Torrents;
 
 namespace TorrentSwifter.Peers
 {
-    // TODO: Add support for IPv6 multicast
-    //       https://docs.microsoft.com/en-us/windows/desktop/winsock/porting-broadcast-applications-to-ipv6
-
     /// <summary>
     /// The local peer discovery, aka Local Service Discovery (LSD).
     /// </summary>
     internal static class LocalPeerDiscovery
     {
         #region Consts
-        private const int BroadcastPort = 6771;
+        private const int MulticastPort = 6771;
 
         private const string BroadcastMessageFormat = "BT-SEARCH * HTTP/1.1\r\nHost: {[0}:6771\r\nPort: {1}\r\nInfohash: {2}\r\ncookie: {3}\r\n\r\n\r\n";
         #endregion
@@ -26,17 +23,10 @@ namespace TorrentSwifter.Peers
         private static Socket socketV4;
         private static Socket socketV6;
 
-        private static readonly IPEndPoint endPoint;
-
         private static readonly IPAddress multicastIPAddressV4 = IPAddress.Parse("239.192.152.143");
         private static readonly IPAddress multicastIPAddressV6 = IPAddress.Parse("[ff15::efc0:988f]");
-        #endregion
-
-        #region Static Initializer
-        static LocalPeerDiscovery()
-        {
-            endPoint = new IPEndPoint(IPAddress.Broadcast, BroadcastPort);
-        }
+        private static readonly IPEndPoint endPointV4 = new IPEndPoint(IPAddress.Broadcast, MulticastPort);
+        private static readonly IPEndPoint endPointV6 = new IPEndPoint(multicastIPAddressV6, MulticastPort);
         #endregion
 
         #region Internal Methods
@@ -97,20 +87,20 @@ namespace TorrentSwifter.Peers
 
             if (socketV4 != null)
             {
-                Broadcast(socketV4, multicastIPAddressV4, listenPort, infoHashHex, cookie);
+                Broadcast(socketV4, endPointV4, multicastIPAddressV4, listenPort, infoHashHex, cookie);
             }
 
             if (socketV6 != null)
             {
-                Broadcast(socketV6, multicastIPAddressV6, listenPort, infoHashHex, cookie);
+                Broadcast(socketV6, endPointV6, multicastIPAddressV6, listenPort, infoHashHex, cookie);
             }
         }
         #endregion
 
         #region Private Methods
-        private static void Broadcast(Socket socket, IPAddress multicastIPAddress, int listenPort, string infoHashHex, string cookie)
+        private static void Broadcast(Socket socket, IPEndPoint endPoint, IPAddress ipAddress, int listenPort, string infoHashHex, string cookie)
         {
-            string message = string.Format(BroadcastMessageFormat, multicastIPAddress, listenPort, infoHashHex, cookie);
+            string message = string.Format(BroadcastMessageFormat, ipAddress, listenPort, infoHashHex, cookie);
             byte[] messageData = Encoding.ASCII.GetBytes(message);
 
             try
