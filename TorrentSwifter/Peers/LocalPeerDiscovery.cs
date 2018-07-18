@@ -19,12 +19,17 @@ namespace TorrentSwifter.Peers
         #region Consts
         private const int BroadcastPort = 6771;
 
-        private const string BroadcastMessageFormat = "BT-SEARCH * HTTP/1.1\r\nHost: 239.192.152.143:6771\r\nPort: {0}\r\nInfohash: {1}\r\ncookie: {2}\r\n\r\n\r\n";
+        private const string BroadcastMessageFormat = "BT-SEARCH * HTTP/1.1\r\nHost: {[0}:6771\r\nPort: {1}\r\nInfohash: {2}\r\ncookie: {3}\r\n\r\n\r\n";
         #endregion
 
         #region Fields
-        private static Socket socket;
+        private static Socket socketV4;
+        private static Socket socketV6;
+
         private static readonly IPEndPoint endPoint;
+
+        private static readonly IPAddress multicastIPAddressV4 = IPAddress.Parse("239.192.152.143");
+        private static readonly IPAddress multicastIPAddressV6 = IPAddress.Parse("[ff15::efc0:988f]");
         #endregion
 
         #region Static Initializer
@@ -37,18 +42,37 @@ namespace TorrentSwifter.Peers
         #region Internal Methods
         internal static void Initialize()
         {
-            if (socket != null)
-                return;
+            if (Socket.OSSupportsIPv4 && socketV4 == null)
+            {
+                socketV4 = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+                socketV4.MulticastLoopback = false;
 
-            socket = new Socket(SocketType.Dgram, ProtocolType.Udp);
+                var multicastOptionV4 = new MulticastOption(multicastIPAddressV4);
+                socketV4.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, multicastOptionV4);
+            }
+
+            if (Socket.OSSupportsIPv6 && socketV6 == null)
+            {
+                socketV6 = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
+                socketV6.MulticastLoopback = false;
+
+                var multicastOptionV6 = new IPv6MulticastOption(multicastIPAddressV6);
+                socketV6.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.AddMembership, multicastOptionV6);
+            }
         }
 
         internal static void Uninitialize()
         {
-            if (socket != null)
+            if (socketV4 != null)
             {
-                socket.Close();
-                socket = null;
+                socketV4.Close();
+                socketV4 = null;
+            }
+
+            if (socketV6 != null)
+            {
+                socketV6.Close();
+                socketV6 = null;
             }
         }
         #endregion
@@ -64,14 +88,31 @@ namespace TorrentSwifter.Peers
                 throw new ArgumentNullException("torrent");
             else if (torrent.IsPrivate)
                 return;
-            else if (socket == null)
+            else if (socketV4 == null && socketV6 == null)
                 throw new InvalidOperationException("The local peer discovery has not yet been initialized.");
 
             int listenPort = PeerListener.Port;
             string infoHashHex = torrent.InfoHash.ToHexString().ToUpperInvariant();
             string cookie = LocalPeerListener.Cookie;
-            string message = string.Format(BroadcastMessageFormat, listenPort, infoHashHex, cookie);
+
+            if (socketV4 != null)
+            {
+                Broadcast(socketV4, multicastIPAddressV4, listenPort, infoHashHex, cookie);
+            }
+
+            if (socketV6 != null)
+            {
+                Broadcast(socketV6, multicastIPAddressV6, listenPort, infoHashHex, cookie);
+            }
+        }
+        #endregion
+
+        #region Private Methods
+        private static void Broadcast(Socket socket, IPAddress multicastIPAddress, int listenPort, string infoHashHex, string cookie)
+        {
+            string message = string.Format(BroadcastMessageFormat, multicastIPAddress, listenPort, infoHashHex, cookie);
             byte[] messageData = Encoding.ASCII.GetBytes(message);
+
             try
             {
                 socket.SendTo(messageData, 0, messageData.Length, SocketFlags.None, endPoint);
