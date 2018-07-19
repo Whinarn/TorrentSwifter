@@ -2,9 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Company>Mattias Edlund</Company>
+    <Company></Company>
     <Copyright>Copyright © Mattias Edlund 2018</Copyright>
     <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <Version>0.1.0</Version>
+    <Authors>Mattias Edlund</Authors>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <PackageProjectUrl>https://github.com/Whinarn/TorrentSwifter</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Whinarn/TorrentSwifter.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>bittorrent, torrent, trackers, torrentswifter</PackageTags>
+    <PackageLicenseUrl>https://github.com/Whinarn/TorrentSwifter/blob/master/LICENSE</PackageLicenseUrl>
+    <Description>A library that provides high-level access to the BitTorrent protocol.</Description>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

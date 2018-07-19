@@ -1,15 +1,16 @@
-﻿using System.Reflection;
+﻿using System.Resources;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("TorrentSwifterCLI")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("TorrentSwifter Command Line Interface")]
+[assembly: AssemblyDescription("A basic command line interface using the TorrentSwifter library.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Mattias Edlund")]
-[assembly: AssemblyProduct("TorrentSwifterCLI")]
+[assembly: AssemblyProduct("TorrentSwifter")]
 [assembly: AssemblyCopyright("Copyright © Mattias Edlund 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -34,3 +35,5 @@ using System.Runtime.InteropServices;
 // [assembly: AssemblyVersion("1.0.*")]
 [assembly: AssemblyVersion("0.1.0.0")]
 [assembly: AssemblyFileVersion("0.1.0.0")]
+[assembly: NeutralResourcesLanguage("en-US")]
+
