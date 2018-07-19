@@ -2,6 +2,7 @@
 using System.Net;
 using System.Threading.Tasks;
 using TorrentSwifter.Collections;
+using TorrentSwifter.Helpers;
 using TorrentSwifter.Logging;
 using TorrentSwifter.Preferences;
 using TorrentSwifter.Torrents;
@@ -21,6 +22,9 @@ namespace TorrentSwifter.Peers
 
         private PeerConnection connection = null;
         private bool haveTriedConnectTo = false;
+
+        private string clientName = null;
+        private string clientVersion = null;
 
         private bool isCompleted = false;
         private BitField bitField = null;
@@ -77,6 +81,24 @@ namespace TorrentSwifter.Peers
         public PeerConnection Connection
         {
             get { return connection; }
+        }
+
+        /// <summary>
+        /// Gets the name of the client program that this peer is using.
+        /// Note that this can be null if it's unknown.
+        /// </summary>
+        public string ClientName
+        {
+            get { return clientName; }
+        }
+
+        /// <summary>
+        /// Gets the version of the client program that this peer is using.
+        /// Note that this can be null if it's unknown.
+        /// </summary>
+        public string ClientVersion
+        {
+            get { return clientVersion; }
         }
 
         /// <summary>
