@@ -8,7 +8,7 @@
 - [x] Tracker Protocol Extension: Scrape ([BEP 48](http://www.bittorrent.org/beps/bep_0048.html))
 - [x] IPv6 Tracker Extension ([BEP 7](http://www.bittorrent.org/beps/bep_0007.html))
 - [ ] Tracker Returns External IP ([BEP 24](http://www.bittorrent.org/beps/bep_0024.html))
-- [ ] Peer ID Conventions ([BEP 20](http://www.bittorrent.org/beps/bep_0020.html))
+- [x] Peer ID Conventions ([BEP 20](http://www.bittorrent.org/beps/bep_0020.html))
 - [ ] WebSeed (GetRight style) ([BEP 19](http://www.bittorrent.org/beps/bep_0019.html))
 - [ ] WebSeed (Hoffman-style) ([BEP 17](http://www.bittorrent.org/beps/bep_0017.html))
 - [x] Local Service Discovery ([BEP 14](http://www.bittorrent.org/beps/bep_0014.html))
