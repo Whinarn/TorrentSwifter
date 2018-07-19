@@ -158,13 +158,23 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Returns the text-representation of this peer ID.
         /// </summary>
-        /// <returns>The peer ID in hexadecimals.</returns>
+        /// <returns>The peer client info with ID.</returns>
         public override string ToString()
         {
             if (id != null)
             {
-                // TODO: Format with client name, version, etc..
-                return HexHelper.BytesToHex(id);
+                string idHex = HexHelper.BytesToHex(id);
+
+                string clientName;
+                string clientVersion;
+                if (PeerHelper.TryGetPeerClientInfo(this, out clientName, out clientVersion))
+                {
+                    return string.Format("[{0} (v{1}), RAW:{2}]", clientName, clientVersion, idHex);
+                }
+                else
+                {
+                    return string.Format("[UNKNOWN, RAW:{0}]", idHex);
+                }
             }
             else
             {
