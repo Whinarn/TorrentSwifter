@@ -383,6 +383,7 @@ namespace TorrentSwifter.Peers
             connection.Connected += OnConnectionConnected;
             connection.ConnectionFailed += OnConnectionAttemptFailed;
             connection.Disconnected += OnConnectionDisconnected;
+            connection.Handshaked += OnPeerHandshaked;
             connection.BitFieldReceived += OnConnectionBitFieldReceived;
             connection.HavePiece += OnConnectionHavePiece;
             connection.StateChanged += OnConnectionStateChanged;
@@ -393,6 +394,7 @@ namespace TorrentSwifter.Peers
             connection.Connected -= OnConnectionConnected;
             connection.ConnectionFailed -= OnConnectionAttemptFailed;
             connection.Disconnected -= OnConnectionDisconnected;
+            connection.Handshaked -= OnPeerHandshaked;
             connection.BitFieldReceived -= OnConnectionBitFieldReceived;
             connection.HavePiece -= OnConnectionHavePiece;
             connection.StateChanged -= OnConnectionStateChanged;
@@ -426,6 +428,23 @@ namespace TorrentSwifter.Peers
         #endregion
 
         #region Peer Events
+        private void OnPeerHandshaked(object sender, EventArgs e)
+        {
+            string clientName;
+            string clientVersion;
+            if (PeerHelper.TryGetPeerClientInfo(peerID, out clientName, out clientVersion))
+            {
+                this.clientName = clientName;
+                this.clientVersion = clientVersion;
+
+                Log.LogInfo("[Peer][{0}] We handshaked with client: {1} (v{2})", endPoint, clientName, clientVersion);
+            }
+            else
+            {
+                Log.LogInfo("[Peer][{0}] We handshaked with an unknown client with peer ID: {1}", endPoint, peerID.ToHexString());
+            }
+        }
+
         private void OnPeerCompleted()
         {
             Log.LogInfo("[Peer][{0}] A peer just completed downloading.", endPoint);
