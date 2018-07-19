@@ -288,6 +288,8 @@ namespace TorrentSwifter.Peers
             if (headers.TryGetString("Cookie", out cookieText) && string.Equals(cookieText, cookie))
                 return false;
 
+            Log.LogInfo("[LocalPeerDiscovery][{0}] Received a local broadcast for {1} torrents.", endPoint.Address, infoHashes.Length);
+
             var peerEndPoint = new IPEndPoint(endPoint.Address, port);
             for (int i = 0; i < infoHashes.Length; i++)
             {
