@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Company></Company>
+    <Copyright>Copyright © Mattias Edlund 2018</Copyright>
+    <Product>TorrentSwifter</Product>
+    <Version>0.1.0</Version>
+    <Authors>Mattias Edlund</Authors>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <PackageProjectUrl>https://github.com/Whinarn/TorrentSwifter</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Whinarn/TorrentSwifter.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>bittorrent, torrent, torrentswifter</PackageTags>
+    <PackageLicenseUrl>https://github.com/Whinarn/TorrentSwifter/blob/master/LICENSE</PackageLicenseUrl>
+    <Description>A library for UI extensions to the TorrentSwifter library.</Description>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors />
+    <DocumentationFile>bin\Release\netstandard2.0\TorrentSwifter.UI.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netstandard2.0\TorrentSwifter.UI.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TorrentSwifter\TorrentSwifter.csproj" />
+  </ItemGroup>
+
+</Project>
