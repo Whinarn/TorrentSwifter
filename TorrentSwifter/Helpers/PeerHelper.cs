@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Helpers
 {
-    // TODO: Add support to figure out client info from remote peer IDs
-
     internal static class PeerHelper
     {
         #region Consts
@@ -196,20 +193,17 @@ namespace TorrentSwifter.Helpers
             if (idChars[0] != '-' || idChars[7] != '-')
                 return false;
 
-            for (int i = 3; i < 7; i++)
-            {
-                if (!char.IsDigit(idChars[i]))
-                    return false;
-            }
+            if (!AreCharsDigits(idChars, 3, 4))
+                return false;
 
             string clientID = new string(idChars, 1, 2);
-            if (azureusStyleClients.TryGetValue(clientID, out clientName))
+            if (!azureusStyleClients.TryGetValue(clientID, out clientName))
             {
-                clientVersion = string.Format("{0}.{1}.{2}.{3}", idChars[3], idChars[4], idChars[5], idChars[6]);
-                return true;
+                clientName = string.Format("Unknown ({0})", clientID);
             }
 
-            return false;
+            clientVersion = string.Format("{0}.{1}.{2}.{3}", idChars[3], idChars[4], idChars[5], idChars[6]);
+            return true;
         }
 
         private static bool TryGetShadowStyleClientInfo(char[] idChars, out string clientName, out string clientVersion)
@@ -242,7 +236,67 @@ namespace TorrentSwifter.Helpers
 
         private static bool TryGetOtherClientInfo(char[] idChars, out string clientName, out string clientVersion)
         {
-            // TODO: Parse clients like BitComment, BitLord, XBT Client, Opera, MLdonkey, Bits on Wheels, Queen Bee, BitTyrant, TorrenTopia, BitSpirit, Rufus, G3 Torrent, FlashGet, BitCometLite, 
+            // Detect BitComent (older versions) and BitLord
+            if (idChars[0] == 'e' && idChars[1] == 'x' && idChars[2] == 'b' && idChars[3] == 'c' && AreCharsDigits(idChars, 4, 4))
+            {
+                if (idChars[8] == 'L' && idChars[9] == 'O' && idChars[10] == 'R' && idChars[11] == 'D')
+                {
+                    clientName = "BitLord";
+                }
+                else
+                {
+                    clientName = "BitComet";
+                }
+
+                int versionMajor, versionMinor;
+                string versionMajorText = new string(idChars, 4, 2);
+                string versionMinorText = new string(idChars, 6, 2);
+
+                if (int.TryParse(versionMajorText, out versionMajor) && int.TryParse(versionMinorText, out versionMinor))
+                {
+                    clientVersion = string.Format("{0}.{1}", versionMajor, versionMinor);
+                    return true;
+                }
+            }
+
+            // Detect XBT Client
+            if (idChars[0] == 'X' && idChars[1] == 'B' && idChars[2] == 'T' && AreCharsDigits(idChars, 3, 3) && idChars[7] == '-')
+            {
+                clientName = "XBT Client";
+                clientVersion = string.Format("{0}.{1}.{2}", idChars[3], idChars[4], idChars[5]);
+                return true;
+            }
+
+            // Detect Opera
+            if (idChars[0] == 'O' && idChars[1] == 'P' && AreCharsDigits(idChars, 2, 4))
+            {
+                clientName = "Opera";
+                clientVersion = string.Format("{0}.{1}.{2}.{3}", idChars[2], idChars[3], idChars[4], idChars[5]);
+                return true;
+            }
+
+            // Detect MLdonkey
+            if (idChars[0] == '-' && idChars[1] == 'M' && idChars[2] == 'L')
+            {
+                int dashIndex = FindCharInArray(idChars, 3, '-');
+                if (dashIndex != -1 && TryParseDottedVersion(idChars, 3, (dashIndex - 3), out clientVersion))
+                {
+                    clientName = "MLdonkey";
+                    return true;
+                }
+            }
+
+            // Detect Mainline-style client
+            if (idChars[0] == 'M' && TryParseVersion(idChars, 1, 3, '-', out clientVersion))
+            {
+                clientName = "Mainline Client";
+                return true;
+            }
+            else if (idChars[0] == 'Q' && TryParseVersion(idChars, 1, 3, '-', out clientVersion))
+            {
+                clientName = "Queen Bee";
+                return true;
+            }
 
             clientName = null;
             clientVersion = null;
@@ -262,6 +316,122 @@ namespace TorrentSwifter.Helpers
                 value = 0;
                 return false;
             }
+        }
+
+        private static bool AreCharsDigits(char[] chars, int offset, int count)
+        {
+            bool result = true;
+            for (int i = offset; i < (offset + count); i++)
+            {
+                if (!char.IsDigit(chars[i]))
+                {
+                    result = false;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private static bool TryParseDottedVersion(char[] chars, int offset, int count, out string version)
+        {
+            bool isValid = true;
+            bool previousWasDot = true;
+            int dotCount = 0;
+            for (int i = offset; i < (offset + count); i++)
+            {
+                char c = chars[i];
+                if (char.IsDigit(c))
+                {
+                    previousWasDot = false;
+                }
+                else if (c == '.')
+                {
+                    if (!previousWasDot)
+                    {
+                        previousWasDot = true;
+                        ++dotCount;
+                    }
+                    else
+                    {
+                        isValid = false;
+                        break;
+                    }
+                }
+                else
+                {
+                    isValid = false;
+                    break;
+                }
+            }
+
+            if (isValid && !previousWasDot && dotCount > 0)
+            {
+                version = new string(chars, offset, count);
+                return true;
+            }
+
+            version = null;
+            return false;
+        }
+
+        private static bool TryParseVersion(char[] chars, int startOffset, int partCount, char separationChar, out string version)
+        {
+            bool lastWasSeparation = true;
+            int endIndex = -1;
+            int foundPartCount = 0;
+            for (int i = startOffset; i < chars.Length; i++)
+            {
+                char c = chars[i];
+                if (char.IsDigit(c))
+                {
+                    lastWasSeparation = false;
+                }
+                else if (c == separationChar)
+                {
+                    if (!lastWasSeparation && foundPartCount < partCount)
+                    {
+                        lastWasSeparation = true;
+                        ++foundPartCount;
+                    }
+                    else
+                    {
+                        endIndex = i;
+                        break;
+                    }
+                }
+                else
+                {
+                    endIndex = i;
+                    break;
+                }
+            }
+
+            if (!lastWasSeparation && endIndex != -1 && foundPartCount == partCount)
+            {
+                version = new string(chars, startOffset, (endIndex - startOffset));
+                if (separationChar != '.')
+                {
+                    version = version.Replace(separationChar, '.');
+                }
+                return true;
+            }
+
+            version = null;
+            return false;
+        }
+
+        private static int FindCharInArray(char[] chars, int startOffset, char c)
+        {
+            int result = -1;
+            for (int i = startOffset; i < chars.Length; i++)
+            {
+                if (chars[i] == c)
+                {
+                    result = i;
+                    break;
+                }
+            }
+            return result;
         }
         #endregion
     }
