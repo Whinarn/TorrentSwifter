@@ -65,7 +65,7 @@ namespace TorrentSwifter.Trackers
             this.key = GenerateRandomKey();
 
             var assemblyVersion = AssemblyHelper.GetAssemblyVersion(typeof(HttpTracker));
-            var userAgentProductInfo = new ProductInfoHeaderValue("TorrentSwifter", assemblyVersion.ToString());
+            var userAgentProductInfo = new ProductInfoHeaderValue("TorrentSwifter", assemblyVersion.ToString(3));
 
             client = new HttpClient();
             client.DefaultRequestHeaders.UserAgent.Add(userAgentProductInfo);
