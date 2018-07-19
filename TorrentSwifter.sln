@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TorrentSwifter", "TorrentSw
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentSwifterCLI", "TorrentSwifterCLI\TorrentSwifterCLI.csproj", "{694A62E9-F4F7-43B9-A4BE-7300FEC94B87}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentSwifter.Windows", "TorrentSwifter.Windows\TorrentSwifter.Windows.csproj", "{36E792B9-4E00-4310-BD00-0618BF8F29A3}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TorrentSwifter.UI", "TorrentSwifter.UI\TorrentSwifter.UI.csproj", "{0D9A06FC-D336-45A1-AAF7-0F8A7326A72B}"
 EndProject
 Global
@@ -23,6 +25,10 @@ Global
 		{694A62E9-F4F7-43B9-A4BE-7300FEC94B87}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{694A62E9-F4F7-43B9-A4BE-7300FEC94B87}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{694A62E9-F4F7-43B9-A4BE-7300FEC94B87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{36E792B9-4E00-4310-BD00-0618BF8F29A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36E792B9-4E00-4310-BD00-0618BF8F29A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36E792B9-4E00-4310-BD00-0618BF8F29A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36E792B9-4E00-4310-BD00-0618BF8F29A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{0D9A06FC-D336-45A1-AAF7-0F8A7326A72B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0D9A06FC-D336-45A1-AAF7-0F8A7326A72B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0D9A06FC-D336-45A1-AAF7-0F8A7326A72B}.Release|Any CPU.ActiveCfg = Release|Any CPU
