@@ -297,6 +297,7 @@ namespace TorrentSwifter.Peers
 
         internal void Update()
         {
+            var connection = this.connection;
             if (connection != null && connection.IsConnected)
             {
                 connection.Update();

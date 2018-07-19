@@ -1092,7 +1092,14 @@ namespace TorrentSwifter.Torrents
             {
                 foreach (var peer in peers)
                 {
-                    peer.Update();
+                    try
+                    {
+                        peer.Update();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.LogErrorException(ex);
+                    }
                 }
             }
         }
