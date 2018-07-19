@@ -197,7 +197,7 @@ namespace TorrentSwifter.Helpers
             if (idChars[0] != '-' || idChars[7] != '-')
                 return false;
 
-            if (!AreCharsDigits(idChars, 3, 4))
+            if (!AreCharsDigits(idChars, 3, 3))
                 return false;
 
             string clientID = new string(idChars, 1, 2);
@@ -206,7 +206,23 @@ namespace TorrentSwifter.Helpers
                 clientName = string.Format("Unknown ({0})", clientID);
             }
 
-            clientVersion = string.Format("{0}.{1}.{2}.{3}", idChars[3], idChars[4], idChars[5], idChars[6]);
+            char lastVersionChar = idChars[6];
+            if (char.IsDigit(lastVersionChar))
+            {
+                clientVersion = string.Format("{0}.{1}.{2}.{3}", idChars[3], idChars[4], idChars[5], idChars[6]);
+            }
+            else if (lastVersionChar == 'A' || lastVersionChar == 'a')
+            {
+                clientVersion = string.Format("{0}.{1}.{2} Alpha", idChars[3], idChars[4], idChars[5]);
+            }
+            else if (lastVersionChar == 'B' || lastVersionChar == 'b')
+            {
+                clientVersion = string.Format("{0}.{1}.{2} Beta", idChars[3], idChars[4], idChars[5]);
+            }
+            else
+            {
+                clientVersion = string.Format("{0}.{1}.{2}", idChars[3], idChars[4], idChars[5]);
+            }
             return true;
         }
 
