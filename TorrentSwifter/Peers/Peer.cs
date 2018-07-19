@@ -226,12 +226,7 @@ namespace TorrentSwifter.Peers
         {
             if (connection != null)
             {
-                connection.Connected -= OnConnectionConnected;
-                connection.ConnectionFailed -= OnConnectionAttemptFailed;
-                connection.Disconnected -= OnConnectionDisconnected;
-                connection.BitFieldReceived -= OnConnectionBitFieldReceived;
-                connection.HavePiece -= OnConnectionHavePiece;
-                connection.StateChanged -= OnConnectionStateChanged;
+                UninitializeConnection(connection);
 
                 connection.Disconnect();
                 connection.Dispose();
@@ -393,6 +388,16 @@ namespace TorrentSwifter.Peers
             connection.StateChanged += OnConnectionStateChanged;
         }
 
+        private void UninitializeConnection(PeerConnection connection)
+        {
+            connection.Connected -= OnConnectionConnected;
+            connection.ConnectionFailed -= OnConnectionAttemptFailed;
+            connection.Disconnected -= OnConnectionDisconnected;
+            connection.BitFieldReceived -= OnConnectionBitFieldReceived;
+            connection.HavePiece -= OnConnectionHavePiece;
+            connection.StateChanged -= OnConnectionStateChanged;
+        }
+
         private void Uninitialize()
         {
             torrent.PieceVerified -= OnTorrentPieceVerified;
@@ -441,6 +446,13 @@ namespace TorrentSwifter.Peers
         private void OnConnectionDisconnected(object sender, EventArgs e)
         {
             Log.LogInfo("[Peer] Disconnected from {0}", endPoint);
+
+            if (connection != null)
+            {
+                UninitializeConnection(connection);
+                connection.Dispose();
+                connection = null;
+            }
 
             if (torrent != null)
             {
