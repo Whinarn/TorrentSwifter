@@ -139,7 +139,11 @@ namespace TorrentSwifter.Helpers
             int majorVersion = MathHelper.Clamp(assemblyVersion.Major, 0, 9);
             int minorVersion = MathHelper.Clamp(assemblyVersion.Minor, 0, 9);
             int buildVersion = MathHelper.Clamp(assemblyVersion.Build, 0, 9);
-            int revisionVersion = MathHelper.Clamp(assemblyVersion.Revision, 0, 9);
+
+            char lastVersionChar = 'S';
+#if DEBUG
+            lastVersionChar = 'A';
+#endif
 
             var idBytes = new byte[20];
             idBytes[0] = (byte)'-';
@@ -148,7 +152,7 @@ namespace TorrentSwifter.Helpers
             idBytes[3] = (byte)('0' + majorVersion);
             idBytes[4] = (byte)('0' + minorVersion);
             idBytes[5] = (byte)('0' + buildVersion);
-            idBytes[6] = (byte)('0' + revisionVersion);
+            idBytes[6] = (byte)lastVersionChar;
             idBytes[7] = (byte)'-';
 
             var guid = Guid.NewGuid();
