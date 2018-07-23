@@ -8,8 +8,11 @@ namespace TorrentSwifter.Preferences
     public static class Prefs
     {
         #region Fields
+        [PreferenceSection("Disk")]
         private static DiskPreferences disk = new DiskPreferences();
+        [PreferenceSection("Peer")]
         private static PeerPreferences peer = new PeerPreferences();
+        [PreferenceSection("Torrent")]
         private static TorrentPreferences torrent = new TorrentPreferences();
         #endregion
 

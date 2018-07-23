@@ -19,6 +19,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets if the full file sizes are allocated for new torrent downloads.
         /// </summary>
+        [PreferenceItem("Allocate Full File Sizes")]
         public bool AllocateFullFileSizes
         {
             get { return allocateFullFileSizes; }
@@ -28,6 +29,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the download bandwidth limit in bytes per second for the combined downloading from all active torrents.
         /// </summary>
+        [PreferenceItem("Download Bandwidth Limit")]
         public long DownloadBandwidthLimit
         {
             get { return downloadBandwidthLimit; }
@@ -37,6 +39,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the upload bandwidth limit in bytes per second for the combined uploading from all active torrents.
         /// </summary>
+        [PreferenceItem("Upload Bandwidth Limit")]
         public long UploadBandwidthLimit
         {
             get { return uploadBandwidthLimit; }

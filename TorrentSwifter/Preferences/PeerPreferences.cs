@@ -26,6 +26,7 @@ namespace TorrentSwifter.Preferences
         /// Gets or sets the port to listen for new connections on.
         /// Zero means that any available port selected by the OS will be used.
         /// </summary>
+        [PreferenceItem("Listen Port")]
         public int ListenPort
         {
             get { return listenPort; }
@@ -42,6 +43,7 @@ namespace TorrentSwifter.Preferences
         /// Gets or sets the timeout (in milliseconds) before disconnecting peers that haven't yet sent an handshake.
         /// Zero means that there is no timeout.
         /// </summary>
+        [PreferenceItem("Handshake Timeout (ms)")]
         public int HandshakeTimeout
         {
             get { return handshakeTimeout; }
@@ -52,6 +54,7 @@ namespace TorrentSwifter.Preferences
         /// Gets or sets the timeout (in milliseconds) before disconnecting peers that haven't been active.
         /// Zero means that there is no timeout.
         /// </summary>
+        [PreferenceItem("Inactive Timeout (ms)")]
         public int InactiveTimeout
         {
             get { return inactiveTimeout; }
@@ -62,6 +65,7 @@ namespace TorrentSwifter.Preferences
         /// Gets or sets the timeout (in milliseconds) before we cancel a piece request that hasn't yet been fulfilled.
         /// Zero means that there is no timeout.
         /// </summary>
+        [PreferenceItem("Piece Request Timeout (ms)")]
         public int PieceRequestTimeout
         {
             get { return pieceRequestTimeout; }
@@ -71,6 +75,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of connections that we allow to download from at the same time.
         /// </summary>
+        [PreferenceItem("Maximum Download Connections")]
         public int MaxDownloadConnections
         {
             get { return maxDownloadConnections; }
@@ -80,6 +85,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of connections that we allow to upload to at the same time.
         /// </summary>
+        [PreferenceItem("Maximum Upload Connections")]
         public int MaxUploadConnections
         {
             get { return maxUploadConnections; }
@@ -89,6 +95,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of concurrent piece requests allowed to a single peer.
         /// </summary>
+        [PreferenceItem("Maximum Concurrent Piece Requests")]
         public int MaxConcurrentPieceRequests
         {
             get { return maxConcurrentPieceRequests; }

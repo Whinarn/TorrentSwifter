@@ -20,6 +20,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of queued reads from the disk.
         /// </summary>
+        [PreferenceItem("Max Queued Reads")]
         public int MaxQueuedReads
         {
             get { return maxQueuedReads; }
@@ -29,6 +30,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of queued writes to the disk.
         /// </summary>
+        [PreferenceItem("Max Queued Writes")]
         public int MaxQueuedWrites
         {
             get { return maxQueuedWrites; }
@@ -38,6 +40,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of concurrent reads from the disk.
         /// </summary>
+        [PreferenceItem("Max Concurrent Reads")]
         public int MaxConcurrentReads
         {
             get { return maxConcurrentReads; }
@@ -47,6 +50,7 @@ namespace TorrentSwifter.Preferences
         /// <summary>
         /// Gets or sets the maximum count of concurrent writes to the disk.
         /// </summary>
+        [PreferenceItem("Max Concurrent Writes")]
         public int MaxConcurrentWrites
         {
             get { return maxConcurrentWrites; }
