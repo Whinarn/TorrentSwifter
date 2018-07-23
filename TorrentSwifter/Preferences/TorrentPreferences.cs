@@ -28,6 +28,7 @@ namespace TorrentSwifter.Preferences
 
         /// <summary>
         /// Gets or sets the download bandwidth limit in bytes per second for the combined downloading from all active torrents.
+        /// Zero means that no limit is imposed.
         /// </summary>
         [PreferenceItem("Download Bandwidth Limit")]
         public long DownloadBandwidthLimit
@@ -38,6 +39,7 @@ namespace TorrentSwifter.Preferences
 
         /// <summary>
         /// Gets or sets the upload bandwidth limit in bytes per second for the combined uploading from all active torrents.
+        /// Zero means that no limit is imposed.
         /// </summary>
         [PreferenceItem("Upload Bandwidth Limit")]
         public long UploadBandwidthLimit
