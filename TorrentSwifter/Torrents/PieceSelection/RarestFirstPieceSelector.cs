@@ -15,6 +15,15 @@ namespace TorrentSwifter.Torrents.PieceSelection
         private double randomNoise = DefaultRandomNoise;
 
         /// <summary>
+        /// Gets the maximum duplicated request count.
+        /// One or below means that no duplicated requests are allowed.
+        /// </summary>
+        public int MaxDuplicatedRequestCount
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
         /// Creates a new rarest-first piece selector with a default random noise of 0.05
         /// </summary>
         public RarestFirstPieceSelector()

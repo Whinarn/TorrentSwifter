@@ -11,6 +11,15 @@ namespace TorrentSwifter.Torrents.PieceSelection
     public sealed class RandomPieceSelector : IPieceSelector
     {
         /// <summary>
+        /// Gets the maximum duplicated request count.
+        /// One or below means that no duplicated requests are allowed.
+        /// </summary>
+        public int MaxDuplicatedRequestCount
+        {
+            get { return 1; }
+        }
+
+        /// <summary>
         /// Returns the ranked pieces for downloading from this piece selector.
         /// Note that this should not return already downloaded and verified pieces.
         /// </summary>
