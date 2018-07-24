@@ -11,6 +11,7 @@ using TorrentSwifter.Logging;
 using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Preferences;
+using TorrentSwifter.Torrents.PieceSelection;
 using TorrentSwifter.Torrents.RateLimiter;
 using TorrentSwifter.Trackers;
 
@@ -27,8 +28,6 @@ namespace TorrentSwifter.Torrents
         private const int MinBlockSize = 1 * (int)SizeHelper.KiloByte;
         private const int MaxBlockSize = 16 * (int)SizeHelper.KiloByte;
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
-
-        private const double PieceImportanceNoise = 0.05;
         #endregion
 
         #region Fields
@@ -50,6 +49,8 @@ namespace TorrentSwifter.Torrents
         private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
         private long bytesLeftToDownload = 0L;
+
+        private IPieceSelector pieceSelector = new RandomPieceSelector();
 
         private long sessionDownloadedBytes = 0L;
         private long sessionUploadedBytes = 0L;
@@ -219,6 +220,15 @@ namespace TorrentSwifter.Torrents
                 else
                     return TorrentState.Downloading;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the currently used piece selector for downloading.
+        /// </summary>
+        public IPieceSelector PieceSelector
+        {
+            get { return pieceSelector; }
+            set { pieceSelector = value ?? new RandomPieceSelector(); }
         }
 
         /// <summary>
@@ -716,12 +726,6 @@ namespace TorrentSwifter.Torrents
 
             return HashHelper.ComputeSHA1(pieceData);
         }
-
-        private IEnumerable<TorrentPiece> GetRankedPieces()
-        {
-            return pieces.Where((piece) => !piece.IsVerified)
-                .OrderByDescending((piece) => piece.Importance + RandomHelper.NextDouble(PieceImportanceNoise));
-        }
         #endregion
 
         #region Piece Requests
@@ -846,7 +850,7 @@ namespace TorrentSwifter.Torrents
         private void RequestMorePieces()
         {
             var peerList = tempRequestPiecePeers;
-            var rankedPieces = GetRankedPieces();
+            var rankedPieces = pieceSelector.GetRankedPieces(this, pieces);
             foreach (var piece in rankedPieces)
             {
                 GetPeersWithPiece(piece.Index, true, peerList);
