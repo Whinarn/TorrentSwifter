@@ -10,6 +10,7 @@ using TorrentSwifter.Logging;
 using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Preferences;
+using TorrentSwifter.Torrents.Modes;
 using TorrentSwifter.Torrents.PieceSelection;
 using TorrentSwifter.Torrents.RateLimiter;
 using TorrentSwifter.Trackers;
@@ -50,6 +51,7 @@ namespace TorrentSwifter.Torrents
         private TorrentFile[] files = null;
         private long bytesLeftToDownload = 0L;
 
+        private ITorrentMode mode = DefaultMode;
         private IPieceSelector pieceSelector = DefaultPieceSelector;
 
         private long sessionDownloadedBytes = 0L;
@@ -75,6 +77,7 @@ namespace TorrentSwifter.Torrents
         private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         private List<Peer> tempRequestPiecePeers = new List<Peer>();
 
+        private static readonly ITorrentMode DefaultMode = new NormalMode();
         private static readonly IPieceSelector DefaultPieceSelector = new AvailableThenRarestFirstPieceSelector();
         #endregion
 
@@ -222,6 +225,15 @@ namespace TorrentSwifter.Torrents
                 else
                     return TorrentState.Downloading;
             }
+        }
+
+        /// <summary>
+        /// Gets or sets the mode used for downloading and uploading this torrent.
+        /// </summary>
+        public ITorrentMode Mode
+        {
+            get { return mode; }
+            set { mode = value ?? DefaultMode; }
         }
 
         /// <summary>
