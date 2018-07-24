@@ -17,6 +17,7 @@ using TorrentSwifter.Trackers;
 namespace TorrentSwifter.Torrents
 {
     // TODO: Add support to pause torrents
+    // TODO: Add support to set if torrents should go over to endgame mode automatically once almost completed
 
     /// <summary>
     /// A torrent.
