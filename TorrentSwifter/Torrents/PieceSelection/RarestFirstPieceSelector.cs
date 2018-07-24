@@ -6,7 +6,7 @@ using TorrentSwifter.Helpers;
 namespace TorrentSwifter.Torrents.PieceSelection
 {
     /// <summary>
-    /// A piece selector that selects the most reare pieces.
+    /// A piece selector that selects the most rare pieces.
     /// </summary>
     public sealed class RarestFirstPieceSelector : IPieceSelector
     {
