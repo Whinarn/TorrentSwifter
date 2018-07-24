@@ -6,27 +6,27 @@ using TorrentSwifter.Helpers;
 namespace TorrentSwifter.Torrents.PieceSelection
 {
     /// <summary>
-    /// A piece selector that selects a random piece first, and then the most rare pieces.
+    /// A piece selector that selects a random highly available piece first, and then the most rare pieces.
     /// </summary>
-    public sealed class RandomThenRarestFirstPieceSelector : IPieceSelector
+    public sealed class AvailableThenRarestFirstPieceSelector : IPieceSelector
     {
         private const double DefaultRandomNoise = 0.05;
 
         private double randomNoise = DefaultRandomNoise;
 
         /// <summary>
-        /// Creates a new random-then-rarest-first piece selector with a default random noise of 0.05
+        /// Creates a new available-then-rarest-first piece selector with a default random noise of 0.05
         /// </summary>
-        public RandomThenRarestFirstPieceSelector()
+        public AvailableThenRarestFirstPieceSelector()
         {
 
         }
 
         /// <summary>
-        /// Creates a new random-then-rarest-first piece selector with a specific random noise.
+        /// Creates a new available-then-rarest-first piece selector with a specific random noise.
         /// </summary>
         /// <param name="randomNoise">The random noise applied that makes sure that some random is applied to the selection.</param>
-        public RandomThenRarestFirstPieceSelector(double randomNoise)
+        public AvailableThenRarestFirstPieceSelector(double randomNoise)
         {
             this.randomNoise = Math.Max(randomNoise, 0.0);
         }
