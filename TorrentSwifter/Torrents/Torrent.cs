@@ -74,7 +74,7 @@ namespace TorrentSwifter.Torrents
         private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         private List<Peer> tempRequestPiecePeers = new List<Peer>();
 
-        private static readonly IPieceSelector DefaultPieceSelector = new RarestFirstPieceSelector();
+        private static readonly IPieceSelector DefaultPieceSelector = new AvailableThenRarestFirstPieceSelector();
         #endregion
 
         #region Events
