@@ -1,6 +1,7 @@
 # TorrentSwifter
 
 ## Support
+### BEP
 - [x] The BitTorrent Protocol ([BEP 3](http://www.bittorrent.org/beps/bep_0003.html))
 - [x] UDP Tracker Protocol ([BEP 15](http://www.bittorrent.org/beps/bep_0015.html))
 - [x] Multitracker Metadata Extension ([BEP 12](http://www.bittorrent.org/beps/bep_0012.html))
@@ -23,4 +24,16 @@
 - [ ] Extension for partial seeds ([BEP 21](http://www.bittorrent.org/beps/bep_0021.html))
 - [ ] Padding files and extended file attributes ([BEP 47](http://www.bittorrent.org/beps/bep_0047.html))
 - [ ] Torrent Signing ([BEP 35](http://www.bittorrent.org/beps/bep_0035.html))
+
+### Piece Selection
+- [x] Random
+- [x] Rarest first
+- [x] Highly available first piece, then rarest first
+
+### Modes
+- [ ] Normal
+- [ ] End-game
+- [ ] Superseeding
+
+### Other
 - [ ] UPnP

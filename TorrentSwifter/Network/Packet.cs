@@ -523,6 +523,24 @@ namespace TorrentSwifter.Network
             byte[] stringBytes = encoding.GetBytes(text);
             Write(stringBytes, 0, stringBytes.Length);
         }
+
+        /// <summary>
+        /// Writes a specific count of zero bytes to the packet.
+        /// </summary>
+        /// <param name="count">The count of bytes.</param>
+        public void WriteZeroes(int count)
+        {
+            if (count < 0)
+                throw new ArgumentOutOfRangeException("count");
+            else if (count == 0)
+                return;
+
+            EnsureCapacity(this.offset + count);
+            this.offset += count;
+
+            if (this.offset > this.length)
+                this.length = this.offset;
+        }
         #endregion
 
         #region Skipping

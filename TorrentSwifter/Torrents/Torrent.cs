@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TorrentSwifter.Collections;
@@ -11,12 +10,15 @@ using TorrentSwifter.Logging;
 using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Preferences;
+using TorrentSwifter.Torrents.Modes;
+using TorrentSwifter.Torrents.PieceSelection;
 using TorrentSwifter.Torrents.RateLimiter;
 using TorrentSwifter.Trackers;
 
 namespace TorrentSwifter.Torrents
 {
     // TODO: Add support to pause torrents
+    // TODO: Add support to set if torrents should go over to endgame mode automatically once almost completed
 
     /// <summary>
     /// A torrent.
@@ -27,8 +29,6 @@ namespace TorrentSwifter.Torrents
         private const int MinBlockSize = 1 * (int)SizeHelper.KiloByte;
         private const int MaxBlockSize = 16 * (int)SizeHelper.KiloByte;
         private const int DefaultBlockSize = 16 * (int)SizeHelper.KiloByte;
-
-        private const double PieceImportanceNoise = 0.05;
         #endregion
 
         #region Fields
@@ -50,6 +50,9 @@ namespace TorrentSwifter.Torrents
         private TorrentPiece[] pieces = null;
         private TorrentFile[] files = null;
         private long bytesLeftToDownload = 0L;
+
+        private ITorrentMode mode = null;
+        private IPieceSelector pieceSelector = DefaultPieceSelector;
 
         private long sessionDownloadedBytes = 0L;
         private long sessionUploadedBytes = 0L;
@@ -73,6 +76,8 @@ namespace TorrentSwifter.Torrents
         private ConcurrentQueue<OutgoingPieceRequest> outgoingPieceRequests = new ConcurrentQueue<OutgoingPieceRequest>();
         private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         private List<Peer> tempRequestPiecePeers = new List<Peer>();
+
+        private static readonly IPieceSelector DefaultPieceSelector = new AvailableThenRarestFirstPieceSelector();
         #endregion
 
         #region Events
@@ -222,6 +227,35 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets or sets the mode used for downloading and uploading this torrent.
+        /// </summary>
+        public ITorrentMode Mode
+        {
+            get { return mode; }
+            set
+            {
+                if (mode == value)
+                    return;
+
+                if (mode != null)
+                {
+                    mode.Torrent = null;
+                }
+                mode = value ?? new NormalMode();
+                mode.Torrent = this;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the currently used piece selector for downloading.
+        /// </summary>
+        public IPieceSelector PieceSelector
+        {
+            get { return pieceSelector; }
+            set { pieceSelector = value ?? DefaultPieceSelector; }
+        }
+
+        /// <summary>
         /// Gets the amount of bytes downloaded this session.
         /// </summary>
         public long SessionDownloadedBytes
@@ -320,6 +354,9 @@ namespace TorrentSwifter.Torrents
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
             this.bytesLeftToDownload = totalSize;
+
+            this.mode = new NormalMode();
+            this.mode.Torrent = this;
 
             InitializePieces();
             InitializeFiles();
@@ -716,12 +753,6 @@ namespace TorrentSwifter.Torrents
 
             return HashHelper.ComputeSHA1(pieceData);
         }
-
-        private IEnumerable<TorrentPiece> GetRankedPieces()
-        {
-            return pieces.Where((piece) => !piece.IsVerified)
-                .OrderByDescending((piece) => piece.Importance + RandomHelper.NextDouble(PieceImportanceNoise));
-        }
         #endregion
 
         #region Piece Requests
@@ -846,19 +877,15 @@ namespace TorrentSwifter.Torrents
         private void RequestMorePieces()
         {
             var peerList = tempRequestPiecePeers;
-            var rankedPieces = GetRankedPieces();
+            var rankedPieces = pieceSelector.GetRankedPieces(this, pieces);
             foreach (var piece in rankedPieces)
             {
                 GetPeersWithPiece(piece.Index, true, peerList);
                 if (peerList.Count == 0)
                     continue;
 
-                // TODO: Improve the peer selection
-                RandomHelper.Randomize(peerList);
-                var peer = peerList[0];
-
                 int blockCount = piece.BlockCount;
-                for (int blockIndex = 0; blockIndex < blockCount; blockIndex++)
+                for (int blockIndex = 0; blockIndex < blockCount && peerList.Count > 0; blockIndex++)
                 {
                     var block = piece.GetBlock(blockIndex);
                     if (block.IsDownloaded)
@@ -866,22 +893,42 @@ namespace TorrentSwifter.Torrents
                     else if (block.IsRequested) // TODO: Allow for more requests for the same block after a certain time, but not to the same peer more than once
                         continue;
 
-                    var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
-                    outgoingPieceRequests.Enqueue(request);
-                    peer.RegisterPieceRequest(request);
-
-                    // TODO: Improve the peer selection
-                    if (!peer.CanRequestPiecesFrom)
+                    if (mode.RequestAllPeersForSameBlock)
                     {
-                        peerList.RemoveAt(0);
-                        if (peerList.Count > 0)
+                        // Send the same block request to all peers
+                        int peerCount = peerList.Count;
+                        for (int peerIndex = (peerCount - 1); peerIndex >= 0; peerIndex--)
                         {
-                            peer = peerList[0];
+                            var peer = peerList[peerIndex];
+                            if (!peer.CanRequestPiecesFrom)
+                            {
+                                peerList.RemoveAt(peerIndex);
+                                continue;
+                            }
+
+                            var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                            outgoingPieceRequests.Enqueue(request);
+                            peer.RegisterPieceRequest(request);
                         }
-                        else
+                    }
+                    else
+                    {
+                        // Get a random peer from the list and check if we can still request pieces from the peer
+                        var peer = RandomHelper.GetRandomFromList(peerList);
+                        if (!peer.CanRequestPiecesFrom)
                         {
-                            // We have no more peers for this piece
-                            break;
+                            peerList.Remove(peer);
+                            continue;
+                        }
+
+                        var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                        outgoingPieceRequests.Enqueue(request);
+                        peer.RegisterPieceRequest(request);
+
+                        // Remove the peer from the list if we can send no more requests
+                        if (!peer.CanRequestPiecesFrom)
+                        {
+                            peerList.Remove(peer);
                         }
                     }
                 }
@@ -1130,6 +1177,7 @@ namespace TorrentSwifter.Torrents
 
                         if (!isVerifyingIntegrity && hasVerifiedIntegrity)
                         {
+                            UpdateMode();
                             UpdateTrackers();
                             UpdatePeers();
 
@@ -1148,6 +1196,18 @@ namespace TorrentSwifter.Torrents
             finally
             {
                 isStopped = true;
+            }
+        }
+
+        private void UpdateMode()
+        {
+            try
+            {
+                mode.Update(this);
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
             }
         }
         #endregion

@@ -443,7 +443,7 @@ namespace TorrentSwifter.Peers
         #region Torrent Events
         private void OnTorrentPieceVerified(object sender, PieceEventArgs e)
         {
-            if (connection != null && connection.IsConnected && connection.IsHandshaked)
+            if (connection != null && connection.IsConnected && connection.IsHandshaked && !torrent.Mode.MaskBitmasks)
             {
                 connection.ReportHavePiece(e.PieceIndex);
             }

@@ -767,12 +767,23 @@ namespace TorrentSwifter.Peers
             if (isBitFieldSent || !isHandshakeSent)
                 return;
 
-            var bitField = torrent.BitField;
-            var bitFieldBytes = bitField.Buffer;
-            int bitFieldByteCount = bitField.ByteLength;
-            var packet = CreatePacket(MessageType.BitField, bitFieldByteCount);
-            packet.Write(bitFieldBytes, 0, bitFieldByteCount);
-            SendPacket(packet);
+            if (torrent.Mode.MaskBitmasks)
+            {
+                var bitField = torrent.BitField;
+                int bitFieldByteCount = bitField.ByteLength;
+                var packet = CreatePacket(MessageType.BitField, bitFieldByteCount);
+                packet.WriteZeroes(bitFieldByteCount);
+                SendPacket(packet);
+            }
+            else
+            {
+                var bitField = torrent.BitField;
+                var bitFieldBytes = bitField.Buffer;
+                int bitFieldByteCount = bitField.ByteLength;
+                var packet = CreatePacket(MessageType.BitField, bitFieldByteCount);
+                packet.Write(bitFieldBytes, 0, bitFieldByteCount);
+                SendPacket(packet);
+            }
 
             isBitFieldSent = true;
         }
