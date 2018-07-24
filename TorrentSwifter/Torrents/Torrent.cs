@@ -51,7 +51,7 @@ namespace TorrentSwifter.Torrents
         private TorrentFile[] files = null;
         private long bytesLeftToDownload = 0L;
 
-        private ITorrentMode mode = DefaultMode;
+        private ITorrentMode mode = null;
         private IPieceSelector pieceSelector = DefaultPieceSelector;
 
         private long sessionDownloadedBytes = 0L;
@@ -77,7 +77,6 @@ namespace TorrentSwifter.Torrents
         private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         private List<Peer> tempRequestPiecePeers = new List<Peer>();
 
-        private static readonly ITorrentMode DefaultMode = new NormalMode();
         private static readonly IPieceSelector DefaultPieceSelector = new AvailableThenRarestFirstPieceSelector();
         #endregion
 
@@ -233,7 +232,18 @@ namespace TorrentSwifter.Torrents
         public ITorrentMode Mode
         {
             get { return mode; }
-            set { mode = value ?? DefaultMode; }
+            set
+            {
+                if (mode == value)
+                    return;
+
+                if (mode != null)
+                {
+                    mode.Torrent = null;
+                }
+                mode = value ?? new NormalMode();
+                mode.Torrent = this;
+            }
         }
 
         /// <summary>
@@ -344,6 +354,9 @@ namespace TorrentSwifter.Torrents
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
             this.bytesLeftToDownload = totalSize;
+
+            this.mode = new NormalMode();
+            this.mode.Torrent = this;
 
             InitializePieces();
             InitializeFiles();
@@ -1164,6 +1177,7 @@ namespace TorrentSwifter.Torrents
 
                         if (!isVerifyingIntegrity && hasVerifiedIntegrity)
                         {
+                            UpdateMode();
                             UpdateTrackers();
                             UpdatePeers();
 
@@ -1182,6 +1196,18 @@ namespace TorrentSwifter.Torrents
             finally
             {
                 isStopped = true;
+            }
+        }
+
+        private void UpdateMode()
+        {
+            try
+            {
+                mode.Update(this);
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
             }
         }
         #endregion
