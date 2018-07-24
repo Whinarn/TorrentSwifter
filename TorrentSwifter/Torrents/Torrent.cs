@@ -859,12 +859,8 @@ namespace TorrentSwifter.Torrents
                 if (peerList.Count == 0)
                     continue;
 
-                // TODO: Improve the peer selection
-                RandomHelper.Randomize(peerList);
-                var peer = peerList[0];
-
                 int blockCount = piece.BlockCount;
-                for (int blockIndex = 0; blockIndex < blockCount; blockIndex++)
+                for (int blockIndex = 0; blockIndex < blockCount && peerList.Count > 0; blockIndex++)
                 {
                     var block = piece.GetBlock(blockIndex);
                     if (block.IsDownloaded)
@@ -872,23 +868,22 @@ namespace TorrentSwifter.Torrents
                     else if (block.IsRequested) // TODO: Allow for more requests for the same block after a certain time, but not to the same peer more than once
                         continue;
 
+                    // Get a random peer from the list and check if we can still request pieces from the peer
+                    var peer = RandomHelper.GetRandomFromList(peerList);
+                    if (!peer.CanRequestPiecesFrom)
+                    {
+                        peerList.Remove(peer);
+                        continue;
+                    }
+
                     var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
                     outgoingPieceRequests.Enqueue(request);
                     peer.RegisterPieceRequest(request);
 
-                    // TODO: Improve the peer selection
+                    // Remove the peer from the list if we can send no more requests
                     if (!peer.CanRequestPiecesFrom)
                     {
-                        peerList.RemoveAt(0);
-                        if (peerList.Count > 0)
-                        {
-                            peer = peerList[0];
-                        }
-                        else
-                        {
-                            // We have no more peers for this piece
-                            break;
-                        }
+                        peerList.Remove(peer);
                     }
                 }
             }
