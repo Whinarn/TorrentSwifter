@@ -10,8 +10,6 @@ namespace TorrentSwifter.Torrents.PieceSelection
     /// </summary>
     public sealed class RandomPieceSelector : IPieceSelector
     {
-        private const double PieceImportanceNoise = 0.05;
-
         /// <summary>
         /// Returns the ranked pieces for downloading from this piece selector.
         /// Note that this should not return already downloaded and verified pieces.
@@ -22,7 +20,7 @@ namespace TorrentSwifter.Torrents.PieceSelection
         public IEnumerable<TorrentPiece> GetRankedPieces(Torrent torrent, TorrentPiece[] pieces)
         {
             return pieces.Where((piece) => !piece.IsVerified)
-                .OrderByDescending((piece) => piece.Importance + RandomHelper.NextDouble(PieceImportanceNoise));
+                .OrderByDescending((piece) => piece.DownloadProgress + RandomHelper.NextDouble(0.2));
         }
     }
 }
