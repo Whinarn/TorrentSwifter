@@ -164,7 +164,7 @@ namespace TorrentSwifter.Torrents
                 if (double.IsPositiveInfinity(rarity)) // If no peer has the piece
                     return 0.0;
 
-                return downloadProgress + rarity;
+                return (downloadProgress * 2.0) + rarity;
             }
         }
         #endregion
