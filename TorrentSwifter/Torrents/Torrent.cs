@@ -880,22 +880,43 @@ namespace TorrentSwifter.Torrents
                     else if (block.IsRequested) // TODO: Allow for more requests for the same block after a certain time, but not to the same peer more than once
                         continue;
 
-                    // Get a random peer from the list and check if we can still request pieces from the peer
-                    var peer = RandomHelper.GetRandomFromList(peerList);
-                    if (!peer.CanRequestPiecesFrom)
+                    if (mode.RequestAllPeersForSameBlock)
                     {
-                        peerList.Remove(peer);
-                        continue;
+                        // Send the same block request to all peers
+                        int peerCount = peerList.Count;
+                        for (int peerIndex = (peerCount - 1); peerIndex >= 0; peerIndex--)
+                        {
+                            var peer = peerList[peerIndex];
+                            if (!peer.CanRequestPiecesFrom)
+                            {
+                                peerList.RemoveAt(peerIndex);
+                                continue;
+                            }
+
+                            var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                            outgoingPieceRequests.Enqueue(request);
+                            peer.RegisterPieceRequest(request);
+                        }
                     }
-
-                    var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
-                    outgoingPieceRequests.Enqueue(request);
-                    peer.RegisterPieceRequest(request);
-
-                    // Remove the peer from the list if we can send no more requests
-                    if (!peer.CanRequestPiecesFrom)
+                    else
                     {
-                        peerList.Remove(peer);
+                        // Get a random peer from the list and check if we can still request pieces from the peer
+                        var peer = RandomHelper.GetRandomFromList(peerList);
+                        if (!peer.CanRequestPiecesFrom)
+                        {
+                            peerList.Remove(peer);
+                            continue;
+                        }
+
+                        var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                        outgoingPieceRequests.Enqueue(request);
+                        peer.RegisterPieceRequest(request);
+
+                        // Remove the peer from the list if we can send no more requests
+                        if (!peer.CanRequestPiecesFrom)
+                        {
+                            peerList.Remove(peer);
+                        }
                     }
                 }
             }
