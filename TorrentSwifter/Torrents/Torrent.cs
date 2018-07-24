@@ -852,15 +852,12 @@ namespace TorrentSwifter.Torrents
         private void RequestMorePieces()
         {
             var peerList = tempRequestPiecePeers;
-            int maxDuplicatedRequestCount = pieceSelector.MaxDuplicatedRequestCount;
             var rankedPieces = pieceSelector.GetRankedPieces(this, pieces);
             foreach (var piece in rankedPieces)
             {
                 GetPeersWithPiece(piece.Index, true, peerList);
                 if (peerList.Count == 0)
                     continue;
-
-                // TODO: If maxDuplicatedRequestCount is above one, we send the same request to the maximum allowed count of peers with this piece
 
                 // TODO: Improve the peer selection
                 RandomHelper.Randomize(peerList);
