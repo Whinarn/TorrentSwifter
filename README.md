@@ -29,7 +29,6 @@
 - [x] Random
 - [x] Rarest first
 - [x] Highly available first piece, then rarest first
-- [x] Endgame mode
 
 ### Modes
 - [ ] Normal
