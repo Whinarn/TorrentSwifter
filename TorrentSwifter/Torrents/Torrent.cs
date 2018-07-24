@@ -10,6 +10,7 @@ using TorrentSwifter.Logging;
 using TorrentSwifter.Managers;
 using TorrentSwifter.Peers;
 using TorrentSwifter.Preferences;
+using TorrentSwifter.Torrents.Modes;
 using TorrentSwifter.Torrents.PieceSelection;
 using TorrentSwifter.Torrents.RateLimiter;
 using TorrentSwifter.Trackers;
@@ -50,6 +51,7 @@ namespace TorrentSwifter.Torrents
         private TorrentFile[] files = null;
         private long bytesLeftToDownload = 0L;
 
+        private ITorrentMode mode = null;
         private IPieceSelector pieceSelector = DefaultPieceSelector;
 
         private long sessionDownloadedBytes = 0L;
@@ -225,6 +227,26 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
+        /// Gets or sets the mode used for downloading and uploading this torrent.
+        /// </summary>
+        public ITorrentMode Mode
+        {
+            get { return mode; }
+            set
+            {
+                if (mode == value)
+                    return;
+
+                if (mode != null)
+                {
+                    mode.Torrent = null;
+                }
+                mode = value ?? new NormalMode();
+                mode.Torrent = this;
+            }
+        }
+
+        /// <summary>
         /// Gets or sets the currently used piece selector for downloading.
         /// </summary>
         public IPieceSelector PieceSelector
@@ -332,6 +354,9 @@ namespace TorrentSwifter.Torrents
             this.blockSize = blockSize;
             this.totalSize = metaData.TotalSize;
             this.bytesLeftToDownload = totalSize;
+
+            this.mode = new NormalMode();
+            this.mode.Torrent = this;
 
             InitializePieces();
             InitializeFiles();
@@ -868,22 +893,43 @@ namespace TorrentSwifter.Torrents
                     else if (block.IsRequested) // TODO: Allow for more requests for the same block after a certain time, but not to the same peer more than once
                         continue;
 
-                    // Get a random peer from the list and check if we can still request pieces from the peer
-                    var peer = RandomHelper.GetRandomFromList(peerList);
-                    if (!peer.CanRequestPiecesFrom)
+                    if (mode.RequestAllPeersForSameBlock)
                     {
-                        peerList.Remove(peer);
-                        continue;
+                        // Send the same block request to all peers
+                        int peerCount = peerList.Count;
+                        for (int peerIndex = (peerCount - 1); peerIndex >= 0; peerIndex--)
+                        {
+                            var peer = peerList[peerIndex];
+                            if (!peer.CanRequestPiecesFrom)
+                            {
+                                peerList.RemoveAt(peerIndex);
+                                continue;
+                            }
+
+                            var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                            outgoingPieceRequests.Enqueue(request);
+                            peer.RegisterPieceRequest(request);
+                        }
                     }
-
-                    var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
-                    outgoingPieceRequests.Enqueue(request);
-                    peer.RegisterPieceRequest(request);
-
-                    // Remove the peer from the list if we can send no more requests
-                    if (!peer.CanRequestPiecesFrom)
+                    else
                     {
-                        peerList.Remove(peer);
+                        // Get a random peer from the list and check if we can still request pieces from the peer
+                        var peer = RandomHelper.GetRandomFromList(peerList);
+                        if (!peer.CanRequestPiecesFrom)
+                        {
+                            peerList.Remove(peer);
+                            continue;
+                        }
+
+                        var request = new OutgoingPieceRequest(this, peer, piece.Index, blockIndex);
+                        outgoingPieceRequests.Enqueue(request);
+                        peer.RegisterPieceRequest(request);
+
+                        // Remove the peer from the list if we can send no more requests
+                        if (!peer.CanRequestPiecesFrom)
+                        {
+                            peerList.Remove(peer);
+                        }
                     }
                 }
             }
@@ -1131,6 +1177,7 @@ namespace TorrentSwifter.Torrents
 
                         if (!isVerifyingIntegrity && hasVerifiedIntegrity)
                         {
+                            UpdateMode();
                             UpdateTrackers();
                             UpdatePeers();
 
@@ -1149,6 +1196,18 @@ namespace TorrentSwifter.Torrents
             finally
             {
                 isStopped = true;
+            }
+        }
+
+        private void UpdateMode()
+        {
+            try
+            {
+                mode.Update(this);
+            }
+            catch (Exception ex)
+            {
+                Log.LogErrorException(ex);
             }
         }
         #endregion

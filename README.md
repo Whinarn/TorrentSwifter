@@ -31,5 +31,10 @@
 - [x] Highly available first piece, then rarest first
 - [x] Endgame mode
 
+### Modes
+- [ ] Normal
+- [ ] End-game
+- [ ] Superseeding
+
 ### Other
 - [ ] UPnP
