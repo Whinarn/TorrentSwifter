@@ -103,7 +103,51 @@ namespace TorrentSwifter.Torrents
         }
 
         /// <summary>
-        /// Gets the importance of this piece to us (in terms of downloading).
+        /// Gets the download progress of this piece from zero to one.
+        /// </summary>
+        public double DownloadProgress
+        {
+            get
+            {
+                if (isVerified)
+                    return 1.0;
+
+                int downloadCount = 0;
+                for (int i = 0; i < blocks.Length; i++)
+                {
+                    if (blocks[i].IsDownloaded)
+                    {
+                        ++downloadCount;
+                    }
+                }
+                return ((double)downloadCount / (double)blocks.Length);
+            }
+        }
+
+        /// <summary>
+        /// Gets the rarity of this piece between zero and one with one meaning that only one peer has this piece and zero that everyone has it.
+        /// The only exception is that this will return double.PositiveInfinity if there are no peers available with this piece.
+        /// </summary>
+        public double Rarity
+        {
+            get
+            {
+                int totalPeerCount = torrent.PeerCount;
+                if (totalPeerCount == 0)
+                    return double.PositiveInfinity;
+
+                int peerCountWithPiece = torrent.GetPeerCountWithPiece(index);
+                if (peerCountWithPiece == 0)
+                    return double.PositiveInfinity;
+                else if (peerCountWithPiece == 1)
+                    return 1.0;
+
+                return (1.0 - ((double)peerCountWithPiece / (double)totalPeerCount));
+            }
+        }
+
+        /// <summary>
+        /// Gets the importance of this piece to us (in terms of downloading) with a higher value being more important than a lower value.
         /// </summary>
         public double Importance
         {
@@ -112,12 +156,15 @@ namespace TorrentSwifter.Torrents
                 if (isVerified)
                     return 0.0;
 
-                double downloadProgress = GetDownloadProgress();
+                double downloadProgress = this.DownloadProgress;
                 if (downloadProgress >= 1.0)
                     return 0.0;
 
-                double rarity = GetRarity();
-                return downloadProgress + rarity;
+                double rarity = this.Rarity;
+                if (double.IsPositiveInfinity(rarity)) // If no peer has the piece
+                    return 0.0;
+
+                return (downloadProgress * 2.0) + rarity;
             }
         }
         #endregion
@@ -179,28 +226,6 @@ namespace TorrentSwifter.Torrents
             }
 
             return result;
-        }
-        #endregion
-
-        #region Private Methods
-        private double GetDownloadProgress()
-        {
-            int downloadCount = 0;
-            for (int i = 0; i < blocks.Length; i++)
-            {
-                if (blocks[i].IsDownloaded)
-                {
-                    ++downloadCount;
-                }
-            }
-            return ((double)downloadCount / (double)blocks.Length);
-        }
-
-        private double GetRarity()
-        {
-            int peerCountWithPiece = torrent.GetPeerCountWithPiece(index);
-            int totalPeerCount = torrent.PeerCount;
-            return (1.0 - ((double)peerCountWithPiece / (double)totalPeerCount));
         }
         #endregion
     }

@@ -56,5 +56,17 @@ namespace TorrentSwifter.Helpers
                 }
             }
         }
+
+        public static T GetRandomFromList<T>(List<T> list)
+        {
+            int listCount = list.Count;
+            if (listCount == 0)
+                return default(T);
+            else if (listCount == 1)
+                return list[0];
+
+            int randomIndex = Next(listCount);
+            return list[randomIndex];
+        }
     }
 }
