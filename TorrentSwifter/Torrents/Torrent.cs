@@ -2,7 +2,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TorrentSwifter.Collections;
@@ -50,7 +49,7 @@ namespace TorrentSwifter.Torrents
         private TorrentFile[] files = null;
         private long bytesLeftToDownload = 0L;
 
-        private IPieceSelector pieceSelector = new RandomPieceSelector();
+        private IPieceSelector pieceSelector = DefaultPieceSelector;
 
         private long sessionDownloadedBytes = 0L;
         private long sessionUploadedBytes = 0L;
@@ -74,6 +73,8 @@ namespace TorrentSwifter.Torrents
         private ConcurrentQueue<OutgoingPieceRequest> outgoingPieceRequests = new ConcurrentQueue<OutgoingPieceRequest>();
         private ConcurrentList<OutgoingPieceRequest> pendingOutgoingPieceRequests = new ConcurrentList<OutgoingPieceRequest>();
         private List<Peer> tempRequestPiecePeers = new List<Peer>();
+
+        private static readonly IPieceSelector DefaultPieceSelector = new RarestFirstPieceSelector();
         #endregion
 
         #region Events
@@ -228,7 +229,7 @@ namespace TorrentSwifter.Torrents
         public IPieceSelector PieceSelector
         {
             get { return pieceSelector; }
-            set { pieceSelector = value ?? new RandomPieceSelector(); }
+            set { pieceSelector = value ?? DefaultPieceSelector; }
         }
 
         /// <summary>
