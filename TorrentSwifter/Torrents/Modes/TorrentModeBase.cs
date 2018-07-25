@@ -22,6 +22,8 @@ namespace TorrentSwifter.Torrents.Modes
             {
                 if (torrent == value)
                     return;
+                else if (torrent != null && value != null)
+                    throw new InvalidOperationException("This mode has already been assigned to another torrent. Please make sure each mode instance is only assigned to one torrent at a time.");
 
                 torrent = value;
                 OnTorrentChanged();
