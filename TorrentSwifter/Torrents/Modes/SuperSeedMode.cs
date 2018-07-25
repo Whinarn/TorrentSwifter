@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using TorrentSwifter.Helpers;
 using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Torrents.Modes
@@ -13,6 +14,7 @@ namespace TorrentSwifter.Torrents.Modes
     public class SuperSeedMode : TorrentModeBase
     {
         private List<Peer> tempPeerList = new List<Peer>(50);
+        private Dictionary<Peer, int> assignedPeers = new Dictionary<Peer, int>(50);
         private int[] piecePeerCounts = null;
         private object syncObj = new object();
 
@@ -40,6 +42,9 @@ namespace TorrentSwifter.Torrents.Modes
         {
             lock (syncObj)
             {
+                tempPeerList.Clear();
+                assignedPeers.Clear();
+
                 if (torrent != null)
                     piecePeerCounts = new int[torrent.PieceCount];
                 else
@@ -54,14 +59,43 @@ namespace TorrentSwifter.Torrents.Modes
         {
             lock (syncObj)
             {
+                // Check for peers that should no longer be assigned
+                var peerList = tempPeerList;
+                peerList.Clear();
+                foreach (var assignedPeer in assignedPeers)
+                {
+                    Peer peer = assignedPeer.Key;
+                    int pieceIndex = assignedPeer.Value;
+
+                    // If the peer is no longer connected or now has this piece we will unassign them from the piece
+                    if (!peer.IsConnected || (peer.BitField != null && peer.BitField.Get(pieceIndex)))
+                    {
+                        peerList.Add(peer);
+                        --piecePeerCounts[pieceIndex];
+                    }
+                }
+
+                // Remove assigned peers that are no longer connected
+                foreach (var peer in peerList)
+                {
+                    assignedPeers.Remove(peer);
+                }
+
                 var rankedPieces = GetRankedPieces(torrent);
+                peerList.Clear();
                 foreach (var piece in rankedPieces)
                 {
-                    torrent.GetPeersWithoutPiece(piece.Index, true, tempPeerList);
-                    if (tempPeerList.Count == 0)
+                    torrent.GetPeersWithoutPiece(piece.Index, true, peerList);
+                    RemoveAssignedPeersFromList(peerList);
+                    if (peerList.Count == 0)
                         continue;
 
-                    // TODO: What next?
+                    var assignedPeer = RandomHelper.GetRandomFromList(peerList);
+                    if (assignedPeer == null)
+                        continue;
+
+                    assignedPeers[assignedPeer] = piece.Index;
+                    ++piecePeerCounts[piece.Index];
                 }
             }
         }
@@ -81,6 +115,14 @@ namespace TorrentSwifter.Torrents.Modes
                     continue;
 
                 yield return piece;
+            }
+        }
+
+        private void RemoveAssignedPeersFromList(List<Peer> peerList)
+        {
+            foreach (var peer in assignedPeers.Keys)
+            {
+                peerList.Remove(peer);
             }
         }
     }
