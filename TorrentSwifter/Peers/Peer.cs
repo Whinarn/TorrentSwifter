@@ -408,7 +408,7 @@ namespace TorrentSwifter.Peers
             connection.Disconnected += OnConnectionDisconnected;
             connection.Handshaked += OnPeerHandshaked;
             connection.BitFieldReceived += OnConnectionBitFieldReceived;
-            connection.HavePiece += OnConnectionHavePiece;
+            connection.HavePieceReceived += OnConnectionHavePiece;
             connection.StateChanged += OnConnectionStateChanged;
         }
 
@@ -419,7 +419,7 @@ namespace TorrentSwifter.Peers
             connection.Disconnected -= OnConnectionDisconnected;
             connection.Handshaked -= OnPeerHandshaked;
             connection.BitFieldReceived -= OnConnectionBitFieldReceived;
-            connection.HavePiece -= OnConnectionHavePiece;
+            connection.HavePieceReceived -= OnConnectionHavePiece;
             connection.StateChanged -= OnConnectionStateChanged;
         }
 

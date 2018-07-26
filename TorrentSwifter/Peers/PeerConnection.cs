@@ -154,7 +154,7 @@ namespace TorrentSwifter.Peers
         /// <summary>
         /// Occurs when the peer has reported having a new piece.
         /// </summary>
-        public event EventHandler<PieceEventArgs> HavePiece;
+        public event EventHandler<PieceEventArgs> HavePieceReceived;
         #endregion
 
         #region Constructor
@@ -358,7 +358,7 @@ namespace TorrentSwifter.Peers
 
             remoteBitField.Set(pieceIndex, true);
 
-            HavePiece.SafeInvoke(this, new PieceEventArgs(pieceIndex));
+            HavePieceReceived.SafeInvoke(this, new PieceEventArgs(pieceIndex));
         }
         #endregion
     }
