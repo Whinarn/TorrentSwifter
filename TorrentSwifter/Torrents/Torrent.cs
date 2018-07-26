@@ -1177,7 +1177,7 @@ namespace TorrentSwifter.Torrents
         {
             try
             {
-                mode.Update(this);
+                mode.Update();
             }
             catch (Exception ex)
             {
