@@ -390,6 +390,11 @@ namespace TorrentSwifter.Peers
             }
         }
 
+        internal void ReportHavePiece(int pieceIndex)
+        {
+            connection.ReportHavePiece(pieceIndex);
+        }
+
         internal async Task<bool> RequestPieceData(int pieceIndex, int blockIndex)
         {
             if (connection == null)

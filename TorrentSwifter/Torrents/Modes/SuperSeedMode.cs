@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using TorrentSwifter.Helpers;
 using TorrentSwifter.Peers;
 
@@ -16,6 +17,8 @@ namespace TorrentSwifter.Torrents.Modes
         private List<Peer> tempPeerList = new List<Peer>(50);
         private Dictionary<Peer, int> assignedPeers = new Dictionary<Peer, int>(50);
         private int[] piecePeerCounts = null;
+
+        private int isUpdating = 0;
         private object syncObj = new object();
 
         /// <summary>
@@ -57,6 +60,10 @@ namespace TorrentSwifter.Torrents.Modes
         /// </summary>
         public override void Update()
         {
+            // Prevents us from running this update more than once at the same time
+            if (Interlocked.CompareExchange(ref isUpdating, 1, 0) != 0)
+                return;
+
             lock (syncObj)
             {
                 // Check for peers that should no longer be assigned
@@ -78,6 +85,7 @@ namespace TorrentSwifter.Torrents.Modes
                 // Remove assigned peers that are no longer connected
                 foreach (var peer in peerList)
                 {
+                    UnregisterPeerEvents(peer);
                     assignedPeers.Remove(peer);
                 }
 
@@ -94,10 +102,15 @@ namespace TorrentSwifter.Torrents.Modes
                     if (assignedPeer == null)
                         continue;
 
+                    RegisterPeerEvents(assignedPeer);
+                    assignedPeer.ReportHavePiece(piece.Index);
                     assignedPeers[assignedPeer] = piece.Index;
                     ++piecePeerCounts[piece.Index];
                 }
             }
+
+            // Reset the flag because we are no longer updating
+            Interlocked.Exchange(ref isUpdating, 0);
         }
 
         private IEnumerable<TorrentPiece> GetRankedPieces(Torrent torrent)
@@ -124,6 +137,41 @@ namespace TorrentSwifter.Torrents.Modes
             {
                 peerList.Remove(peer);
             }
+        }
+
+        private void RegisterPeerEvents(Peer peer)
+        {
+            peer.Disconnected += OnPeerDisconnect;
+            peer.BitFieldReceived += OnPeerBitfieldReceived;
+            peer.HavePieceReceived += OnPeerHavePiece;
+        }
+
+        private void UnregisterPeerEvents(Peer peer)
+        {
+            peer.Disconnected -= OnPeerDisconnect;
+            peer.BitFieldReceived -= OnPeerBitfieldReceived;
+            peer.HavePieceReceived -= OnPeerHavePiece;
+        }
+
+        private void OnPeerDisconnect(object sender, EventArgs e)
+        {
+            Peer peer = (sender as Peer);
+            if (peer != null)
+            {
+                UnregisterPeerEvents(peer);
+            }
+
+            Update();
+        }
+
+        private void OnPeerBitfieldReceived(object sender, BitFieldEventArgs e)
+        {
+            Update();
+        }
+
+        private void OnPeerHavePiece(object sender, PieceEventArgs e)
+        {
+            Update();
         }
     }
 }
