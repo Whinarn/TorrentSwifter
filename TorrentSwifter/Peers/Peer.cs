@@ -430,6 +430,11 @@ namespace TorrentSwifter.Peers
         private void Initialize()
         {
             torrent.PieceVerified += OnTorrentPieceVerified;
+
+            if (bitField == null)
+            {
+                bitField = new BitField(torrent.PieceCount);
+            }
         }
 
         private void InitializeConnection(PeerConnection connection)
@@ -543,7 +548,14 @@ namespace TorrentSwifter.Peers
 
         private void OnConnectionBitFieldReceived(object sender, BitFieldEventArgs e)
         {
-            bitField = e.BitField;
+            if (bitField != null)
+            {
+                e.BitField.CopyTo(bitField);
+            }
+            else
+            {
+                bitField = e.BitField;
+            }
 
             bool isCompleted = bitField.HasAllSet();
             if (isCompleted != this.isCompleted)
