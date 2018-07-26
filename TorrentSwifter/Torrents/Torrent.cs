@@ -790,7 +790,7 @@ namespace TorrentSwifter.Torrents
                 currentExtraRate += length;
             }
 
-            // Reset the flag that we are currently processing
+            // Reset the flag because we are no longer processing
             Interlocked.Exchange(ref isProcessingIncomingPieceRequests, 0);
         }
 
@@ -849,7 +849,7 @@ namespace TorrentSwifter.Torrents
                 }
             }
 
-            // Reset the flag that we are currently processing
+            // Reset the flag because we are no longer processing
             Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
         }
 
