@@ -790,7 +790,7 @@ namespace TorrentSwifter.Torrents
                 currentExtraRate += length;
             }
 
-            // Reset the flag that we are currently processing
+            // Reset the flag because we are no longer processing
             Interlocked.Exchange(ref isProcessingIncomingPieceRequests, 0);
         }
 
@@ -849,7 +849,7 @@ namespace TorrentSwifter.Torrents
                 }
             }
 
-            // Reset the flag that we are currently processing
+            // Reset the flag because we are no longer processing
             Interlocked.Exchange(ref isProcessingOutgoingPieceRequests, 0);
         }
 
@@ -1107,32 +1107,6 @@ namespace TorrentSwifter.Torrents
         #endregion
 
         #region Peers
-        private void GetPeersWithPiece(int pieceIndex, bool requestPiecesFrom, List<Peer> peerList)
-        {
-            peerList.Clear();
-            lock (peersSyncObj)
-            {
-                foreach (var peer in peers)
-                {
-                    if (requestPiecesFrom && !peer.CanRequestPiecesFrom)
-                        continue;
-
-                    if (peer.IsCompleted)
-                    {
-                        peerList.Add(peer);
-                    }
-                    else
-                    {
-                        var peerBitField = peer.BitField;
-                        if (peerBitField != null && peerBitField.Get(pieceIndex))
-                        {
-                            peerList.Add(peer);
-                        }
-                    }
-                }
-            }
-        }
-
         private void UpdatePeers()
         {
             lock (peersSyncObj)
@@ -1203,7 +1177,7 @@ namespace TorrentSwifter.Torrents
         {
             try
             {
-                mode.Update(this);
+                mode.Update();
             }
             catch (Exception ex)
             {
@@ -1289,6 +1263,53 @@ namespace TorrentSwifter.Torrents
                 }
             }
             return peerCount;
+        }
+
+        internal void GetPeersWithPiece(int pieceIndex, bool requestPiecesFrom, List<Peer> peerList)
+        {
+            peerList.Clear();
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    if (requestPiecesFrom && !peer.CanRequestPiecesFrom)
+                        continue;
+
+                    if (peer.IsCompleted)
+                    {
+                        peerList.Add(peer);
+                    }
+                    else
+                    {
+                        var peerBitField = peer.BitField;
+                        if (peerBitField != null && peerBitField.Get(pieceIndex))
+                        {
+                            peerList.Add(peer);
+                        }
+                    }
+                }
+            }
+        }
+
+        internal void GetPeersWithoutPiece(int pieceIndex, bool onlyConnected, List<Peer> peerList)
+        {
+            peerList.Clear();
+            lock (peersSyncObj)
+            {
+                foreach (var peer in peers)
+                {
+                    if (onlyConnected && !peer.IsConnected)
+                        continue;
+                    else if (peer.IsCompleted)
+                        continue;
+
+                    var peerBitField = peer.BitField;
+                    if (peerBitField != null && !peerBitField.Get(pieceIndex))
+                    {
+                        peerList.Add(peer);
+                    }
+                }
+            }
         }
         #endregion
 

@@ -131,6 +131,37 @@ namespace TorrentSwifter.Peers
         }
         #endregion
 
+        #region Events
+        /// <summary>
+        /// Occurs when a connection has been established with this peer.
+        /// </summary>
+        public event EventHandler Connected;
+        /// <summary>
+        /// Occurs when a connection attempt has failed with this peer.
+        /// </summary>
+        public event EventHandler<PeerConnectionFailedEventArgs> ConnectionFailed;
+        /// <summary>
+        /// Occurs when our connection with this peer has been disconnected.
+        /// </summary>
+        public event EventHandler Disconnected;
+        /// <summary>
+        /// Occurs when we have handshaked with this peer.
+        /// </summary>
+        public event EventHandler Handshaked;
+        /// <summary>
+        /// Occurs when the state of this peer has changed.
+        /// </summary>
+        public event EventHandler<PeerConnectionStateEventArgs> StateChanged;
+        /// <summary>
+        /// Occurs when the full bit field has been received.
+        /// </summary>
+        public event EventHandler<BitFieldEventArgs> BitFieldReceived;
+        /// <summary>
+        /// Occurs when the peer has reported having a new piece.
+        /// </summary>
+        public event EventHandler<PieceEventArgs> HavePieceReceived;
+        #endregion
+
         #region Constructor
         /// <summary>
         /// Creates a new torrent peer.
@@ -359,6 +390,11 @@ namespace TorrentSwifter.Peers
             }
         }
 
+        internal void ReportHavePiece(int pieceIndex)
+        {
+            connection.ReportHavePiece(pieceIndex);
+        }
+
         internal async Task<bool> RequestPieceData(int pieceIndex, int blockIndex)
         {
             if (connection == null)
@@ -399,6 +435,11 @@ namespace TorrentSwifter.Peers
         private void Initialize()
         {
             torrent.PieceVerified += OnTorrentPieceVerified;
+
+            if (bitField == null)
+            {
+                bitField = new BitField(torrent.PieceCount);
+            }
         }
 
         private void InitializeConnection(PeerConnection connection)
@@ -408,7 +449,7 @@ namespace TorrentSwifter.Peers
             connection.Disconnected += OnConnectionDisconnected;
             connection.Handshaked += OnPeerHandshaked;
             connection.BitFieldReceived += OnConnectionBitFieldReceived;
-            connection.HavePiece += OnConnectionHavePiece;
+            connection.HavePieceReceived += OnConnectionHavePiece;
             connection.StateChanged += OnConnectionStateChanged;
         }
 
@@ -419,7 +460,7 @@ namespace TorrentSwifter.Peers
             connection.Disconnected -= OnConnectionDisconnected;
             connection.Handshaked -= OnPeerHandshaked;
             connection.BitFieldReceived -= OnConnectionBitFieldReceived;
-            connection.HavePiece -= OnConnectionHavePiece;
+            connection.HavePieceReceived -= OnConnectionHavePiece;
             connection.StateChanged -= OnConnectionStateChanged;
         }
 
@@ -466,6 +507,8 @@ namespace TorrentSwifter.Peers
             {
                 Log.LogInfo("[Peer][{0}] We handshaked with an unknown client with peer ID: {1}", endPoint, peerID.ToHexString());
             }
+
+            Handshaked.SafeInvoke(this, e);
         }
 
         private void OnPeerCompleted()
@@ -478,11 +521,15 @@ namespace TorrentSwifter.Peers
         private void OnConnectionConnected(object sender, EventArgs e)
         {
             Log.LogInfo("[Peer] Connected to {0}", endPoint);
+
+            Connected.SafeInvoke(this, e);
         }
 
         private void OnConnectionAttemptFailed(object sender, PeerConnectionFailedEventArgs e)
         {
             Log.LogInfo("[Peer] Connection attempt failed to {0} with reason: {1}", endPoint, e.FailedReason);
+
+            ConnectionFailed.SafeInvoke(this, e);
         }
 
         private void OnConnectionDisconnected(object sender, EventArgs e)
@@ -500,11 +547,20 @@ namespace TorrentSwifter.Peers
             {
                 torrent.OnPeerDisconnected(this);
             }
+
+            Disconnected.SafeInvoke(this, e);
         }
 
         private void OnConnectionBitFieldReceived(object sender, BitFieldEventArgs e)
         {
-            bitField = e.BitField;
+            if (bitField != null)
+            {
+                e.BitField.CopyTo(bitField);
+            }
+            else
+            {
+                bitField = e.BitField;
+            }
 
             bool isCompleted = bitField.HasAllSet();
             if (isCompleted != this.isCompleted)
@@ -515,6 +571,8 @@ namespace TorrentSwifter.Peers
                     OnPeerCompleted();
                 }
             }
+
+            BitFieldReceived.SafeInvoke(this, e);
         }
 
         private void OnConnectionHavePiece(object sender, PieceEventArgs e)
@@ -535,6 +593,8 @@ namespace TorrentSwifter.Peers
                     OnPeerCompleted();
                 }
             }
+
+            HavePieceReceived.SafeInvoke(this, e);
         }
 
         private void OnConnectionStateChanged(object sender, PeerConnectionStateEventArgs e)
@@ -543,6 +603,8 @@ namespace TorrentSwifter.Peers
             {
                 torrent.OnPeerChokingUs(this);
             }
+
+            StateChanged.SafeInvoke(this, e);
         }
         #endregion
         #endregion
