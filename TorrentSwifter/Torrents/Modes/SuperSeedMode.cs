@@ -9,6 +9,9 @@ using TorrentSwifter.Peers;
 
 namespace TorrentSwifter.Torrents.Modes
 {
+    // TODO: Improve the performance of this super-seeding mode.
+    //       The upload speed is very limited when this mode is active.
+
     /// <summary>
     /// Super-seeding mode.
     /// </summary>
