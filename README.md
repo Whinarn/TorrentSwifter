@@ -2,7 +2,7 @@
 
 ## Description
 This is just a toy project of mine for learning more about the BitTorrent protocol.
-Basic support for leeching and seeding torrent files exists, but he project is nowhere close to being ready for consumers in the current state.
+Basic support for leeching and seeding torrent files exists, but the project is nowhere close to being ready for consumers in the current state.
 
 The project is developed using Visual Studio and is compatible with [.NET Standard 2.0](https://docs.microsoft.com/en-us/dotnet/standard/net-standard) so it should work cross-platform, although it has only been tested on Windows.
 
